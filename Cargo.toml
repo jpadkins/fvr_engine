@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+  "fvr_engine",
+  "fvr_engine-atlas_generator",
+]
+
+default-members = [
+  "fvr_engine"
+]

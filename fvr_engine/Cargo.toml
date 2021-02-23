@@ -1,0 +1,17 @@
+[package]
+name = "fvr_engine"
+version = "0.1.0"
+authors = ["Jacob Adkins <jacobpadkins@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.38"
+bracket-lib = "0.8.1"
+nom = "6.1.2"
+specs = "0.16.1"
+specs-derive = "0.4.1"
+
+[dependencies.sdl2]
+version = "0.34.2"
+default-features = false
+features = ["image"]
