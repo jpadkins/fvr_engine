@@ -5,9 +5,10 @@ authors = ["Jacob Adkins <jacobpadkins@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+fvr_engine-parser = { path = "../fvr_engine-parser", version = "0.1.0" }
+fvr_engine-renderer = { path = "../fvr_engine-renderer", version = "0.1.0" }
 anyhow = "1.0.38"
 bracket-lib = "0.8.1"
-nom = "6.1.2"
 specs = "0.16.1"
 specs-derive = "0.4.1"
 

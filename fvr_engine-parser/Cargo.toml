@@ -1,0 +1,10 @@
+[package]
+name = "fvr_engine-parser"
+version = "0.1.0"
+authors = ["Jacob Adkins <jacobpadkins@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.38"
+cargo-criterion = "1.0.1"
+nom = "6.1.2"
