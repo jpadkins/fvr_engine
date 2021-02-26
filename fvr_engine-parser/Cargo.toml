@@ -6,5 +6,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.38"
-cargo-criterion = "1.0.1"
+criterion = "0.3.4"
 nom = "6.1.2"
+
+[[bench]]
+name = "rich_text_benchmark"
+harness = false

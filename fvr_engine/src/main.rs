@@ -8,6 +8,7 @@ fn main() -> Result<(), String> {
     let sdl2_context = sdl2::init()?;
     let video_subsystem = sdl2_context.video()?;
     let _image_context = sdl2::image::init(sdl2::image::InitFlag::PNG);
+    let mut event_pump = sdl2_context.event_pump().map_err(|e| e.to_string())?;
     let window = video_subsystem
         .window("FVR_ENGINE", 800, 600)
         .position_centered()
@@ -23,7 +24,6 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
     let _texture_creator = canvas.texture_creator();
-    let mut event_pump = sdl2_context.event_pump().map_err(|e| e.to_string())?;
     canvas.set_draw_color(Color::RGB(30, 15, 60));
 
     'main: loop {
