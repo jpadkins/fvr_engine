@@ -75,7 +75,10 @@ pub enum RichTextHintType {
 pub enum RichTextValue {
     Text(String),
     Newline,
-    FormatHint { key: RichTextHintType, value: String },
+    FormatHint {
+        key: RichTextHintType,
+        value: String,
+    },
 }
 
 // Parser for a string of text that does not contain a newline, escaped left chevron, or format hint.
@@ -399,13 +402,13 @@ fn format_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
 }
 
 // The main parse function.
-pub fn parse_rich_text(input: String) -> Result<Vec<RichTextValue>> {
+pub fn parse_rich_text<S: AsRef<str>>(input: S) -> Result<Vec<RichTextValue>> {
     let result = many1(alt((
         text_parser,
         newline_parser,
         escaped_chevron_parser,
         format_hint_parser,
-    )))(&input);
+    )))(input.as_ref());
 
     Ok(result.map_err(|e| anyhow::format_err!(e.to_string()))?.1)
 }
@@ -416,7 +419,7 @@ fn test_parse_rich_text() {
         "<l:t><o:f><fc:Y><bc:k><<<oc:k>Hello, <l:c><o:t><fc:k><oc:R>world<l:t><o:f><fc:Y>!";
 
     assert_eq!(
-        parse_rich_text(TEST_STR.into()).unwrap(),
+        parse_rich_text(TEST_STR).unwrap(),
         vec![
             RichTextValue::FormatHint {
                 key: RichTextHintType::Layout,

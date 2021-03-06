@@ -63,56 +63,54 @@ fn parse_metrics(file_path: &str) -> Result<Vec<CharMetric>> {
     for event in parser {
         let element = event.context("Failed to parse an XML event.")?;
 
-        match element {
-            XmlEvent::StartElement {
-                name, attributes, ..
-            } => {
-                // We only care about the char elements.
-                if name.to_string() != "char" {
-                    continue;
-                }
-
-                // Char attributes follow this order: id, x, y, width, height, xoffset, yoffset.
-                let codepoint = attributes[0]
-                    .value
-                    .parse::<u32>()
-                    .context(format!("Failed to parse codepoint: <{}>.", attributes[0]))?;
-                let x = attributes[1]
-                    .value
-                    .parse::<u32>()
-                    .context(format!("Failed to parse x: <{}>.", attributes[1]))?;
-                let y = attributes[2]
-                    .value
-                    .parse::<u32>()
-                    .context(format!("Failed to parse y: <{}>.", attributes[1]))?;
-                let width = attributes[3]
-                    .value
-                    .parse::<u32>()
-                    .context(format!("Failed to parse width: <{}>.", attributes[2]))?;
-                let height = attributes[4]
-                    .value
-                    .parse::<u32>()
-                    .context(format!("Failed to parse height: <{}>.", attributes[3]))?;
-                let x_offset = attributes[5]
-                    .value
-                    .parse::<i32>()
-                    .context(format!("Failed to parse x_offset: <{}>.", attributes[4]))?;
-                let y_offset = attributes[6]
-                    .value
-                    .parse::<i32>()
-                    .context(format!("Failed to parse y_offset: <{}>.", attributes[5]))?;
-
-                char_metrics.push(CharMetric {
-                    codepoint,
-                    x,
-                    y,
-                    width,
-                    height,
-                    x_offset,
-                    y_offset,
-                });
+        if let XmlEvent::StartElement {
+            name, attributes, ..
+        } = element
+        {
+            // We only care about the char elements.
+            if name.to_string() != "char" {
+                continue;
             }
-            _ => {}
+
+            // Char attributes follow this order: id, x, y, width, height, xoffset, yoffset.
+            let codepoint = attributes[0]
+                .value
+                .parse::<u32>()
+                .context(format!("Failed to parse codepoint: <{}>.", attributes[0]))?;
+            let x = attributes[1]
+                .value
+                .parse::<u32>()
+                .context(format!("Failed to parse x: <{}>.", attributes[1]))?;
+            let y = attributes[2]
+                .value
+                .parse::<u32>()
+                .context(format!("Failed to parse y: <{}>.", attributes[1]))?;
+            let width = attributes[3]
+                .value
+                .parse::<u32>()
+                .context(format!("Failed to parse width: <{}>.", attributes[2]))?;
+            let height = attributes[4]
+                .value
+                .parse::<u32>()
+                .context(format!("Failed to parse height: <{}>.", attributes[3]))?;
+            let x_offset = attributes[5]
+                .value
+                .parse::<i32>()
+                .context(format!("Failed to parse x_offset: <{}>.", attributes[4]))?;
+            let y_offset = attributes[6]
+                .value
+                .parse::<i32>()
+                .context(format!("Failed to parse y_offset: <{}>.", attributes[5]))?;
+
+            char_metrics.push(CharMetric {
+                codepoint,
+                x,
+                y,
+                width,
+                height,
+                x_offset,
+                y_offset,
+            });
         }
     }
 
@@ -123,8 +121,8 @@ fn generate(
     name: &str,
     default_max_regular_height: u32,
     default_max_outline_height: u32,
-    default_regular_metrics: &Vec<CharMetric>,
-    default_outline_metrics: &Vec<CharMetric>,
+    default_regular_metrics: &[CharMetric],
+    default_outline_metrics: &[CharMetric],
     default_regular_atlas: &DynamicImage,
     default_outline_atlas: &DynamicImage,
 ) -> Result<()> {
@@ -191,8 +189,8 @@ fn generate(
         // Push the new metric.
         let output_metric = CharMetric {
             codepoint: metric.codepoint,
-            x: x,
-            y: y,
+            x,
+            y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -230,8 +228,8 @@ fn generate(
         // Push the new metric.
         let output_metric = CharMetric {
             codepoint: metric.codepoint,
-            x: x,
-            y: y,
+            x,
+            y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -268,8 +266,8 @@ fn generate(
         // Push the new metric.
         let output_metric = CharMetric {
             codepoint: metric.codepoint,
-            x: x,
-            y: y,
+            x,
+            y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -303,8 +301,8 @@ fn generate(
         // Push the new metric.
         let output_metric = CharMetric {
             codepoint: metric.codepoint,
-            x: x,
-            y: y,
+            x,
+            y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -394,9 +392,9 @@ fn main() -> Result<()> {
         .subcommand(SubCommand::with_name("list").about("List atlases to be generated"))
         .get_matches();
 
-    if let Some(_) = matches.subcommand_matches("run") {
+    if matches.subcommand_matches("run").is_some() {
         generate_all()?;
-    } else if let Some(_) = matches.subcommand_matches("list") {
+    } else if matches.subcommand_matches("list").is_some() {
         println!("Listing!");
     }
 

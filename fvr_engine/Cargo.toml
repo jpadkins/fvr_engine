@@ -5,14 +5,18 @@ authors = ["Jacob Adkins <jacobpadkins@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+fvr_engine-client = { path = "../fvr_engine-client", version = "0.1.0" }
+fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 fvr_engine-parser = { path = "../fvr_engine-parser", version = "0.1.0" }
-fvr_engine-renderer = { path = "../fvr_engine-renderer", version = "0.1.0" }
 anyhow = "1.0.38"
 bracket-lib = "0.8.1"
+once_cell = "1.7.0"
+owning_ref = "0.4.1"
 specs = "0.16.1"
 specs-derive = "0.4.1"
 
+# TODO - remove this by keeping all SDL2-specific types inside the client lib.
 [dependencies.sdl2]
 version = "0.34.2"
 default-features = false
-features = ["image"]
+features = ["image", "unsafe_textures"]
