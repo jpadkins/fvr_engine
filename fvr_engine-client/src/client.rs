@@ -42,10 +42,10 @@ impl Client {
         {
             let gl_attr = video_subsystem.gl_attr();
             gl_attr.set_context_profile(GLProfile::Core);
-            gl_attr.set_context_version(3, 0);
+            gl_attr.set_context_version(3, 3);
 
             debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
-            debug_assert_eq!(gl_attr.context_version(), (3, 0));
+            debug_assert_eq!(gl_attr.context_version(), (3, 3));
         }
 
         let event_pump = sdl2_context.event_pump()?;

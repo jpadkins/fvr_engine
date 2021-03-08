@@ -9,7 +9,8 @@ use gl::types::*;
 
 use glam::{Mat4, Vec3};
 
-use rand::rngs::ThreadRng;
+use image::DynamicImage;
+
 use rand::Rng;
 
 use crate::terminal::*;
@@ -25,7 +26,7 @@ const TERMINAL_WIDTH: u32 = 103;
 const TERMINAL_HEIGHT: u32 = 37;
 
 const BACKGROUND_VERTEX_SHADER_SOURCE: &str = r#"
-#version 150
+#version 330 core
 
 in vec2 position;
 in vec3 color;
@@ -42,7 +43,7 @@ void main()
 "#;
 
 const BACKGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
-#version 150
+#version 330 core
 
 precision lowp float;
 
@@ -57,7 +58,7 @@ void main()
 "#;
 
 const FOREGROUND_VERTEX_SHADER_SOURCE: &str = r#"
-#version 150
+#version 330 core
 
 in vec2 position;
 in vec4 color;
@@ -77,7 +78,7 @@ void main()
 "#;
 
 const FOREGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
-#version 150
+#version 330 core
 
 precision lowp float;
 
@@ -238,7 +239,6 @@ impl Vertex for BackgroundVertex {
                 ptr::null(),
             );
             gl::EnableVertexAttribArray(location as GLuint);
-
             gl_error_unwrap()?;
 
             let location = get_attrib_location(program, "color")?;
@@ -251,7 +251,6 @@ impl Vertex for BackgroundVertex {
                 (mem::size_of::<GLfloat>() * 2) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-
             gl_error_unwrap()?;
         }
 
@@ -284,7 +283,6 @@ impl Vertex for ForegroundVertex {
                 ptr::null(),
             );
             gl::EnableVertexAttribArray(location as GLuint);
-
             gl_error_unwrap()?;
 
             let location = get_attrib_location(program, "color")?;
@@ -297,7 +295,6 @@ impl Vertex for ForegroundVertex {
                 (mem::size_of::<GLfloat>() * 2) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-
             gl_error_unwrap()?;
 
             let location = get_attrib_location(program, "tex_coords")?;
@@ -310,7 +307,6 @@ impl Vertex for ForegroundVertex {
                 (mem::size_of::<GLfloat>() * 6) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-
             gl_error_unwrap()?;
         }
 
@@ -347,14 +343,12 @@ where
         unsafe {
             gl::GenBuffers(1, &mut vbo);
         }
-
         gl_error_unwrap()?;
 
         let mut ibo = 0;
         unsafe {
             gl::GenBuffers(1, &mut ibo);
         }
-
         gl_error_unwrap()?;
 
         Ok(Self {
@@ -447,6 +441,9 @@ pub struct Renderer {
     foreground_quad_grid: QuadGrid<ForegroundVertex>,
     background_mvp_location: GLint,
     foreground_mvp_location: GLint,
+    font_atlas_texture: GLuint,
+    font_atlas_width: u32,
+    font_atlas_height: u32,
 }
 
 impl Renderer {
@@ -457,7 +454,6 @@ impl Renderer {
         unsafe {
             gl::GenVertexArrays(1, &mut background_vao);
         }
-
         gl_error_unwrap()?;
 
         // Link background shader program.
@@ -477,7 +473,6 @@ impl Renderer {
         unsafe {
             gl::BindVertexArray(background_vao);
         }
-
         gl_error_unwrap()?;
 
         // Bind buffer data and enable attribs.
@@ -533,7 +528,6 @@ impl Renderer {
         unsafe {
             gl::GenVertexArrays(1, &mut foreground_vao);
         }
-
         gl_error_unwrap()?;
 
         // Link background shader program.
@@ -553,17 +547,119 @@ impl Renderer {
         unsafe {
             gl::BindVertexArray(foreground_vao);
         }
-
         gl_error_unwrap()?;
 
         // Bind buffer data and enable attribs.
-        let foreground_quad_grid =
+        let mut foreground_quad_grid =
             QuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)?;
+
+        // TODO: REMOVE
+        let mut rng = rand::thread_rng();
+
+        for x in 0..foreground_quad_grid.width() {
+            for y in 0..foreground_quad_grid.height() {
+                let mut quad = foreground_quad_grid.quad_mut(x, y);
+                let r = rng.gen();
+                let g = rng.gen();
+                let b = rng.gen();
+
+                quad[0].position[0] = (x * TILE_WIDTH) as GLfloat;
+                quad[0].position[1] = (y * TILE_HEIGHT) as GLfloat;
+                quad[0].color[0] = r;
+                quad[0].color[1] = g;
+                quad[0].color[2] = b;
+                quad[0].color[3] = 1.0;
+                quad[0].tex_coords[0] = 0.0;
+                quad[0].tex_coords[1] = 0.0;
+
+                quad[1].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
+                quad[1].position[1] = (y * TILE_HEIGHT) as GLfloat;
+                quad[1].color[0] = r;
+                quad[1].color[1] = g;
+                quad[1].color[2] = b;
+                quad[1].color[3] = 1.0;
+                quad[1].tex_coords[0] = 1.0;
+                quad[1].tex_coords[1] = 0.0;
+
+                quad[2].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
+                quad[2].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
+                quad[2].color[0] = r;
+                quad[2].color[1] = g;
+                quad[2].color[2] = b;
+                quad[2].color[3] = 1.0;
+                quad[2].tex_coords[0] = 1.0;
+                quad[2].tex_coords[1] = 1.0;
+
+                quad[3].position[0] = (x * TILE_WIDTH) as GLfloat;
+                quad[3].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
+                quad[3].color[0] = r;
+                quad[3].color[1] = g;
+                quad[3].color[2] = b;
+                quad[3].color[3] = 1.0;
+                quad[3].tex_coords[0] = 0.0;
+                quad[3].tex_coords[1] = 1.0;
+            }
+        }
+        // TODO: REMOVE
+
         foreground_quad_grid.bind_data();
 
         ForegroundVertex::enable_attribs(foreground_program)?;
 
         let foreground_mvp_location = get_uniform_location(foreground_program, "mvp")?;
+
+        // Load font atlas texture.
+        let font_atlas_path = format!("{}/{}.png", FONT_ATLAS_PATH, FONT_NAME);
+        let font_atlas_image = image::open(font_atlas_path).map_err(|e| e.to_string())?;
+        let font_atlas_image = match font_atlas_image {
+            DynamicImage::ImageRgba8(image) => image,
+            other_format => other_format.to_rgba8(),
+        };
+
+        let (font_atlas_width, font_atlas_height) = font_atlas_image.dimensions();
+
+        let mut font_atlas_texture = 0;
+
+        unsafe {
+            gl::GenTextures(1, &mut font_atlas_texture);
+            gl_error_unwrap()?;
+
+            gl::BindTexture(gl::TEXTURE_2D, font_atlas_texture);
+            gl_error_unwrap()?;
+
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_S,
+                gl::CLAMP_TO_EDGE as GLint,
+            );
+            gl_error_unwrap()?;
+            gl::TexParameteri(
+                gl::TEXTURE_2D,
+                gl::TEXTURE_WRAP_T,
+                gl::CLAMP_TO_EDGE as GLint,
+            );
+            gl_error_unwrap()?;
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+            gl_error_unwrap()?;
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+            gl_error_unwrap()?;
+
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA as GLint,
+                font_atlas_width as GLsizei,
+                font_atlas_height as GLsizei,
+                0,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                font_atlas_image.as_ptr() as *const c_void,
+            );
+            gl_error_unwrap()?;
+
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+            gl_error_unwrap()?;
+        }
 
         // Misc. OpenGL settings.
         unsafe {
@@ -575,7 +671,6 @@ impl Renderer {
             gl::BlendEquation(gl::FUNC_ADD);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
-
         gl_error_unwrap()?;
 
         Ok(Self {
@@ -587,6 +682,9 @@ impl Renderer {
             foreground_quad_grid,
             background_mvp_location,
             foreground_mvp_location,
+            font_atlas_texture,
+            font_atlas_width,
+            font_atlas_height,
         })
     }
 
@@ -632,7 +730,6 @@ impl Renderer {
                 gl::FALSE as GLboolean,
                 mem::transmute(&mvp_data[0]),
             );
-
             gl_error_unwrap()?;
 
             gl::UseProgram(self.foreground_program);
@@ -642,7 +739,6 @@ impl Renderer {
                 gl::FALSE as GLboolean,
                 mem::transmute(&mvp_data[0]),
             );
-
             gl_error_unwrap()?;
         }
 
@@ -662,18 +758,19 @@ impl Renderer {
                 gl::UNSIGNED_INT,
                 ptr::null(),
             );
-
             gl_error_unwrap()?;
 
             // Draw foreground.
-            // gl::BindVertexArray(self.foreground_vao);
-            // gl::UseProgram(self.foreground_program);
-            // gl::DrawElements(
-            //     gl::TRIANGLES,
-            //     self.foreground_quad_grid.indices_len() as GLint,
-            //     gl::UNSIGNED_INT,
-            //     ptr::null(),
-            // );
+            gl::BindVertexArray(self.foreground_vao);
+            gl::UseProgram(self.foreground_program);
+            gl::DrawElements(
+                gl::TRIANGLES,
+                self.foreground_quad_grid.indices_len() as GLint,
+                gl::UNSIGNED_INT,
+                ptr::null(),
+            );
+
+            gl_error_unwrap()?;
 
             Ok(())
         }
@@ -683,6 +780,7 @@ impl Renderer {
 impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
+            gl::DeleteTextures(1, &self.font_atlas_texture);
             gl::DeleteProgram(self.foreground_program);
             gl::DeleteVertexArrays(1, &self.foreground_vao);
             gl::DeleteProgram(self.background_program);
