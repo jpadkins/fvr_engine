@@ -109,9 +109,9 @@ impl Client {
         self.debug_enabled = !self.debug_enabled;
     }
 
-    pub fn render_frame(&mut self) {
+    pub fn render_frame(&mut self) -> Result<(), String> {
         if self.resized {
-            self.renderer.update_viewport(self.window.size());
+            self.renderer.update_viewport(self.window.size())?;
             self.resized = false;
         }
 
@@ -119,7 +119,7 @@ impl Client {
         let delta = now - self.last_frame;
         self.last_frame = now;
 
-        self.renderer.render();
+        self.renderer.render()?;
 
         if self.debug_enabled {
             self.debug_gui
@@ -128,6 +128,8 @@ impl Client {
 
         self.window.gl_swap_window();
 
-        // ::std::thread::sleep(::std::time::Duration::new(0, 1_000_000_000u32 / 60));
+        ::std::thread::sleep(::std::time::Duration::new(0, 1_000_000_000u32 / 60));
+
+        Ok(())
     }
 }

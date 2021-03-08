@@ -26,7 +26,7 @@ fn main() -> Result<(), String> {
             }
         }
 
-        client.render_frame();
+        client.render_frame()?;
     }
 
     Ok(())
