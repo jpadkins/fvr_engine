@@ -10,6 +10,7 @@ use image::DynamicImage;
 
 use fvr_engine_core::prelude::*;
 
+use crate::font_metrics_handler::*;
 use crate::gl_helpers::*;
 use crate::quad_grid::*;
 use crate::shader_strings::*;
@@ -149,9 +150,10 @@ pub struct Renderer {
     foreground_quad_grid: QuadGrid<ForegroundVertex>,
     background_mvp_location: GLint,
     foreground_mvp_location: GLint,
-    font_atlas_texture: GLuint,
-    font_atlas_width: u32,
-    font_atlas_height: u32,
+    atlas_texture: GLuint,
+    atlas_width: u32,
+    atlas_height: u32,
+    font_metrics: FontMetricsHandler,
 }
 
 impl Renderer {
@@ -260,24 +262,24 @@ impl Renderer {
             .context("Failed to obtain foreground MVP matrix uniform location.")?;
 
         // Load font atlas texture.
-        let font_atlas_path = format!("{}/{}.png", FONT_ATLAS_PATH, FONT_NAME);
-        let font_atlas_image = image::open(&font_atlas_path)
+        let atlas_path = format!("{}/{}.png", FONT_ATLAS_PATH, FONT_NAME);
+        let atlas_image = image::open(&atlas_path)
             .map_err(|e| anyhow!(e))
-            .with_context(|| format!("Failed to open font atlas image at {}.", font_atlas_path))?;
-        let font_atlas_image = match font_atlas_image {
+            .with_context(|| format!("Failed to open font atlas image at {}.", atlas_path))?;
+        let atlas_image = match atlas_image {
             DynamicImage::ImageRgba8(image) => image,
             other_format => other_format.to_rgba8(),
         };
 
-        let (font_atlas_width, font_atlas_height) = font_atlas_image.dimensions();
+        let (atlas_width, atlas_height) = atlas_image.dimensions();
 
-        let mut font_atlas_texture = 0;
+        let mut atlas_texture = 0;
 
         unsafe {
-            gl::GenTextures(1, &mut font_atlas_texture);
+            gl::GenTextures(1, &mut atlas_texture);
             gl_error_unwrap!();
 
-            gl::BindTexture(gl::TEXTURE_2D, font_atlas_texture);
+            gl::BindTexture(gl::TEXTURE_2D, atlas_texture);
             gl_error_unwrap!();
 
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
@@ -293,12 +295,12 @@ impl Renderer {
                 gl::TEXTURE_2D,
                 0,
                 gl::RGBA as GLint,
-                font_atlas_width as GLsizei,
-                font_atlas_height as GLsizei,
+                atlas_width as GLsizei,
+                atlas_height as GLsizei,
                 0,
                 gl::RGBA,
                 gl::UNSIGNED_BYTE,
-                font_atlas_image.as_ptr() as *const c_void,
+                atlas_image.as_ptr() as *const c_void,
             );
             gl_error_unwrap!();
 
@@ -323,6 +325,11 @@ impl Renderer {
             gl_error_unwrap!();
         }
 
+        // Load the font metrics.
+        let metrics_path = format!("{}/{}.toml", FONT_ATLAS_PATH, FONT_NAME);
+        let font_metrics = FontMetricsHandler::load_from_file(metrics_path)
+            .context("Failed to load font metrics handler.")?;
+
         Ok(Self {
             background_program,
             foreground_program,
@@ -332,9 +339,10 @@ impl Renderer {
             foreground_quad_grid,
             background_mvp_location,
             foreground_mvp_location,
-            font_atlas_texture,
-            font_atlas_width,
-            font_atlas_height,
+            atlas_texture,
+            atlas_width,
+            atlas_height,
+            font_metrics,
         })
     }
 
@@ -400,6 +408,14 @@ impl Renderer {
     }
 
     pub fn update_from_terminal(&mut self, terminal: &Terminal) -> Result<()> {
+        let mut x_positions = [0.0; 4];
+        let mut y_positions = [0.0; 4];
+        let mut u_tex_coords = [0.0; 4];
+        let mut v_tex_coords = [0.0; 4];
+
+        let u_normalize = 1.0 / self.atlas_width as f32;
+        let v_normalize = 1.0 / self.atlas_height as f32;
+
         // Iterate over dirty tiles in terminal.
         for ((x, y), tile) in terminal.dirty_tiles_iter() {
             // Update the background colors.
@@ -410,20 +426,27 @@ impl Renderer {
             }
 
             // Update the foreground positions, colors, and tex coords.
-            let (x_position, y_position, u_tex_coord, v_tex_coord) =
-                self.positions_for_glyph(tile.glyph, tile.layout).with_context(|| {
-                    format!("Failed to retrieve positions for glyph {}.", tile.glyph)
-                })?;
+            self.assign_glyph_positions(
+                x,
+                y,
+                tile.glyph,
+                tile.layout,
+                &mut x_positions,
+                &mut y_positions,
+                &mut u_tex_coords,
+                &mut v_tex_coords,
+            )
+            .with_context(|| format!("Failed to retrieve positions for glyph {}.", tile.glyph))?;
 
-            for vertex in self.foreground_quad_grid.quad_mut(x, y) {
-                vertex.position[0] = x_position;
-                vertex.position[0] = y_position;
+            for (i, vertex) in self.foreground_quad_grid.quad_mut(x, y).iter_mut().enumerate() {
+                vertex.position[0] = x_positions[i];
+                vertex.position[1] = y_positions[i];
                 vertex.color[0] = tile.foreground_color.0.r as f32 / 255.0;
                 vertex.color[1] = tile.foreground_color.0.g as f32 / 255.0;
                 vertex.color[2] = tile.foreground_color.0.b as f32 / 255.0;
                 vertex.color[3] = tile.foreground_color.0.a as f32 / 255.0;
-                vertex.tex_coords[0] = u_tex_coord;
-                vertex.tex_coords[1] = v_tex_coord;
+                vertex.tex_coords[0] = u_tex_coords[i] * u_normalize;
+                vertex.tex_coords[1] = v_tex_coords[i] * v_normalize;
             }
         }
 
@@ -487,15 +510,76 @@ impl Renderer {
         }
     }
 
-    fn positions_for_glyph(&self, glyph: char, layout: TileLayout) -> Result<(f32, f32, f32, f32)> {
-        Ok((0.0, 0.0, 0.0, 0.0))
+    fn assign_glyph_positions(
+        &self,
+        x: u32,
+        y: u32,
+        glyph: char,
+        layout: TileLayout,
+        x_positions: &mut [f32; 4],
+        y_positions: &mut [f32; 4],
+        u_tex_coords: &mut [f32; 4],
+        v_tex_coords: &mut [f32; 4],
+    ) -> Result<()> {
+        // TODO: Handle outlined
+        let metric = self
+            .font_metrics
+            .regular()
+            .get(&(glyph as u32))
+            .with_context(|| format!("Failed to load regular metrics for glyph {}.", glyph))?;
+
+        let offset = Self::calculate_glyph_offset(&metric, layout);
+
+        // Top left.
+        x_positions[0] = ((x * TILE_WIDTH) as i32 + offset.0) as f32;
+        y_positions[0] = ((y * TILE_HEIGHT) as i32 + offset.1) as f32;
+        u_tex_coords[0] = metric.x as f32;
+        v_tex_coords[0] = metric.y as f32;
+
+        // Top right.
+        x_positions[1] = (((x * TILE_WIDTH) + metric.width) as i32 + offset.0) as f32;
+        y_positions[1] = ((y * TILE_HEIGHT) as i32 + offset.1) as f32;
+        u_tex_coords[1] = (metric.x + metric.width) as f32;
+        v_tex_coords[1] = metric.y as f32;
+
+        // Bottom left.
+        x_positions[2] = (((x * TILE_WIDTH) + metric.width) as i32 + offset.0) as f32;
+        y_positions[2] = (((y * TILE_HEIGHT) + metric.height) as i32 + offset.1) as f32;
+        u_tex_coords[2] = (metric.x + metric.width) as f32;
+        v_tex_coords[2] = (metric.y + metric.height) as f32;
+
+        // Bottom right.
+        x_positions[3] = ((x * TILE_WIDTH) as i32 + offset.0) as f32;
+        y_positions[3] = (((y * TILE_HEIGHT) + metric.height) as i32 + offset.1) as f32;
+        u_tex_coords[3] = metric.x as f32;
+        v_tex_coords[3] = (metric.y + metric.height) as f32;
+
+        Ok(())
+    }
+
+    fn calculate_glyph_offset(metric: &GlyphMetric, layout: TileLayout) -> (i32, i32) {
+        match layout {
+            TileLayout::Center => (
+                (TILE_WIDTH as i32 - metric.width as i32) / 2,
+                (TILE_HEIGHT as i32 - metric.height as i32) / 2,
+            ),
+            TileLayout::Floor => (
+                (TILE_WIDTH as i32 - metric.width as i32) / 2,
+                TILE_HEIGHT as i32 - metric.height as i32,
+            ),
+            TileLayout::Text => (metric.x_offset, metric.y_offset),
+            TileLayout::Exact((x, y)) => (
+                ((TILE_WIDTH as i32 - metric.width as i32) / 2) + x,
+                ((TILE_HEIGHT as i32 - metric.height as i32) / 2) + y,
+            ),
+        }
     }
 }
 
 impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteTextures(1, &self.font_atlas_texture);
+            gl::DeleteTextures(1, &self.atlas_texture);
             gl::DeleteProgram(self.foreground_program);
             gl::DeleteVertexArrays(1, &self.foreground_vao);
             gl::DeleteProgram(self.background_program);

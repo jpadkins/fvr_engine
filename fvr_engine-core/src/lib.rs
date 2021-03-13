@@ -1,3 +1,4 @@
+mod cp437;
 mod grid_map;
 mod misc;
 mod primitives;
@@ -5,6 +6,7 @@ mod traits;
 mod translate_map;
 
 pub mod prelude {
+    pub use crate::cp437::*;
     pub use crate::grid_map::*;
     pub use crate::misc::*;
     pub use crate::primitives::*;

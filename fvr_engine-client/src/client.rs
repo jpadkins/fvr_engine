@@ -90,12 +90,14 @@ impl Client {
         let debug_gui = DebugGui::new(&video_subsystem, &window);
 
         // Renderer
-        let mut renderer = Renderer::new()?;
+        let mut renderer = Renderer::new().context("Failed to create the renderer.")?;
 
         // Terminal
         let terminal = Terminal::new(TERMINAL_WIDTH, TERMINAL_HEIGHT);
 
-        renderer.update_from_terminal(&terminal)?;
+        renderer
+            .update_from_terminal(&terminal)
+            .context("Failed to sync renderer state with terminal.")?;
 
         Ok(Self {
             _sdl2_context: sdl2_context,
@@ -176,13 +178,17 @@ impl Client {
 
         // Recenter the renderer if the window has been resized.
         if self.resized {
-            self.renderer.update_viewport(self.window.size())?;
+            self.renderer
+                .update_viewport(self.window.size())
+                .context("Failed to refresh renderer scaling.")?;
             self.resized = false;
         }
 
         // Sync the renderer with the terminal if changes have been made.
         if self.terminal.dirty() {
-            self.renderer.update_from_terminal(&self.terminal)?;
+            self.renderer
+                .update_from_terminal(&self.terminal)
+                .context("Failed to sync renderer state with terminal.")?;
             self.terminal.set_clean();
         }
 

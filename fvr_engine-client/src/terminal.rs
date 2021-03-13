@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rand::seq::SliceRandom;
 use rand::Rng;
 
 use fvr_engine_core::prelude::*;
@@ -80,7 +81,13 @@ impl Terminal {
     }
 
     pub fn set_clean(&mut self) {
+        self.dirty = false;
         self.dirty_tiles.data_mut().fill(false);
+    }
+
+    pub fn set_dirty(&mut self) {
+        self.dirty = true;
+        self.dirty_tiles.data_mut().fill(true);
     }
 
     pub fn dirty_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
@@ -101,8 +108,9 @@ impl Terminal {
             ));
             tile.foreground_color =
                 TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
+            tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
         }
 
-        self.dirty_tiles.data_mut().fill(true);
+        self.set_dirty();
     }
 }
