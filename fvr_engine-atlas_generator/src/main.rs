@@ -6,8 +6,9 @@ use anyhow::{Context, Result};
 use clap::{App, AppSettings, SubCommand};
 use hashbrown::HashSet;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageBuffer, Rgba};
-use serde_derive::Serialize;
 use xml::reader::{EventReader, XmlEvent};
+
+use fvr_engine_core::prelude::*;
 
 // Font used to fill in missing glyphs.
 // NOTE: This font must include all possible codepage 437 glyphs.
@@ -29,29 +30,12 @@ const REGULAR_PNG: &str = "regular.png";
 const OUTLINE_FNT: &str = "outline.fnt";
 const OUTLINE_PNG: &str = "outline.png";
 
-#[derive(Debug, Serialize)]
-struct CharMetric {
-    pub codepoint: u32,
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
-    pub x_offset: i32,
-    pub y_offset: i32,
-}
-
-#[derive(Debug, Serialize)]
-struct OutputCharMetrics {
-    pub regular: Vec<CharMetric>,
-    pub outline: Vec<CharMetric>,
-}
-
 fn load_image(file_path: &str) -> Result<DynamicImage> {
     let img = image::open(file_path).context("Failed to open image")?;
     Ok(img)
 }
 
-fn parse_metrics(file_path: &str) -> Result<Vec<CharMetric>> {
+fn parse_metrics(file_path: &str) -> Result<Vec<GlyphMetric>> {
     let mut char_metrics = Vec::new();
 
     // File IO plumbing.
@@ -63,10 +47,7 @@ fn parse_metrics(file_path: &str) -> Result<Vec<CharMetric>> {
     for event in parser {
         let element = event.context("Failed to parse an XML event.")?;
 
-        if let XmlEvent::StartElement {
-            name, attributes, ..
-        } = element
-        {
+        if let XmlEvent::StartElement { name, attributes, .. } = element {
             // We only care about the char elements.
             if name.to_string() != "char" {
                 continue;
@@ -102,15 +83,7 @@ fn parse_metrics(file_path: &str) -> Result<Vec<CharMetric>> {
                 .parse::<i32>()
                 .context(format!("Failed to parse y_offset: <{}>.", attributes[5]))?;
 
-            char_metrics.push(CharMetric {
-                codepoint,
-                x,
-                y,
-                width,
-                height,
-                x_offset,
-                y_offset,
-            });
+            char_metrics.push(GlyphMetric { codepoint, x, y, width, height, x_offset, y_offset });
         }
     }
 
@@ -121,8 +94,8 @@ fn generate(
     name: &str,
     default_max_regular_height: u32,
     default_max_outline_height: u32,
-    default_regular_metrics: &[CharMetric],
-    default_outline_metrics: &[CharMetric],
+    default_regular_metrics: &[GlyphMetric],
+    default_outline_metrics: &[GlyphMetric],
     default_regular_atlas: &DynamicImage,
     default_outline_atlas: &DynamicImage,
 ) -> Result<()> {
@@ -151,10 +124,7 @@ fn generate(
     let mut output_buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
     // Vectors for capturing the new metrics lists to serialize.
-    let mut output_metrics = OutputCharMetrics {
-        regular: Vec::new(),
-        outline: Vec::new(),
-    };
+    let mut output_metrics = FontMetrics { regular: Vec::new(), outline: Vec::new() };
 
     // Find the max height of the regular metrics and gather a set of font's codepoints.
     let mut codepoint_set = HashSet::new();
@@ -182,12 +152,10 @@ fn generate(
 
         // Copy the glyph.
         let view = regular_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer
-            .copy_from(&view, x, y)
-            .context("Failed to copy regular glyph")?;
+        output_buffer.copy_from(&view, x, y).context("Failed to copy regular glyph")?;
 
         // Push the new metric.
-        let output_metric = CharMetric {
+        let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
             x,
             y,
@@ -221,12 +189,10 @@ fn generate(
 
         // Copy the glyph.
         let view = outline_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer
-            .copy_from(&view, x, y)
-            .context("Failed to copy outline glyph")?;
+        output_buffer.copy_from(&view, x, y).context("Failed to copy outline glyph")?;
 
         // Push the new metric.
-        let output_metric = CharMetric {
+        let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
             x,
             y,
@@ -259,12 +225,10 @@ fn generate(
 
         // Copy the glyph.
         let view = default_regular_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer
-            .copy_from(&view, x, y)
-            .context("Failed to copy default regular glyph")?;
+        output_buffer.copy_from(&view, x, y).context("Failed to copy default regular glyph")?;
 
         // Push the new metric.
-        let output_metric = CharMetric {
+        let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
             x,
             y,
@@ -294,12 +258,10 @@ fn generate(
 
         // Copy the glyph.
         let view = default_outline_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer
-            .copy_from(&view, x, y)
-            .context("Failed to copy default outline glyph")?;
+        output_buffer.copy_from(&view, x, y).context("Failed to copy default outline glyph")?;
 
         // Push the new metric.
-        let output_metric = CharMetric {
+        let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
             x,
             y,
@@ -315,17 +277,13 @@ fn generate(
     }
 
     // Save the output atlas.
-    output_buffer
-        .save(output_atlas_path)
-        .context("Failed to save output atlas.")?;
+    output_buffer.save(output_atlas_path).context("Failed to save output atlas.")?;
 
     // Save the output metrics.
     let toml = toml::to_string(&output_metrics).context("Failed to serialize output metrics.")?;
     let mut output_metrics_file =
         File::create(output_metrics_path).context("Failed to create output metrics file.")?;
-    output_metrics_file
-        .write_all(toml.as_bytes())
-        .context("Failed to save output metrics.")?;
+    output_metrics_file.write_all(toml.as_bytes()).context("Failed to save output metrics.")?;
 
     Ok(())
 }

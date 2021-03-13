@@ -13,7 +13,10 @@ image = "0.23.14"
 imgui = "0.7.0"
 imgui-opengl-renderer = "0.11.0"
 imgui-sdl2 = "0.14.0"
+itertools = "0.10.0"
 rand = "0.8.3"
+stopwatch = "0.0.7"
+toml = "0.5.8"
 
 [dependencies.sdl2]
 version = "0.34.2"

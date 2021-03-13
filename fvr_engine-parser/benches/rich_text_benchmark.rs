@@ -21,15 +21,11 @@ pub fn benchmark(c: &mut Criterion) {
     );
 
     // Benchmark the parser on a long rich string.
-    c.bench_with_input(
-        BenchmarkId::new("rich_text_parser", "a long string"),
-        &long,
-        |b, &long| {
-            b.iter(|| {
-                let _parsed_rich_text = parse_rich_text(long).unwrap();
-            })
-        },
-    );
+    c.bench_with_input(BenchmarkId::new("rich_text_parser", "a long string"), &long, |b, &long| {
+        b.iter(|| {
+            let _parsed_rich_text = parse_rich_text(long).unwrap();
+        })
+    });
 }
 
 criterion_group!(benches, benchmark);

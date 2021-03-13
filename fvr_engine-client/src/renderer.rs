@@ -1,22 +1,21 @@
-use std::ffi::{c_void, CString};
+use std::ffi::c_void;
 use std::mem;
 use std::ptr;
 use std::str;
 
-use anyhow::Result;
-
+use anyhow::{anyhow, Context, Result};
 use gl::types::*;
-
 use glam::{Mat4, Vec3};
-
 use image::DynamicImage;
-
-use rand::Rng;
-
-use crate::terminal::*;
 
 use fvr_engine_core::prelude::*;
 
+use crate::gl_helpers::*;
+use crate::quad_grid::*;
+use crate::shader_strings::*;
+use crate::terminal::*;
+
+// TODO: Move these to config file and pass them into the fvr_engine-client ctor.
 const FONT_ATLAS_PATH: &str = "./resources/font_atlases";
 const FONT_NAME: &str = "input_mono";
 
@@ -25,196 +24,7 @@ const TILE_HEIGHT: u32 = 34;
 const TERMINAL_WIDTH: u32 = 103;
 const TERMINAL_HEIGHT: u32 = 37;
 
-const BACKGROUND_VERTEX_SHADER_SOURCE: &str = r#"
-#version 330 core
-
-in vec2 position;
-in vec3 color;
-
-out vec4 v_color;
-
-uniform mat4 mvp;
-
-void main()
-{
-    v_color = vec4(color, 1.0);
-    gl_Position = mvp * vec4(position, 1.0, 1.0);
-}
-"#;
-
-const BACKGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
-#version 330 core
-
-precision lowp float;
-
-in vec4 v_color;
-
-out vec4 color;
-
-void main()
-{
-    color = v_color;
-}
-"#;
-
-const FOREGROUND_VERTEX_SHADER_SOURCE: &str = r#"
-#version 330 core
-
-in vec2 position;
-in vec4 color;
-in vec2 tex_coords;
-
-out vec4 v_color;
-out vec2 v_tex_coords;
-
-uniform mat4 mvp;
-
-void main()
-{
-    v_color = color;
-    v_tex_coords = tex_coords;
-    gl_Position = mvp * vec4(position, 1.0, 1.0);
-}
-"#;
-
-const FOREGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
-#version 330 core
-
-precision lowp float;
-
-in vec4 v_color;
-in vec2 v_tex_coords;
-
-out vec4 color;
-
-uniform sampler2D texture;
-
-void main()
-{
-    color = texture2D(texture, v_tex_coords) * v_color;
-}
-"#;
-
-fn gl_error_unwrap() -> Result<(), String> {
-    let error = unsafe { gl::GetError() };
-
-    if error != gl::NO_ERROR {
-        return match error {
-            gl::INVALID_ENUM => Err("[OpenGL] Error: INVALID_ENUM".into()),
-            gl::INVALID_VALUE => Err("[OpenGL] Error: INVALID_VALUE".into()),
-            gl::INVALID_OPERATION => Err("[OpenGL] Error: INVALID_OPERATION".into()),
-            gl::INVALID_FRAMEBUFFER_OPERATION => {
-                Err("[OpenGL] Error: INVALID_FRAMEBUFFER_OPERATION".into())
-            }
-            gl::OUT_OF_MEMORY => Err("[OpenGL] Error: OUT_OF_MEMORY".into()),
-            gl::STACK_UNDERFLOW => Err("[OpenGL] Error: STACK_UNDERFLOW".into()),
-            gl::STACK_OVERFLOW => Err("[OpenGL] Error: STACK_OVERFLOW".into()),
-            _ => Err(format!("[OpenGL] Error: {}", error)),
-        };
-    }
-
-    Ok(())
-}
-
-fn compile_shader(src: &str, shader_type: GLenum) -> Result<GLuint, String> {
-    unsafe {
-        let shader = gl::CreateShader(shader_type);
-        let c_str = CString::new(src.as_bytes()).map_err(|e| e.to_string())?;
-
-        // Compile the shader.
-        gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
-        gl::CompileShader(shader);
-
-        // Check the status.
-        let mut status = gl::FALSE as GLint;
-        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
-
-        // Return if OK.
-        if status == gl::TRUE as GLint {
-            return Ok(shader);
-        }
-
-        // Else return the error log.
-        let mut len = 0 as GLint;
-        gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
-        let mut buffer = Vec::with_capacity(len as usize);
-        buffer.set_len(len as usize - 1);
-
-        gl::GetShaderInfoLog(
-            shader,
-            len,
-            ptr::null_mut(),
-            buffer.as_mut_ptr() as *mut GLchar,
-        );
-        let log = str::from_utf8(&buffer).map_err(|e| e.to_string())?;
-        Err(log.into())
-    }
-}
-
-fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GLuint, String> {
-    unsafe {
-        let program = gl::CreateProgram();
-
-        // Attach the shaders.
-        gl::AttachShader(program, vertex_shader);
-        gl::AttachShader(program, fragment_shader);
-
-        // Link the program.
-        gl::LinkProgram(program);
-
-        // Check the status.
-        let mut status = gl::FALSE as GLint;
-        gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
-
-        // Return if OK.
-        if status == gl::TRUE as GLint {
-            return Ok(program);
-        }
-
-        // Else return the error log.
-        let mut len = 0 as GLint;
-        gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
-        let mut buffer = Vec::with_capacity(len as usize);
-        buffer.set_len(len as usize - 1);
-
-        gl::GetProgramInfoLog(
-            program,
-            len,
-            ptr::null_mut(),
-            buffer.as_mut_ptr() as *mut GLchar,
-        );
-        let log = str::from_utf8(&buffer).map_err(|e| e.to_string())?;
-        Err(log.into())
-    }
-}
-
-fn get_attrib_location(program: GLuint, name: &str) -> Result<GLint, String> {
-    let c_str = CString::new(name).map_err(|e| e.to_string())?;
-    let location = unsafe { gl::GetAttribLocation(program, c_str.as_ptr()) };
-
-    if location != -1 {
-        Ok(location)
-    } else {
-        Err(format!("[OpenGL] Failed to find attrib {}.", name))
-    }
-}
-
-fn get_uniform_location(program: GLuint, name: &str) -> Result<GLint, String> {
-    let c_str = CString::new(name).map_err(|e| e.to_string())?;
-    let location = unsafe { gl::GetUniformLocation(program, c_str.as_ptr()) };
-
-    if location != -1 {
-        Ok(location)
-    } else {
-        Err(format!("[OpenGL] Failed to find uniform {}.", name))
-    }
-}
-
-trait Vertex {
-    fn size_of() -> usize;
-    fn enable_attribs(program: GLuint) -> Result<(), String>;
-}
-
+// Define vertex structure for background quad grid.
 #[repr(C, packed)]
 #[derive(Clone, Copy, Default, Debug)]
 struct BackgroundVertex {
@@ -227,9 +37,11 @@ impl Vertex for BackgroundVertex {
         mem::size_of::<GLfloat>() * 5
     }
 
-    fn enable_attribs(program: GLuint) -> Result<(), String> {
+    fn enable_attribs(program: GLuint) -> Result<()> {
         unsafe {
-            let location = get_attrib_location(program, "position")?;
+            let location = get_attrib_location(program, "position")
+                .context("Failed to get background position attrib location.")?;
+
             gl::VertexAttribPointer(
                 location as GLuint,
                 2,
@@ -239,9 +51,11 @@ impl Vertex for BackgroundVertex {
                 ptr::null(),
             );
             gl::EnableVertexAttribArray(location as GLuint);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
-            let location = get_attrib_location(program, "color")?;
+            let location = get_attrib_location(program, "color")
+                .context("Failed to get background color attrib location.")?;
+
             gl::VertexAttribPointer(
                 location as GLuint,
                 3,
@@ -251,13 +65,14 @@ impl Vertex for BackgroundVertex {
                 (mem::size_of::<GLfloat>() * 2) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
         }
 
         Ok(())
     }
 }
 
+// Define vertex structure for foreground quad grid.
 #[repr(C, packed)]
 #[derive(Clone, Copy, Default, Debug)]
 struct ForegroundVertex {
@@ -271,9 +86,11 @@ impl Vertex for ForegroundVertex {
         mem::size_of::<GLfloat>() * 8
     }
 
-    fn enable_attribs(program: GLuint) -> Result<(), String> {
+    fn enable_attribs(program: GLuint) -> Result<()> {
         unsafe {
-            let location = get_attrib_location(program, "position")?;
+            let location = get_attrib_location(program, "position")
+                .context("Failed to get foreground position attrib location.")?;
+
             gl::VertexAttribPointer(
                 location as GLuint,
                 2,
@@ -283,9 +100,11 @@ impl Vertex for ForegroundVertex {
                 ptr::null(),
             );
             gl::EnableVertexAttribArray(location as GLuint);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
-            let location = get_attrib_location(program, "color")?;
+            let location = get_attrib_location(program, "color")
+                .context("Failed to get foreground color attrib location.")?;
+
             gl::VertexAttribPointer(
                 location as GLuint,
                 4,
@@ -295,9 +114,11 @@ impl Vertex for ForegroundVertex {
                 (mem::size_of::<GLfloat>() * 2) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
-            let location = get_attrib_location(program, "tex_coords")?;
+            let location = get_attrib_location(program, "tex_coords")
+                .context("Failed to get foreground tex_coords attrib location.")?;
+
             gl::VertexAttribPointer(
                 location as GLuint,
                 2,
@@ -307,131 +128,18 @@ impl Vertex for ForegroundVertex {
                 (mem::size_of::<GLfloat>() * 6) as *const c_void,
             );
             gl::EnableVertexAttribArray(location as GLuint);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
         }
 
         Ok(())
     }
 }
 
-trait QuadGridVertex: Copy + Default + Vertex {}
-
+// Impl trait for vertex structs.
 impl QuadGridVertex for BackgroundVertex {}
 impl QuadGridVertex for ForegroundVertex {}
 
-struct QuadGrid<V>
-where
-    V: QuadGridVertex,
-{
-    vertices: GridMap<[V; 4]>,
-    indices: Vec<GLuint>,
-    vbo: GLuint,
-    ibo: GLuint,
-}
-
-impl<V> QuadGrid<V>
-where
-    V: QuadGridVertex,
-{
-    const INDICES_PER_QUAD: u32 = 6;
-
-    pub fn new(width: u32, height: u32) -> Result<Self, String> {
-        let vertices = GridMap::new(width, height);
-        let indices = Self::generate_indices(width, height);
-
-        let mut vbo = 0;
-        unsafe {
-            gl::GenBuffers(1, &mut vbo);
-        }
-        gl_error_unwrap()?;
-
-        let mut ibo = 0;
-        unsafe {
-            gl::GenBuffers(1, &mut ibo);
-        }
-        gl_error_unwrap()?;
-
-        Ok(Self {
-            vertices,
-            indices,
-            vbo,
-            ibo,
-        })
-    }
-
-    pub fn width(&self) -> u32 {
-        self.vertices.width()
-    }
-
-    pub fn height(&self) -> u32 {
-        self.vertices.height()
-    }
-
-    pub fn quad(&self, x: u32, y: u32) -> &[V; 4] {
-        self.vertices.get_xy(x, y)
-    }
-
-    pub fn quad_mut(&mut self, x: u32, y: u32) -> &mut [V; 4] {
-        self.vertices.get_xy_mut(x, y)
-    }
-
-    pub fn indices_len(&self) -> GLint {
-        self.indices.len() as GLint
-    }
-
-    pub fn bind_data(&self) {
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (self.vertices.data().len() * 4 * V::size_of()) as GLsizeiptr,
-                mem::transmute(&self.vertices.data()[0]),
-                gl::STATIC_DRAW,
-            );
-
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ibo);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (self.indices.len() * mem::size_of::<GLuint>()) as GLsizeiptr,
-                mem::transmute(&self.indices[0]),
-                gl::STATIC_DRAW,
-            );
-        }
-    }
-
-    fn generate_indices(width: u32, height: u32) -> Vec<GLuint> {
-        let num_indices = (width * height * Self::INDICES_PER_QUAD * 2) as usize;
-        let mut indices = vec![0; num_indices];
-
-        let iter = (0..indices.len())
-            .step_by(Self::INDICES_PER_QUAD as usize)
-            .enumerate();
-        for (i, idx) in iter {
-            let i = (i * 4) as GLuint;
-            indices[idx] = i;
-            indices[idx + 1] = i + 1;
-            indices[idx + 2] = i + 2;
-            indices[idx + 3] = i;
-            indices[idx + 4] = i + 2;
-            indices[idx + 5] = i + 3;
-        }
-
-        indices
-    }
-}
-
-impl<V> Drop for QuadGrid<V>
-where
-    V: QuadGridVertex,
-{
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteBuffers(1, &self.vbo);
-            gl::DeleteBuffers(1, &self.ibo);
-        }
-    }
-}
-
+// Renderer contains the OpenGL state pointers and everything required for rendering.
 pub struct Renderer {
     background_program: GLuint,
     foreground_program: GLuint,
@@ -447,20 +155,23 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new() -> Result<Self, String> {
+    pub fn new() -> Result<Self> {
         // Setup background VAO.
         let mut background_vao = 0;
 
         unsafe {
             gl::GenVertexArrays(1, &mut background_vao);
         }
-        gl_error_unwrap()?;
+        gl_error_unwrap!();
 
         // Link background shader program.
-        let vertex_shader = compile_shader(BACKGROUND_VERTEX_SHADER_SOURCE, gl::VERTEX_SHADER)?;
+        let vertex_shader = compile_shader(BACKGROUND_VERTEX_SHADER_SOURCE, gl::VERTEX_SHADER)
+            .context("Failed to compile background vertex shader.")?;
         let fragment_shader =
-            compile_shader(BACKGROUND_FRAGMENT_SHADER_SOURCE, gl::FRAGMENT_SHADER)?;
-        let program = link_program(vertex_shader, fragment_shader);
+            compile_shader(BACKGROUND_FRAGMENT_SHADER_SOURCE, gl::FRAGMENT_SHADER)
+                .context("Failed to compile background fragment shader.")?;
+        let background_program = link_program(vertex_shader, fragment_shader)
+            .context("Failed to link background program.")?;
 
         // The shaders are no longer needed.
         unsafe {
@@ -468,59 +179,43 @@ impl Renderer {
             gl::DeleteShader(fragment_shader);
         }
 
-        let background_program = program?;
-
+        // Bind background VAO.
         unsafe {
             gl::BindVertexArray(background_vao);
         }
-        gl_error_unwrap()?;
+        gl_error_unwrap!();
 
         // Bind buffer data and enable attribs.
         let mut background_quad_grid =
-            QuadGrid::<BackgroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)?;
+            QuadGrid::<BackgroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+                .context("Failed to create background quad grid.")?;
 
-        // TODO: REMOVE
-        let mut rng = rand::thread_rng();
-
+        // Position data of the background quad grid will not change.
         for x in 0..background_quad_grid.width() {
             for y in 0..background_quad_grid.height() {
                 let mut quad = background_quad_grid.quad_mut(x, y);
-                let r = rng.gen();
-                let g = rng.gen();
-                let b = rng.gen();
 
                 quad[0].position[0] = (x * TILE_WIDTH) as GLfloat;
                 quad[0].position[1] = (y * TILE_HEIGHT) as GLfloat;
-                quad[0].color[0] = r;
-                quad[0].color[1] = g;
-                quad[0].color[2] = b;
 
                 quad[1].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
                 quad[1].position[1] = (y * TILE_HEIGHT) as GLfloat;
-                quad[1].color[0] = r;
-                quad[1].color[1] = g;
-                quad[1].color[2] = b;
 
                 quad[2].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
                 quad[2].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
-                quad[2].color[0] = r;
-                quad[2].color[1] = g;
-                quad[2].color[2] = b;
 
                 quad[3].position[0] = (x * TILE_WIDTH) as GLfloat;
                 quad[3].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
-                quad[3].color[0] = r;
-                quad[3].color[1] = g;
-                quad[3].color[2] = b;
             }
         }
-        // TODO: REMOVE
 
-        background_quad_grid.bind_data();
+        background_quad_grid.bind_data().context("Failed to bind background quad grid data.")?;
 
-        BackgroundVertex::enable_attribs(background_program)?;
+        BackgroundVertex::enable_attribs(background_program)
+            .context("Failed to enable background quad grid vertex attribs.")?;
 
-        let background_mvp_location = get_uniform_location(background_program, "mvp")?;
+        let background_mvp_location = get_uniform_location(background_program, "mvp")
+            .context("Failed to obtain background MVP matrix uniform location.")?;
 
         // Setup foreground VAO.
         let mut foreground_vao = 0;
@@ -528,13 +223,16 @@ impl Renderer {
         unsafe {
             gl::GenVertexArrays(1, &mut foreground_vao);
         }
-        gl_error_unwrap()?;
+        gl_error_unwrap!();
 
         // Link background shader program.
-        let vertex_shader = compile_shader(FOREGROUND_VERTEX_SHADER_SOURCE, gl::VERTEX_SHADER)?;
+        let vertex_shader = compile_shader(FOREGROUND_VERTEX_SHADER_SOURCE, gl::VERTEX_SHADER)
+            .context("Failed to compile foreground vertex shader.")?;
         let fragment_shader =
-            compile_shader(FOREGROUND_FRAGMENT_SHADER_SOURCE, gl::FRAGMENT_SHADER)?;
-        let program = link_program(vertex_shader, fragment_shader);
+            compile_shader(FOREGROUND_FRAGMENT_SHADER_SOURCE, gl::FRAGMENT_SHADER)
+                .context("Failed to compile foreground fragment shader.")?;
+        let foreground_program = link_program(vertex_shader, fragment_shader)
+            .context("Failed to link foreground program.")?;
 
         // The shaders are no longer needed.
         unsafe {
@@ -542,75 +240,30 @@ impl Renderer {
             gl::DeleteShader(fragment_shader);
         }
 
-        let foreground_program = program?;
-
+        // Bind foreground VAO.
         unsafe {
             gl::BindVertexArray(foreground_vao);
         }
-        gl_error_unwrap()?;
+        gl_error_unwrap!();
 
         // Bind buffer data and enable attribs.
-        let mut foreground_quad_grid =
-            QuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)?;
+        let foreground_quad_grid =
+            QuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+                .context("Failed to create foreground quad grid.")?;
 
-        // TODO: REMOVE
-        let mut rng = rand::thread_rng();
+        foreground_quad_grid.bind_data().context("Failed to bind foreground quad grid data.")?;
 
-        for x in 0..foreground_quad_grid.width() {
-            for y in 0..foreground_quad_grid.height() {
-                let mut quad = foreground_quad_grid.quad_mut(x, y);
-                let r = rng.gen();
-                let g = rng.gen();
-                let b = rng.gen();
+        ForegroundVertex::enable_attribs(foreground_program)
+            .context("Failed to enable foreground quad grid vertex attribs.")?;
 
-                quad[0].position[0] = (x * TILE_WIDTH) as GLfloat;
-                quad[0].position[1] = (y * TILE_HEIGHT) as GLfloat;
-                quad[0].color[0] = r;
-                quad[0].color[1] = g;
-                quad[0].color[2] = b;
-                quad[0].color[3] = 1.0;
-                quad[0].tex_coords[0] = 0.0;
-                quad[0].tex_coords[1] = 0.0;
-
-                quad[1].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
-                quad[1].position[1] = (y * TILE_HEIGHT) as GLfloat;
-                quad[1].color[0] = r;
-                quad[1].color[1] = g;
-                quad[1].color[2] = b;
-                quad[1].color[3] = 1.0;
-                quad[1].tex_coords[0] = 1.0;
-                quad[1].tex_coords[1] = 0.0;
-
-                quad[2].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
-                quad[2].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
-                quad[2].color[0] = r;
-                quad[2].color[1] = g;
-                quad[2].color[2] = b;
-                quad[2].color[3] = 1.0;
-                quad[2].tex_coords[0] = 1.0;
-                quad[2].tex_coords[1] = 1.0;
-
-                quad[3].position[0] = (x * TILE_WIDTH) as GLfloat;
-                quad[3].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
-                quad[3].color[0] = r;
-                quad[3].color[1] = g;
-                quad[3].color[2] = b;
-                quad[3].color[3] = 1.0;
-                quad[3].tex_coords[0] = 0.0;
-                quad[3].tex_coords[1] = 1.0;
-            }
-        }
-        // TODO: REMOVE
-
-        foreground_quad_grid.bind_data();
-
-        ForegroundVertex::enable_attribs(foreground_program)?;
-
-        let foreground_mvp_location = get_uniform_location(foreground_program, "mvp")?;
+        let foreground_mvp_location = get_uniform_location(foreground_program, "mvp")
+            .context("Failed to obtain foreground MVP matrix uniform location.")?;
 
         // Load font atlas texture.
         let font_atlas_path = format!("{}/{}.png", FONT_ATLAS_PATH, FONT_NAME);
-        let font_atlas_image = image::open(font_atlas_path).map_err(|e| e.to_string())?;
+        let font_atlas_image = image::open(&font_atlas_path)
+            .map_err(|e| anyhow!(e))
+            .with_context(|| format!("Failed to open font atlas image at {}.", font_atlas_path))?;
         let font_atlas_image = match font_atlas_image {
             DynamicImage::ImageRgba8(image) => image,
             other_format => other_format.to_rgba8(),
@@ -622,27 +275,19 @@ impl Renderer {
 
         unsafe {
             gl::GenTextures(1, &mut font_atlas_texture);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
             gl::BindTexture(gl::TEXTURE_2D, font_atlas_texture);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_S,
-                gl::CLAMP_TO_EDGE as GLint,
-            );
-            gl_error_unwrap()?;
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_T,
-                gl::CLAMP_TO_EDGE as GLint,
-            );
-            gl_error_unwrap()?;
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-            gl_error_unwrap()?;
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-            gl_error_unwrap()?;
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+            gl_error_unwrap!();
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+            gl_error_unwrap!();
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+            gl_error_unwrap!();
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+            gl_error_unwrap!();
 
             gl::TexImage2D(
                 gl::TEXTURE_2D,
@@ -655,23 +300,28 @@ impl Renderer {
                 gl::UNSIGNED_BYTE,
                 font_atlas_image.as_ptr() as *const c_void,
             );
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
             gl::GenerateMipmap(gl::TEXTURE_2D);
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
         }
 
         // Misc. OpenGL settings.
         unsafe {
-            gl::ClearColor(0.1, 0.2, 0.3, 1.0);
-
             // Optimized blending for opaque background.
             // https://apoorvaj.io/alpha-compositing-opengl-blending-and-premultiplied-alpha/
             gl::Enable(gl::BLEND);
+            gl_error_unwrap!();
+
             gl::BlendEquation(gl::FUNC_ADD);
+            gl_error_unwrap!();
+
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl_error_unwrap!();
+
+            gl::ClearColor(0.1, 0.2, 0.3, 1.0);
+            gl_error_unwrap!();
         }
-        gl_error_unwrap()?;
 
         Ok(Self {
             background_program,
@@ -688,7 +338,7 @@ impl Renderer {
         })
     }
 
-    pub fn update_viewport(&self, (width, height): (u32, u32)) -> Result<(), String> {
+    pub fn update_viewport(&self, (width, height): (u32, u32)) -> Result<()> {
         // Find the dimensions (in pixels) of the quad grid.
         const EFFECTIVE_WIDTH: f32 = (TILE_WIDTH * TERMINAL_WIDTH) as f32;
         const EFFECTIVE_HEIGHT: f32 = (TILE_HEIGHT * TERMINAL_HEIGHT) as f32;
@@ -724,56 +374,121 @@ impl Renderer {
             gl::Viewport(0, 0, width as GLsizei, height as GLsizei);
 
             gl::UseProgram(self.background_program);
+            gl_error_unwrap!();
+
             gl::UniformMatrix4fv(
                 self.background_mvp_location,
                 1,
                 gl::FALSE as GLboolean,
-                mem::transmute(&mvp_data[0]),
+                &mvp_data as *const f32,
             );
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
             gl::UseProgram(self.foreground_program);
+            gl_error_unwrap!();
+
             gl::UniformMatrix4fv(
                 self.foreground_mvp_location,
                 1,
                 gl::FALSE as GLboolean,
-                mem::transmute(&mvp_data[0]),
+                &mvp_data as *const f32,
             );
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
         }
 
         Ok(())
     }
 
-    pub fn render(&self) -> Result<(), String> {
+    pub fn update_from_terminal(&mut self, terminal: &Terminal) -> Result<()> {
+        // Iterate over dirty tiles in terminal.
+        for ((x, y), tile) in terminal.dirty_tiles_iter() {
+            // Update the background colors.
+            for vertex in self.background_quad_grid.quad_mut(x, y) {
+                vertex.color[0] = tile.background_color.0.r as f32 / 255.0;
+                vertex.color[1] = tile.background_color.0.g as f32 / 255.0;
+                vertex.color[2] = tile.background_color.0.b as f32 / 255.0;
+            }
+
+            // Update the foreground positions, colors, and tex coords.
+            let (x_position, y_position, u_tex_coord, v_tex_coord) =
+                self.positions_for_glyph(tile.glyph, tile.layout).with_context(|| {
+                    format!("Failed to retrieve positions for glyph {}.", tile.glyph)
+                })?;
+
+            for vertex in self.foreground_quad_grid.quad_mut(x, y) {
+                vertex.position[0] = x_position;
+                vertex.position[0] = y_position;
+                vertex.color[0] = tile.foreground_color.0.r as f32 / 255.0;
+                vertex.color[1] = tile.foreground_color.0.g as f32 / 255.0;
+                vertex.color[2] = tile.foreground_color.0.b as f32 / 255.0;
+                vertex.color[3] = tile.foreground_color.0.a as f32 / 255.0;
+                vertex.tex_coords[0] = u_tex_coord;
+                vertex.tex_coords[1] = v_tex_coord;
+            }
+        }
+
+        // Rebind the new data to the foreground and background VAOs.
+        unsafe {
+            gl::BindVertexArray(self.background_vao);
+        }
+        gl_error_unwrap!();
+
+        self.background_quad_grid
+            .rebind_vertices()
+            .context("Failed to rebind updated background vertex data.")?;
+
+        unsafe {
+            gl::BindVertexArray(self.foreground_vao);
+        }
+        gl_error_unwrap!();
+
+        self.foreground_quad_grid
+            .rebind_vertices()
+            .context("Failed to rebind updated foreground vertex data.")?;
+
+        Ok(())
+    }
+
+    pub fn render(&self) -> Result<()> {
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             // Draw background.
             gl::BindVertexArray(self.background_vao);
+            gl_error_unwrap!();
+
             gl::UseProgram(self.background_program);
+            gl_error_unwrap!();
+
             gl::DrawElements(
                 gl::TRIANGLES,
                 self.background_quad_grid.indices_len(),
                 gl::UNSIGNED_INT,
                 ptr::null(),
             );
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
             // Draw foreground.
             gl::BindVertexArray(self.foreground_vao);
+            gl_error_unwrap!();
+
             gl::UseProgram(self.foreground_program);
+            gl_error_unwrap!();
+
             gl::DrawElements(
                 gl::TRIANGLES,
                 self.foreground_quad_grid.indices_len() as GLint,
                 gl::UNSIGNED_INT,
                 ptr::null(),
             );
-
-            gl_error_unwrap()?;
+            gl_error_unwrap!();
 
             Ok(())
         }
+    }
+
+    fn positions_for_glyph(&self, glyph: char, layout: TileLayout) -> Result<(f32, f32, f32, f32)> {
+        Ok((0.0, 0.0, 0.0, 0.0))
     }
 }
 

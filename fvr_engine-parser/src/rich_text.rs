@@ -75,10 +75,7 @@ pub enum RichTextHintType {
 pub enum RichTextValue {
     Text(String),
     Newline,
-    FormatHint {
-        key: RichTextHintType,
-        value: String,
-    },
+    FormatHint { key: RichTextHintType, value: String },
 }
 
 // Parser for a string of text that does not contain a newline, escaped left chevron, or format hint.
@@ -90,18 +87,9 @@ fn text_parser(input: &str) -> IResult<&str, RichTextValue> {
 
 #[test]
 fn test_text_parser() {
-    assert_eq!(
-        text_parser("abcdefg"),
-        Ok(("", RichTextValue::Text("abcdefg".into())))
-    );
-    assert_eq!(
-        text_parser("abc<defg"),
-        Ok(("<defg", RichTextValue::Text("abc".into())))
-    );
-    assert_eq!(
-        text_parser("abc\ndefg"),
-        Ok(("\ndefg", RichTextValue::Text("abc".into())))
-    );
+    assert_eq!(text_parser("abcdefg"), Ok(("", RichTextValue::Text("abcdefg".into()))));
+    assert_eq!(text_parser("abc<defg"), Ok(("<defg", RichTextValue::Text("abc".into()))));
+    assert_eq!(text_parser("abc\ndefg"), Ok(("\ndefg", RichTextValue::Text("abc".into()))));
 
     let error = nom::Err::Error(nom::error::Error {
         input: "<abcdefg",
@@ -121,10 +109,8 @@ fn newline_parser(input: &str) -> IResult<&str, RichTextValue> {
 fn test_newline_parser() {
     assert_eq!(newline_parser("\nabc"), Ok(("abc", RichTextValue::Newline)));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "abc\n",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "abc\n", code: nom::error::ErrorKind::Tag });
     assert_eq!(newline_parser("abc\n"), Err(error));
 }
 
@@ -137,15 +123,10 @@ fn escaped_chevron_parser(input: &str) -> IResult<&str, RichTextValue> {
 
 #[test]
 fn test_escaped_chevron_parser() {
-    assert_eq!(
-        escaped_chevron_parser("<<abcd"),
-        Ok(("abcd", RichTextValue::Text("<".into())))
-    );
+    assert_eq!(escaped_chevron_parser("<<abcd"), Ok(("abcd", RichTextValue::Text("<".into()))));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "<abcd",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<abcd", code: nom::error::ErrorKind::Tag });
     assert_eq!(escaped_chevron_parser("<abcd"), Err(error));
 }
 
@@ -166,11 +147,9 @@ fn format_hint_end_parser(input: &str) -> IResult<&str, &str> {
 
 // Parses the value of a layout format hint.
 fn layout_value_parser(input: &str) -> IResult<&str, &str> {
-    alt((
-        tag(CENTER_LAYOUT_VALUE_TAG),
-        tag(FLOOR_LAYOUT_VALUE_TAG),
-        tag(TEXT_LAYOUT_VALUE_TAG),
-    ))(input)
+    alt((tag(CENTER_LAYOUT_VALUE_TAG), tag(FLOOR_LAYOUT_VALUE_TAG), tag(TEXT_LAYOUT_VALUE_TAG)))(
+        input,
+    )
 }
 
 #[test]
@@ -179,10 +158,7 @@ fn test_layout_value_parser() {
     assert_eq!(layout_value_parser("f"), Ok(("", "f")));
     assert_eq!(layout_value_parser("t"), Ok(("", "t")));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "z",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error = nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
     assert_eq!(layout_value_parser("z"), Err(error));
 }
 
@@ -198,31 +174,22 @@ fn layout_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
 
     Ok((
         remainder,
-        RichTextValue::FormatHint {
-            key: RichTextHintType::Layout,
-            value: result.3.into(),
-        },
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: result.3.into() },
     ))
 }
 
 #[test]
 fn test_layout_hint_parser() {
-    let format_hint = RichTextValue::FormatHint {
-        key: RichTextHintType::Layout,
-        value: "c".into(),
-    };
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "c".into() };
     assert_eq!(layout_hint_parser("<l:c>"), Ok(("", format_hint)));
 
-    let format_hint = RichTextValue::FormatHint {
-        key: RichTextHintType::Layout,
-        value: "f".into(),
-    };
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "f".into() };
     assert_eq!(layout_hint_parser("<l:f>Hello"), Ok(("Hello", format_hint)));
 
-    let format_hint = RichTextValue::FormatHint {
-        key: RichTextHintType::Layout,
-        value: "t".into(),
-    };
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() };
     assert_eq!(layout_hint_parser("<l:t>>\t"), Ok((">\t", format_hint)));
 
     let error = nom::Err::Error(nom::error::Error {
@@ -231,10 +198,8 @@ fn test_layout_hint_parser() {
     });
     assert_eq!(layout_hint_parser("Hello<l:c>"), Err(error));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "<l:c>",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<l:c>", code: nom::error::ErrorKind::Tag });
     assert_eq!(layout_hint_parser("<<l:c>"), Err(error));
 }
 
@@ -248,10 +213,7 @@ fn test_outlined_value_parser() {
     assert_eq!(outlined_value_parser("t"), Ok(("", "t")));
     assert_eq!(outlined_value_parser("f"), Ok(("", "f")));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "z",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error = nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
     assert_eq!(outlined_value_parser("z"), Err(error));
 }
 
@@ -267,25 +229,18 @@ fn outlined_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
 
     Ok((
         remainder,
-        RichTextValue::FormatHint {
-            key: RichTextHintType::Outlined,
-            value: result.3.into(),
-        },
+        RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: result.3.into() },
     ))
 }
 
 #[test]
 fn test_outlined_hint_parser() {
-    let format_hint = RichTextValue::FormatHint {
-        key: RichTextHintType::Outlined,
-        value: "t".into(),
-    };
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "t".into() };
     assert_eq!(outlined_hint_parser("<o:t>>\t"), Ok((">\t", format_hint)));
 
-    let error = nom::Err::Error(nom::error::Error {
-        input: "l:c>",
-        code: nom::error::ErrorKind::Tag,
-    });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "l:c>", code: nom::error::ErrorKind::Tag });
     assert_eq!(outlined_hint_parser("<l:c>"), Err(error));
 }
 
@@ -293,35 +248,14 @@ fn test_outlined_hint_parser() {
 fn color_value_parser(input: &str) -> IResult<&str, &str> {
     // Due to max tuple size for alt() we must split this into multiple sub parsers.
     alt((
-        alt((
-            tag(DARK_RED_COLOR_VALUE_TAG),
-            tag(BRIGHT_RED_COLOR_VALUE_TAG),
-        )),
-        alt((
-            tag(DARK_ORANGE_COLOR_VALUE_TAG),
-            tag(BRIGHT_ORANGE_COLOR_VALUE_TAG),
-        )),
+        alt((tag(DARK_RED_COLOR_VALUE_TAG), tag(BRIGHT_RED_COLOR_VALUE_TAG))),
+        alt((tag(DARK_ORANGE_COLOR_VALUE_TAG), tag(BRIGHT_ORANGE_COLOR_VALUE_TAG))),
         alt((tag(BROWN_COLOR_VALUE_TAG), tag(YELLOW_COLOR_VALUE_TAG))),
-        alt((
-            tag(DARK_GREEN_COLOR_VALUE_TAG),
-            tag(BRIGHT_GREEN_COLOR_VALUE_TAG),
-        )),
-        alt((
-            tag(DARK_BLUE_COLOR_VALUE_TAG),
-            tag(BRIGHT_BLUE_COLOR_VALUE_TAG),
-        )),
-        alt((
-            tag(DARK_PURPLE_COLOR_VALUE_TAG),
-            tag(BRIGHT_PURPLE_COLOR_VALUE_TAG),
-        )),
-        alt((
-            tag(DARK_CYAN_COLOR_VALUE_TAG),
-            tag(BRIGHT_CYAN_COLOR_VALUE_TAG),
-        )),
-        alt((
-            tag(DARK_MAGENTA_COLOR_VALUE_TAG),
-            tag(BRIGHT_MAGENTA_COLOR_VALUE_TAG),
-        )),
+        alt((tag(DARK_GREEN_COLOR_VALUE_TAG), tag(BRIGHT_GREEN_COLOR_VALUE_TAG))),
+        alt((tag(DARK_BLUE_COLOR_VALUE_TAG), tag(BRIGHT_BLUE_COLOR_VALUE_TAG))),
+        alt((tag(DARK_PURPLE_COLOR_VALUE_TAG), tag(BRIGHT_PURPLE_COLOR_VALUE_TAG))),
+        alt((tag(DARK_CYAN_COLOR_VALUE_TAG), tag(BRIGHT_CYAN_COLOR_VALUE_TAG))),
+        alt((tag(DARK_MAGENTA_COLOR_VALUE_TAG), tag(BRIGHT_MAGENTA_COLOR_VALUE_TAG))),
         tag(GOLD_COLOR_VALUE_TAG),
         alt((
             tag(BLACK_COLOR_VALUE_TAG),
@@ -383,10 +317,7 @@ fn outline_color_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
 
     Ok((
         remainder,
-        RichTextValue::FormatHint {
-            key: RichTextHintType::OutlineColor,
-            value: result.3.into(),
-        },
+        RichTextValue::FormatHint { key: RichTextHintType::OutlineColor, value: result.3.into() },
     ))
 }
 
@@ -403,12 +334,10 @@ fn format_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
 
 // The main parse function.
 pub fn parse_rich_text<S: AsRef<str>>(input: S) -> Result<Vec<RichTextValue>> {
-    let result = many1(alt((
-        text_parser,
-        newline_parser,
-        escaped_chevron_parser,
-        format_hint_parser,
-    )))(input.as_ref());
+    let result =
+        many1(alt((text_parser, newline_parser, escaped_chevron_parser, format_hint_parser)))(
+            input.as_ref(),
+        );
 
     Ok(result.map_err(|e| anyhow::format_err!(e.to_string()))?.1)
 }
@@ -421,57 +350,21 @@ fn test_parse_rich_text() {
     assert_eq!(
         parse_rich_text(TEST_STR).unwrap(),
         vec![
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Layout,
-                value: "t".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Outlined,
-                value: "f".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::ForegroundColor,
-                value: "Y".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::BackgroundColor,
-                value: "k".into()
-            },
+            RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "f".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "Y".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::BackgroundColor, value: "k".into() },
             RichTextValue::Text("<".into()),
-            RichTextValue::FormatHint {
-                key: RichTextHintType::OutlineColor,
-                value: "k".into()
-            },
+            RichTextValue::FormatHint { key: RichTextHintType::OutlineColor, value: "k".into() },
             RichTextValue::Text("Hello, ".into()),
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Layout,
-                value: "c".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Outlined,
-                value: "t".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::ForegroundColor,
-                value: "k".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::OutlineColor,
-                value: "R".into()
-            },
+            RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "c".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "t".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "k".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::OutlineColor, value: "R".into() },
             RichTextValue::Text("world".into()),
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Layout,
-                value: "t".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::Outlined,
-                value: "f".into()
-            },
-            RichTextValue::FormatHint {
-                key: RichTextHintType::ForegroundColor,
-                value: "Y".into()
-            },
+            RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "f".into() },
+            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "Y".into() },
             RichTextValue::Text("!".into()),
         ]
     );

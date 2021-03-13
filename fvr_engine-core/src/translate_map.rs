@@ -22,10 +22,7 @@ where
     M: Map2dView + Map2dViewMut,
 {
     pub fn new(base_map: &'a mut M, translation: Option<TranslateMapTranslation>) -> Self {
-        Self {
-            base_map,
-            translation,
-        }
+        Self { base_map, translation }
     }
 
     pub fn translation(&self) -> &Option<TranslateMapTranslation> {

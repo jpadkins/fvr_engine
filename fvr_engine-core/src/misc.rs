@@ -3,10 +3,7 @@ pub fn index_2d(x: u32, y: u32, width: u32) -> usize {
 }
 
 pub fn reverse_index_2d(index: usize, width: u32) -> (u32, u32) {
-    (
-        (index % width as usize) as u32,
-        (index / width as usize) as u32,
-    )
+    ((index % width as usize) as u32, (index / width as usize) as u32)
 }
 
 #[test]

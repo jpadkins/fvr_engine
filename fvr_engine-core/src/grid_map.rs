@@ -20,11 +20,7 @@ where
 {
     pub fn new(width: u32, height: u32) -> Self {
         let data = vec![Default::default(); (width * height) as usize];
-        Self {
-            width,
-            height,
-            data,
-        }
+        Self { width, height, data }
     }
 }
 
@@ -97,13 +93,7 @@ fn test_grid_map() {
     // Test get*().
     assert_eq!(*grid_map.get(index_2d(x, y, width)), u32::default());
     assert_eq!(*grid_map.get_xy(x, y), u32::default());
-    assert_eq!(
-        *grid_map.get_point(&Point {
-            x: x as i32,
-            y: y as i32
-        }),
-        u32::default()
-    );
+    assert_eq!(*grid_map.get_point(&Point { x: x as i32, y: y as i32 }), u32::default());
 
     // Test get_*_mut();
     *grid_map.get_mut(index_2d(x, y, width)) = 1;
@@ -112,25 +102,13 @@ fn test_grid_map() {
     *grid_map.get_xy_mut(x, y) = 2;
     assert_eq!(*grid_map.get_xy(x, y), 2);
 
-    *grid_map.get_point_mut(&Point {
-        x: x as i32,
-        y: y as i32,
-    }) = 3;
-    assert_eq!(
-        *grid_map.get_point(&Point {
-            x: x as i32,
-            y: y as i32
-        }),
-        3
-    );
+    *grid_map.get_point_mut(&Point { x: x as i32, y: y as i32 }) = 3;
+    assert_eq!(*grid_map.get_point(&Point { x: x as i32, y: y as i32 }), 3);
 
     // Test iter().
     let mut expected = vec![Default::default(); 4 * 6];
     expected[index_2d(x, y, grid_map.width())] = 3;
-    assert_eq!(
-        grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(),
-        expected
-    );
+    assert_eq!(grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(), expected);
 
     // Test iter_mut().
     expected[1] = 1;
@@ -139,8 +117,5 @@ fn test_grid_map() {
             *v = 1;
         }
     }
-    assert_eq!(
-        grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(),
-        expected
-    );
+    assert_eq!(grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(), expected);
 }
