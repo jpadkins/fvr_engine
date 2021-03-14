@@ -101,6 +101,8 @@ impl Terminal {
         let mut rng = rand::thread_rng();
 
         for tile in self.tiles.data_mut() {
+            tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
+            tile.outlined = rng.gen();
             tile.background_color = TileColor(sdl2::pixels::Color::RGB(
                 rng.gen::<u8>(),
                 rng.gen::<u8>(),
@@ -108,7 +110,8 @@ impl Terminal {
             ));
             tile.foreground_color =
                 TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
-            tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
+            tile.outline_color =
+                TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
         }
 
         self.set_dirty();

@@ -14,6 +14,7 @@ use crate::font_metrics_handler::*;
 use crate::gl_helpers::*;
 use crate::quad_grid::*;
 use crate::shader_strings::*;
+use crate::sparse_quad_grid::*;
 use crate::terminal::*;
 
 // TODO: Move these to config file and pass them into the fvr_engine-client ctor.
@@ -146,8 +147,10 @@ pub struct Renderer {
     foreground_program: GLuint,
     background_vao: GLuint,
     foreground_vao: GLuint,
+    outline_vao: GLuint,
     background_quad_grid: QuadGrid<BackgroundVertex>,
     foreground_quad_grid: QuadGrid<ForegroundVertex>,
+    outline_quad_grid: SparseQuadGrid<ForegroundVertex>,
     background_mvp_location: GLint,
     foreground_mvp_location: GLint,
     atlas_texture: GLuint,
@@ -174,6 +177,8 @@ impl Renderer {
                 .context("Failed to compile background fragment shader.")?;
         let background_program = link_program(vertex_shader, fragment_shader)
             .context("Failed to link background program.")?;
+        let background_mvp_location = get_uniform_location(background_program, "mvp")
+            .context("Failed to obtain background MVP matrix uniform location.")?;
 
         // The shaders are no longer needed.
         unsafe {
@@ -216,9 +221,6 @@ impl Renderer {
         BackgroundVertex::enable_attribs(background_program)
             .context("Failed to enable background quad grid vertex attribs.")?;
 
-        let background_mvp_location = get_uniform_location(background_program, "mvp")
-            .context("Failed to obtain background MVP matrix uniform location.")?;
-
         // Setup foreground VAO.
         let mut foreground_vao = 0;
 
@@ -235,6 +237,8 @@ impl Renderer {
                 .context("Failed to compile foreground fragment shader.")?;
         let foreground_program = link_program(vertex_shader, fragment_shader)
             .context("Failed to link foreground program.")?;
+        let foreground_mvp_location = get_uniform_location(foreground_program, "mvp")
+            .context("Failed to obtain foreground MVP matrix uniform location.")?;
 
         // The shaders are no longer needed.
         unsafe {
@@ -258,8 +262,27 @@ impl Renderer {
         ForegroundVertex::enable_attribs(foreground_program)
             .context("Failed to enable foreground quad grid vertex attribs.")?;
 
-        let foreground_mvp_location = get_uniform_location(foreground_program, "mvp")
-            .context("Failed to obtain foreground MVP matrix uniform location.")?;
+        // Setup and bind outline VAO.
+        // The outline VAO will reuse the foreground shader program and vertex attribs.
+        let mut outline_vao = 0;
+
+        unsafe {
+            gl::GenVertexArrays(1, &mut outline_vao);
+            gl_error_unwrap!();
+
+            gl::BindVertexArray(outline_vao);
+            gl_error_unwrap!();
+        }
+
+        // Bind buffer data and enable attribs.
+        let mut outline_quad_grid =
+            SparseQuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+                .context("Failed to create outline quad grid.")?;
+
+        outline_quad_grid.bind_data().context("Failed to bind outline quad grid data.")?;
+
+        ForegroundVertex::enable_attribs(foreground_program)
+            .context("Failed to enable outline (foreground) quad grid vertex attribs.")?;
 
         // Load font atlas texture.
         let atlas_path = format!("{}/{}.png", FONT_ATLAS_PATH, FONT_NAME);
@@ -321,6 +344,11 @@ impl Renderer {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl_error_unwrap!();
 
+            gl::BlendColor(1.0, 1.0, 1.0, 1.0);
+            gl_error_unwrap!();
+
+            gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+
             gl::ClearColor(0.1, 0.2, 0.3, 1.0);
             gl_error_unwrap!();
         }
@@ -335,8 +363,10 @@ impl Renderer {
             foreground_program,
             background_vao,
             foreground_vao,
+            outline_vao,
             background_quad_grid,
             foreground_quad_grid,
+            outline_quad_grid,
             background_mvp_location,
             foreground_mvp_location,
             atlas_texture,
@@ -431,12 +461,15 @@ impl Renderer {
                 y,
                 tile.glyph,
                 tile.layout,
+                false,
                 &mut x_positions,
                 &mut y_positions,
                 &mut u_tex_coords,
                 &mut v_tex_coords,
             )
-            .with_context(|| format!("Failed to retrieve positions for glyph {}.", tile.glyph))?;
+            .with_context(|| {
+                format!("Failed to retrieve regular positions for glyph {}.", tile.glyph)
+            })?;
 
             for (i, vertex) in self.foreground_quad_grid.quad_mut(x, y).iter_mut().enumerate() {
                 vertex.position[0] = x_positions[i];
@@ -445,6 +478,45 @@ impl Renderer {
                 vertex.color[1] = tile.foreground_color.0.g as f32 / 255.0;
                 vertex.color[2] = tile.foreground_color.0.b as f32 / 255.0;
                 vertex.color[3] = tile.foreground_color.0.a as f32 / 255.0;
+                vertex.tex_coords[0] = u_tex_coords[i] * u_normalize;
+                vertex.tex_coords[1] = v_tex_coords[i] * v_normalize;
+            }
+
+            // Update outline positions, colors and tex coords.
+            if !tile.outlined {
+                self.outline_quad_grid.clear_xy(x, y);
+                continue;
+            }
+
+            // Reset the outline quad to default if present.
+            if self.outline_quad_grid.quad(x, y).is_none() {
+                self.outline_quad_grid.reset_xy(x, y);
+            }
+
+            self.assign_glyph_positions(
+                x,
+                y,
+                tile.glyph,
+                tile.layout,
+                true,
+                &mut x_positions,
+                &mut y_positions,
+                &mut u_tex_coords,
+                &mut v_tex_coords,
+            )
+            .with_context(|| {
+                format!("Failed to retrieve outline positions for glyph {}.", tile.glyph)
+            })?;
+
+            // At this point the quad must be Some().
+            for (i, vertex) in self.outline_quad_grid.quad_mut(x, y).unwrap().iter_mut().enumerate()
+            {
+                vertex.position[0] = x_positions[i];
+                vertex.position[1] = y_positions[i];
+                vertex.color[0] = tile.outline_color.0.r as f32 / 255.0;
+                vertex.color[1] = tile.outline_color.0.g as f32 / 255.0;
+                vertex.color[2] = tile.outline_color.0.b as f32 / 255.0;
+                vertex.color[3] = tile.outline_color.0.a as f32 / 255.0;
                 vertex.tex_coords[0] = u_tex_coords[i] * u_normalize;
                 vertex.tex_coords[1] = v_tex_coords[i] * v_normalize;
             }
@@ -469,6 +541,15 @@ impl Renderer {
             .rebind_vertices()
             .context("Failed to rebind updated foreground vertex data.")?;
 
+        unsafe {
+            gl::BindVertexArray(self.outline_vao);
+        }
+        gl_error_unwrap!();
+
+        self.outline_quad_grid
+            .rebind_vertices()
+            .context("Failed to rebind updated outline vertex data.")?;
+
         Ok(())
     }
 
@@ -477,10 +558,10 @@ impl Renderer {
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             // Draw background.
-            gl::BindVertexArray(self.background_vao);
+            gl::UseProgram(self.background_program);
             gl_error_unwrap!();
 
-            gl::UseProgram(self.background_program);
+            gl::BindVertexArray(self.background_vao);
             gl_error_unwrap!();
 
             gl::DrawElements(
@@ -492,15 +573,27 @@ impl Renderer {
             gl_error_unwrap!();
 
             // Draw foreground.
-            gl::BindVertexArray(self.foreground_vao);
+            gl::UseProgram(self.foreground_program);
             gl_error_unwrap!();
 
-            gl::UseProgram(self.foreground_program);
+            gl::BindVertexArray(self.foreground_vao);
             gl_error_unwrap!();
 
             gl::DrawElements(
                 gl::TRIANGLES,
-                self.foreground_quad_grid.indices_len() as GLint,
+                self.foreground_quad_grid.indices_len(),
+                gl::UNSIGNED_INT,
+                ptr::null(),
+            );
+            gl_error_unwrap!();
+
+            // Draw outlines.
+            gl::BindVertexArray(self.outline_vao);
+            gl_error_unwrap!();
+
+            gl::DrawElements(
+                gl::TRIANGLES,
+                self.outline_quad_grid.indices_len(),
                 gl::UNSIGNED_INT,
                 ptr::null(),
             );
@@ -516,61 +609,70 @@ impl Renderer {
         y: u32,
         glyph: char,
         layout: TileLayout,
+        outline: bool,
         x_positions: &mut [f32; 4],
         y_positions: &mut [f32; 4],
         u_tex_coords: &mut [f32; 4],
         v_tex_coords: &mut [f32; 4],
     ) -> Result<()> {
         // TODO: Handle outlined
-        let metric = self
-            .font_metrics
-            .regular()
-            .get(&(glyph as u32))
-            .with_context(|| format!("Failed to load regular metrics for glyph {}.", glyph))?;
+        let metric;
+
+        if outline {
+            metric =
+                self.font_metrics.outline().get(&(glyph as u32)).with_context(|| {
+                    format!("Failed to load outline metrics for glyph {}.", glyph)
+                })?;
+        } else {
+            metric =
+                self.font_metrics.regular().get(&(glyph as u32)).with_context(|| {
+                    format!("Failed to load regular metrics for glyph {}.", glyph)
+                })?;
+        }
 
         let offset = Self::calculate_glyph_offset(&metric, layout);
 
         // Top left.
-        x_positions[0] = ((x * TILE_WIDTH) as i32 + offset.0) as f32;
-        y_positions[0] = ((y * TILE_HEIGHT) as i32 + offset.1) as f32;
+        x_positions[0] = ((x * TILE_WIDTH) as f32 + offset.0) as f32;
+        y_positions[0] = ((y * TILE_HEIGHT) as f32 + offset.1) as f32;
         u_tex_coords[0] = metric.x as f32;
         v_tex_coords[0] = metric.y as f32;
 
         // Top right.
-        x_positions[1] = (((x * TILE_WIDTH) + metric.width) as i32 + offset.0) as f32;
-        y_positions[1] = ((y * TILE_HEIGHT) as i32 + offset.1) as f32;
+        x_positions[1] = (((x * TILE_WIDTH) + metric.width) as f32 + offset.0) as f32;
+        y_positions[1] = ((y * TILE_HEIGHT) as f32 + offset.1) as f32;
         u_tex_coords[1] = (metric.x + metric.width) as f32;
         v_tex_coords[1] = metric.y as f32;
 
         // Bottom left.
-        x_positions[2] = (((x * TILE_WIDTH) + metric.width) as i32 + offset.0) as f32;
-        y_positions[2] = (((y * TILE_HEIGHT) + metric.height) as i32 + offset.1) as f32;
+        x_positions[2] = (((x * TILE_WIDTH) + metric.width) as f32 + offset.0) as f32;
+        y_positions[2] = (((y * TILE_HEIGHT) + metric.height) as f32 + offset.1) as f32;
         u_tex_coords[2] = (metric.x + metric.width) as f32;
         v_tex_coords[2] = (metric.y + metric.height) as f32;
 
         // Bottom right.
-        x_positions[3] = ((x * TILE_WIDTH) as i32 + offset.0) as f32;
-        y_positions[3] = (((y * TILE_HEIGHT) + metric.height) as i32 + offset.1) as f32;
+        x_positions[3] = ((x * TILE_WIDTH) as f32 + offset.0) as f32;
+        y_positions[3] = (((y * TILE_HEIGHT) + metric.height) as f32 + offset.1) as f32;
         u_tex_coords[3] = metric.x as f32;
         v_tex_coords[3] = (metric.y + metric.height) as f32;
 
         Ok(())
     }
 
-    fn calculate_glyph_offset(metric: &GlyphMetric, layout: TileLayout) -> (i32, i32) {
+    fn calculate_glyph_offset(metric: &GlyphMetric, layout: TileLayout) -> (f32, f32) {
         match layout {
             TileLayout::Center => (
-                (TILE_WIDTH as i32 - metric.width as i32) / 2,
-                (TILE_HEIGHT as i32 - metric.height as i32) / 2,
+                (TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0,
+                (TILE_HEIGHT as i32 - metric.height as i32) as f32 / 2.0,
             ),
             TileLayout::Floor => (
-                (TILE_WIDTH as i32 - metric.width as i32) / 2,
-                TILE_HEIGHT as i32 - metric.height as i32,
+                (TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0,
+                (TILE_HEIGHT as i32 - metric.height as i32) as f32,
             ),
-            TileLayout::Text => (metric.x_offset, metric.y_offset),
+            TileLayout::Text => (metric.x_offset as f32, metric.y_offset as f32),
             TileLayout::Exact((x, y)) => (
-                ((TILE_WIDTH as i32 - metric.width as i32) / 2) + x,
-                ((TILE_HEIGHT as i32 - metric.height as i32) / 2) + y,
+                ((TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0) + x as f32,
+                ((TILE_HEIGHT as i32 - metric.height as i32) as f32 / 2.0) + y as f32,
             ),
         }
     }

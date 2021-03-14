@@ -6,6 +6,7 @@ mod gl_helpers;
 mod quad_grid;
 mod renderer;
 mod shader_strings;
+mod sparse_quad_grid;
 mod terminal;
 
 pub mod prelude {
