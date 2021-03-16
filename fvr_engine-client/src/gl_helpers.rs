@@ -111,6 +111,24 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GL
     }
 }
 
+// Creates and links a new program from vertex and fragment shader sources.
+pub fn link_program_from_sources<S>(vertex_source: S, fragment_source: S) -> Result<GLuint>
+where
+    S: AsRef<str>,
+{
+    let vertex_shader = compile_shader(vertex_source.as_ref(), gl::VERTEX_SHADER)?;
+    let fragment_shader = compile_shader(fragment_source.as_ref(), gl::FRAGMENT_SHADER)?;
+    let program = link_program(vertex_shader, fragment_shader)?;
+
+    // Shaders are no longer needed.
+    unsafe {
+        gl::DeleteShader(vertex_shader);
+        gl::DeleteShader(fragment_shader);
+    }
+
+    Ok(program)
+}
+
 // Returns location of an attrib within a program.
 pub fn get_attrib_location(program: GLuint, name: &str) -> Result<GLint> {
     let c_str = CString::new(name)

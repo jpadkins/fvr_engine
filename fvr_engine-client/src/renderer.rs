@@ -1,3 +1,9 @@
+// TODO: (At some point if it becomes an issue)
+// Rendering can be optimized further -
+// 1. Create two vertex buffers with dynamic draw.
+// 2. Populate one buffer every frame based on the terminal changes.
+// 3. Render the other buffer (i.e. double buffered vertices).
+// Background vertices can be updated so that there is only one vertex format.
 use std::ffi::c_void;
 use std::mem;
 use std::ptr;
@@ -19,7 +25,7 @@ use crate::terminal::*;
 
 // TODO: Move these to config file and pass them into the fvr_engine-client ctor.
 const FONT_ATLAS_PATH: &str = "./resources/font_atlases";
-const FONT_NAME: &str = "input_mono";
+const FONT_NAME: &str = "deja_vu_sans_mono";
 
 // Define vertex structure for background quad grid.
 #[repr(C, packed)]

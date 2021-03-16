@@ -5,6 +5,7 @@ mod font_metrics_handler;
 mod gl_helpers;
 mod quad_grid;
 mod renderer;
+mod renderer_v2;
 mod shader_strings;
 mod sparse_quad_grid;
 mod terminal;
