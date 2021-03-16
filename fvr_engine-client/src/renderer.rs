@@ -19,7 +19,7 @@ use crate::terminal::*;
 
 // TODO: Move these to config file and pass them into the fvr_engine-client ctor.
 const FONT_ATLAS_PATH: &str = "./resources/font_atlases";
-const FONT_NAME: &str = "deja_vu_sans_mono";
+const FONT_NAME: &str = "input_mono";
 
 // Define vertex structure for background quad grid.
 #[repr(C, packed)]
