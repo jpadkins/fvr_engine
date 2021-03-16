@@ -102,12 +102,8 @@ impl Terminal {
 
         for tile in self.tiles.data_mut() {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
-            tile.outlined = rng.gen();
-            tile.background_color = TileColor(sdl2::pixels::Color::RGB(
-                rng.gen::<u8>(),
-                rng.gen::<u8>(),
-                rng.gen::<u8>(),
-            ));
+            tile.outlined = rng.gen_range(0..=3) == 3;
+            tile.background_color = TileColor::rgb(25, 50, 75);
             tile.foreground_color =
                 TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
             tile.outline_color =

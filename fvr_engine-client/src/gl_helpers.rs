@@ -6,6 +6,9 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use gl::types::*;
 
+// Number of indices per quad when using glDrawElements.
+pub const INDICES_PER_QUAD: u32 = 6;
+
 // Checks the current OpenGL error state as returns it as a result.
 pub fn gl_error_unwrap() -> Result<()> {
     let error = unsafe { gl::GetError() };
@@ -134,4 +137,22 @@ pub fn get_uniform_location(program: GLuint, name: &str) -> Result<GLint> {
     } else {
         Err(anyhow!("[OpenGL] Failed to find uniform {}.", name))
     }
+}
+
+pub fn generate_indices(num_quads: u32) -> Vec<GLuint> {
+    let num_indices = (num_quads * INDICES_PER_QUAD) as usize;
+    let mut indices = vec![0; num_indices];
+
+    let iter = (0..indices.len()).step_by(INDICES_PER_QUAD as usize).enumerate();
+    for (i, idx) in iter {
+        let i = (i * 4) as GLuint;
+        indices[idx] = i;
+        indices[idx + 1] = i + 1;
+        indices[idx + 2] = i + 2;
+        indices[idx + 3] = i;
+        indices[idx + 4] = i + 2;
+        indices[idx + 5] = i + 3;
+    }
+
+    indices
 }

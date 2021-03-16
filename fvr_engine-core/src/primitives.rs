@@ -4,7 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 // Dummy external struct definition for serde.
 #[derive(Deserialize, Serialize)]
 #[serde(remote = "SdlColor")]
-pub struct SdlColorDef {
+struct SdlColorDef {
     r: u8,
     g: u8,
     b: u8,

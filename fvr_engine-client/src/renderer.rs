@@ -19,12 +19,7 @@ use crate::terminal::*;
 
 // TODO: Move these to config file and pass them into the fvr_engine-client ctor.
 const FONT_ATLAS_PATH: &str = "./resources/font_atlases";
-const FONT_NAME: &str = "input_mono";
-
-const TILE_WIDTH: u32 = 24;
-const TILE_HEIGHT: u32 = 34;
-const TERMINAL_WIDTH: u32 = 103;
-const TERMINAL_HEIGHT: u32 = 37;
+const FONT_NAME: &str = "deja_vu_sans_mono";
 
 // Define vertex structure for background quad grid.
 #[repr(C, packed)]
@@ -143,6 +138,10 @@ impl QuadGridVertex for ForegroundVertex {}
 
 // Renderer contains the OpenGL state pointers and everything required for rendering.
 pub struct Renderer {
+    terminal_width: u32,
+    terminal_height: u32,
+    tile_width: u32,
+    tile_height: u32,
     background_program: GLuint,
     foreground_program: GLuint,
     background_vao: GLuint,
@@ -160,7 +159,12 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new() -> Result<Self> {
+    pub fn new(
+        terminal_width: u32,
+        terminal_height: u32,
+        tile_width: u32,
+        tile_height: u32,
+    ) -> Result<Self> {
         // Setup background VAO.
         let mut background_vao = 0;
 
@@ -194,7 +198,7 @@ impl Renderer {
 
         // Bind buffer data and enable attribs.
         let mut background_quad_grid =
-            QuadGrid::<BackgroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+            QuadGrid::<BackgroundVertex>::new(terminal_width, terminal_height)
                 .context("Failed to create background quad grid.")?;
 
         // Position data of the background quad grid will not change.
@@ -202,17 +206,17 @@ impl Renderer {
             for y in 0..background_quad_grid.height() {
                 let mut quad = background_quad_grid.quad_mut(x, y);
 
-                quad[0].position[0] = (x * TILE_WIDTH) as GLfloat;
-                quad[0].position[1] = (y * TILE_HEIGHT) as GLfloat;
+                quad[0].position[0] = (x * tile_width) as GLfloat;
+                quad[0].position[1] = (y * tile_height) as GLfloat;
 
-                quad[1].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
-                quad[1].position[1] = (y * TILE_HEIGHT) as GLfloat;
+                quad[1].position[0] = ((x * tile_width) + tile_width) as GLfloat;
+                quad[1].position[1] = (y * tile_height) as GLfloat;
 
-                quad[2].position[0] = ((x * TILE_WIDTH) + TILE_WIDTH) as GLfloat;
-                quad[2].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
+                quad[2].position[0] = ((x * tile_width) + tile_width) as GLfloat;
+                quad[2].position[1] = ((y * tile_height) + tile_height) as GLfloat;
 
-                quad[3].position[0] = (x * TILE_WIDTH) as GLfloat;
-                quad[3].position[1] = ((y * TILE_HEIGHT) + TILE_HEIGHT) as GLfloat;
+                quad[3].position[0] = (x * tile_width) as GLfloat;
+                quad[3].position[1] = ((y * tile_height) + tile_height) as GLfloat;
             }
         }
 
@@ -254,7 +258,7 @@ impl Renderer {
 
         // Bind buffer data and enable attribs.
         let foreground_quad_grid =
-            QuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+            QuadGrid::<ForegroundVertex>::new(terminal_width, terminal_height)
                 .context("Failed to create foreground quad grid.")?;
 
         foreground_quad_grid.bind_data().context("Failed to bind foreground quad grid data.")?;
@@ -276,7 +280,7 @@ impl Renderer {
 
         // Bind buffer data and enable attribs.
         let mut outline_quad_grid =
-            SparseQuadGrid::<ForegroundVertex>::new(TERMINAL_WIDTH, TERMINAL_HEIGHT)
+            SparseQuadGrid::<ForegroundVertex>::new(terminal_width, terminal_height)
                 .context("Failed to create outline quad grid.")?;
 
         outline_quad_grid.bind_data().context("Failed to bind outline quad grid data.")?;
@@ -344,11 +348,6 @@ impl Renderer {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl_error_unwrap!();
 
-            gl::BlendColor(1.0, 1.0, 1.0, 1.0);
-            gl_error_unwrap!();
-
-            gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-
             gl::ClearColor(0.1, 0.2, 0.3, 1.0);
             gl_error_unwrap!();
         }
@@ -359,6 +358,10 @@ impl Renderer {
             .context("Failed to load font metrics handler.")?;
 
         Ok(Self {
+            terminal_width,
+            terminal_height,
+            tile_width,
+            tile_height,
             background_program,
             foreground_program,
             background_vao,
@@ -378,12 +381,12 @@ impl Renderer {
 
     pub fn update_viewport(&self, (width, height): (u32, u32)) -> Result<()> {
         // Find the dimensions (in pixels) of the quad grid.
-        const EFFECTIVE_WIDTH: f32 = (TILE_WIDTH * TERMINAL_WIDTH) as f32;
-        const EFFECTIVE_HEIGHT: f32 = (TILE_HEIGHT * TERMINAL_HEIGHT) as f32;
+        let effective_width = (self.terminal_width * self.tile_width) as f32;
+        let effective_height = (self.terminal_height * self.tile_height) as f32;
 
         // Find the ratios of actual width/height to quad grid width/height.
-        let x_ratio = width as f32 / EFFECTIVE_WIDTH;
-        let y_ratio = height as f32 / EFFECTIVE_HEIGHT;
+        let x_ratio = width as f32 / effective_width;
+        let y_ratio = height as f32 / effective_height;
 
         let x_translate;
         let y_translate;
@@ -391,12 +394,12 @@ impl Renderer {
 
         // Depending on which ratio is larger, set the translation and scale to center the quad grid.
         if x_ratio > y_ratio {
-            x_translate = ((width as f32 - (EFFECTIVE_WIDTH * y_ratio)) / 2.0).floor();
+            x_translate = ((width as f32 - (effective_width * y_ratio)) / 2.0).floor();
             y_translate = 0.0;
             scale = y_ratio;
         } else {
             x_translate = 0.0;
-            y_translate = ((height as f32 - (EFFECTIVE_HEIGHT * x_ratio)) / 2.0).floor();
+            y_translate = ((height as f32 - (effective_height * x_ratio)) / 2.0).floor();
             scale = x_ratio;
         }
 
@@ -474,10 +477,10 @@ impl Renderer {
             for (i, vertex) in self.foreground_quad_grid.quad_mut(x, y).iter_mut().enumerate() {
                 vertex.position[0] = x_positions[i];
                 vertex.position[1] = y_positions[i];
-                vertex.color[0] = tile.foreground_color.0.r as f32 / 255.0;
-                vertex.color[1] = tile.foreground_color.0.g as f32 / 255.0;
-                vertex.color[2] = tile.foreground_color.0.b as f32 / 255.0;
-                vertex.color[3] = tile.foreground_color.0.a as f32 / 255.0;
+                vertex.color[0] = tile.foreground_color.0.r as f32 / std::u8::MAX as f32;
+                vertex.color[1] = tile.foreground_color.0.g as f32 / std::u8::MAX as f32;
+                vertex.color[2] = tile.foreground_color.0.b as f32 / std::u8::MAX as f32;
+                vertex.color[3] = tile.foreground_color.0.a as f32 / std::u8::MAX as f32;
                 vertex.tex_coords[0] = u_tex_coords[i] * u_normalize;
                 vertex.tex_coords[1] = v_tex_coords[i] * v_normalize;
             }
@@ -513,10 +516,10 @@ impl Renderer {
             {
                 vertex.position[0] = x_positions[i];
                 vertex.position[1] = y_positions[i];
-                vertex.color[0] = tile.outline_color.0.r as f32 / 255.0;
-                vertex.color[1] = tile.outline_color.0.g as f32 / 255.0;
-                vertex.color[2] = tile.outline_color.0.b as f32 / 255.0;
-                vertex.color[3] = tile.outline_color.0.a as f32 / 255.0;
+                vertex.color[0] = tile.outline_color.0.r as f32 / std::u8::MAX as f32;
+                vertex.color[1] = tile.outline_color.0.g as f32 / std::u8::MAX as f32;
+                vertex.color[2] = tile.outline_color.0.b as f32 / std::u8::MAX as f32;
+                vertex.color[3] = tile.outline_color.0.a as f32 / std::u8::MAX as f32;
                 vertex.tex_coords[0] = u_tex_coords[i] * u_normalize;
                 vertex.tex_coords[1] = v_tex_coords[i] * v_normalize;
             }
@@ -630,49 +633,49 @@ impl Renderer {
                 })?;
         }
 
-        let offset = Self::calculate_glyph_offset(&metric, layout);
+        let offset = self.calculate_glyph_offset(&metric, layout);
 
         // Top left.
-        x_positions[0] = ((x * TILE_WIDTH) as f32 + offset.0) as f32;
-        y_positions[0] = ((y * TILE_HEIGHT) as f32 + offset.1) as f32;
+        x_positions[0] = (x * self.tile_width) as f32 + offset.0;
+        y_positions[0] = (y * self.tile_height) as f32 + offset.1;
         u_tex_coords[0] = metric.x as f32;
         v_tex_coords[0] = metric.y as f32;
 
         // Top right.
-        x_positions[1] = (((x * TILE_WIDTH) + metric.width) as f32 + offset.0) as f32;
-        y_positions[1] = ((y * TILE_HEIGHT) as f32 + offset.1) as f32;
+        x_positions[1] = ((x * self.tile_width) + metric.width) as f32 + offset.0;
+        y_positions[1] = (y * self.tile_height) as f32 + offset.1;
         u_tex_coords[1] = (metric.x + metric.width) as f32;
         v_tex_coords[1] = metric.y as f32;
 
         // Bottom left.
-        x_positions[2] = (((x * TILE_WIDTH) + metric.width) as f32 + offset.0) as f32;
-        y_positions[2] = (((y * TILE_HEIGHT) + metric.height) as f32 + offset.1) as f32;
+        x_positions[2] = ((x * self.tile_width) + metric.width) as f32 + offset.0;
+        y_positions[2] = ((y * self.tile_height) + metric.height) as f32 + offset.1;
         u_tex_coords[2] = (metric.x + metric.width) as f32;
         v_tex_coords[2] = (metric.y + metric.height) as f32;
 
         // Bottom right.
-        x_positions[3] = ((x * TILE_WIDTH) as f32 + offset.0) as f32;
-        y_positions[3] = (((y * TILE_HEIGHT) + metric.height) as f32 + offset.1) as f32;
+        x_positions[3] = (x * self.tile_width) as f32 + offset.0;
+        y_positions[3] = ((y * self.tile_height) + metric.height) as f32 + offset.1;
         u_tex_coords[3] = metric.x as f32;
         v_tex_coords[3] = (metric.y + metric.height) as f32;
 
         Ok(())
     }
 
-    fn calculate_glyph_offset(metric: &GlyphMetric, layout: TileLayout) -> (f32, f32) {
+    fn calculate_glyph_offset(&self, metric: &GlyphMetric, layout: TileLayout) -> (f32, f32) {
         match layout {
             TileLayout::Center => (
-                (TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0,
-                (TILE_HEIGHT as i32 - metric.height as i32) as f32 / 2.0,
+                (self.tile_width as i32 - metric.width as i32) as f32 / 2.0,
+                (self.tile_height as i32 - metric.height as i32) as f32 / 2.0,
             ),
             TileLayout::Floor => (
-                (TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0,
-                (TILE_HEIGHT as i32 - metric.height as i32) as f32,
+                (self.tile_width as i32 - metric.width as i32) as f32 / 2.0,
+                (self.tile_height as i32 - metric.height as i32) as f32,
             ),
             TileLayout::Text => (metric.x_offset as f32, metric.y_offset as f32),
             TileLayout::Exact((x, y)) => (
-                ((TILE_WIDTH as i32 - metric.width as i32) as f32 / 2.0) + x as f32,
-                ((TILE_HEIGHT as i32 - metric.height as i32) as f32 / 2.0) + y as f32,
+                ((self.tile_width as i32 - metric.width as i32) as f32 / 2.0) + x as f32,
+                ((self.tile_height as i32 - metric.height as i32) as f32 / 2.0) + y as f32,
             ),
         }
     }

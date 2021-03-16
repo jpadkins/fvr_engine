@@ -15,8 +15,10 @@ use crate::terminal::*;
 const WINDOW_TITLE: &str = "FVR_ENGINE";
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
-const TERMINAL_WIDTH: u32 = 103;
-const TERMINAL_HEIGHT: u32 = 37;
+const TERMINAL_WIDTH: u32 = 81; // 103
+const TERMINAL_HEIGHT: u32 = 31; // 37
+const TILE_WIDTH: u32 = 48;
+const TILE_HEIGHT: u32 = 64;
 
 // Render at 60 fps.
 const FRAME_DURATION: Duration = Duration::from_millis(1000 / 60);
@@ -90,7 +92,8 @@ impl Client {
         let debug_gui = DebugGui::new(&video_subsystem, &window);
 
         // Renderer
-        let mut renderer = Renderer::new().context("Failed to create the renderer.")?;
+        let mut renderer = Renderer::new(TERMINAL_WIDTH, TERMINAL_HEIGHT, TILE_WIDTH, TILE_HEIGHT)
+            .context("Failed to create the renderer.")?;
 
         // Terminal
         let terminal = Terminal::new(TERMINAL_WIDTH, TERMINAL_HEIGHT);

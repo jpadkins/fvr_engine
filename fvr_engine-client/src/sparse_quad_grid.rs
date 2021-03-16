@@ -25,12 +25,9 @@ impl<V> SparseQuadGrid<V>
 where
     V: QuadGridVertex,
 {
-    // TODO: Move to gl_helpers
-    const INDICES_PER_QUAD: u32 = 6;
-
     pub fn new(width: u32, height: u32) -> Result<Self> {
         let vertices = GridMap::new(width, height);
-        let indices = Self::generate_indices(width, height);
+        let indices = generate_indices(width * height);
         let vertex_data = Vec::new();
 
         let mut vbo = 0;
@@ -74,7 +71,7 @@ where
 
     pub fn indices_len(&self) -> GLint {
         // Determine indices len based on current used quads.
-        (self.vertex_data.len() * Self::INDICES_PER_QUAD as usize) as GLint
+        (self.vertex_data.len() * INDICES_PER_QUAD as usize) as GLint
     }
 
     pub fn bind_data(&mut self) -> Result<()> {
@@ -155,25 +152,6 @@ where
                 self.vertex_data.push(*quad);
             }
         }
-    }
-
-    // TODO: Move to gl_helpers
-    fn generate_indices(width: u32, height: u32) -> Vec<GLuint> {
-        let num_indices = (width * height * Self::INDICES_PER_QUAD) as usize;
-        let mut indices = vec![0; num_indices];
-
-        let iter = (0..indices.len()).step_by(Self::INDICES_PER_QUAD as usize).enumerate();
-        for (i, idx) in iter {
-            let i = (i * 4) as GLuint;
-            indices[idx] = i;
-            indices[idx + 1] = i + 1;
-            indices[idx + 2] = i + 2;
-            indices[idx + 3] = i;
-            indices[idx + 4] = i + 2;
-            indices[idx + 5] = i + 3;
-        }
-
-        indices
     }
 }
 

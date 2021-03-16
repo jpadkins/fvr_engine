@@ -21,8 +21,10 @@ const OUTPUT_DIR: &str = "./resources/font_atlases";
 const FONTS_DIR: &str = "./fvr_engine-atlas_generator/fonts";
 
 // Dimensions of the output atlas.
-const OUTPUT_WIDTH: u32 = 1024;
-const OUTPUT_HEIGHT: u32 = 1024;
+// 1024x1024 is enough for most 32px font rendering.
+// 1024x2048 for 64px rendering.
+const OUTPUT_WIDTH: u32 = 2048;
+const OUTPUT_HEIGHT: u32 = 2048;
 
 // Names of the four bmfont files.
 const REGULAR_FNT: &str = "regular.fnt";
@@ -99,6 +101,9 @@ fn generate(
     default_regular_atlas: &DynamicImage,
     default_outline_atlas: &DynamicImage,
 ) -> Result<()> {
+    const X_PADDING: u32 = 2;
+    const Y_PADDING: u32 = 2;
+
     // Remove files from previous run.
     let output_atlas_path_str = format!("{}/{}.png", OUTPUT_DIR, name);
     let output_atlas_path = Path::new(&output_atlas_path_str);
@@ -147,7 +152,7 @@ fn generate(
         // Wrap to the next row if necessary.
         if x + metric.width > OUTPUT_WIDTH {
             x = 0;
-            y += max_regular_height;
+            y += max_regular_height + Y_PADDING;
         }
 
         // Copy the glyph.
@@ -167,7 +172,7 @@ fn generate(
         output_metrics.regular.push(output_metric);
 
         // Move x position forward.
-        x += metric.width;
+        x += metric.width + X_PADDING;
     }
 
     // Find the max height of the outline metrics.
@@ -184,7 +189,7 @@ fn generate(
         // Wrap to the next row if necessary.
         if x + metric.width > OUTPUT_WIDTH {
             x = 0;
-            y += max_outline_height;
+            y += max_outline_height + Y_PADDING;
         }
 
         // Copy the glyph.
@@ -204,7 +209,7 @@ fn generate(
         output_metrics.outline.push(output_metric);
 
         // Move x position forward.
-        x += metric.width;
+        x += metric.width + X_PADDING;
     }
 
     // Ensure that all of codepage 437 is covered by iterating and potentially copying the default
@@ -220,7 +225,7 @@ fn generate(
         // Wrap to the next row if necessary.
         if x + metric.width > OUTPUT_WIDTH {
             x = 0;
-            y += default_max_regular_height;
+            y += default_max_regular_height + Y_PADDING;
         }
 
         // Copy the glyph.
@@ -240,7 +245,7 @@ fn generate(
         output_metrics.regular.push(output_metric);
 
         // Move x position forward.
-        x += metric.width;
+        x += metric.width + X_PADDING;
     }
 
     // Default outline.
@@ -253,7 +258,7 @@ fn generate(
         // Wrap to the next row if necessary.
         if x + metric.width > OUTPUT_WIDTH {
             x = 0;
-            y += default_max_outline_height;
+            y += default_max_outline_height + Y_PADDING;
         }
 
         // Copy the glyph.
@@ -273,7 +278,7 @@ fn generate(
         output_metrics.outline.push(output_metric);
 
         // Move x position forward.
-        x += metric.width;
+        x += metric.width + X_PADDING;
     }
 
     // Save the output atlas.

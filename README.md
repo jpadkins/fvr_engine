@@ -2,6 +2,11 @@
 
 A data-driven text-based roleplaying game engine.
 
+## TODO
+
+Make foreground a sparse grid map and set to None if the glyph is ' '.
+^ Also add this ' ' check for the outline grid.
+
 ## CRATES
 
 ### fvr_engine
