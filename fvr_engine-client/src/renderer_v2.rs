@@ -274,7 +274,6 @@ impl RendererV2 {
             }
             gl_error_unwrap!("Failed to bind vertex buffer for background vertex array.");
 
-
             // Enable the background vertex attributes.
             let location = get_attrib_location(background_program, "position")
                 .context("Failed to get background position attrib location.")?;
@@ -294,7 +293,9 @@ impl RendererV2 {
                     // Offset.
                     ptr::null(),
                 );
-                gl_error_unwrap!("Failed to set position attrib pointer for background vertex array.");
+                gl_error_unwrap!(
+                    "Failed to set position attrib pointer for background vertex array."
+                );
 
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable position attrib for background vertex array.");
@@ -365,7 +366,9 @@ impl RendererV2 {
                     // Offset.
                     ptr::null(),
                 );
-                gl_error_unwrap!("Failed to set position attrib pointer for foreground vertex array.");
+                gl_error_unwrap!(
+                    "Failed to set position attrib pointer for foreground vertex array."
+                );
 
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable position attrib for foreground vertex array.");
@@ -413,7 +416,9 @@ impl RendererV2 {
                     // Offset.
                     (mem::size_of::<GLfloat>() * 6) as *const c_void,
                 );
-                gl_error_unwrap!("Failed to set tex_coords attrib pointer for foreground vertex array.");
+                gl_error_unwrap!(
+                    "Failed to set tex_coords attrib pointer for foreground vertex array."
+                );
 
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable tex_coords attrib for foreground vertex array.");
@@ -688,15 +693,22 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Push a colored and textured quad onto the foreground vertices, based on a tile.
     //---------------------------------------------------------------------------------------------
-    fn push_foreground_quad(&mut self, (x, y): (u32, u32), tile: &Tile, outlined: bool) -> Result<()> {
+    fn push_foreground_quad(
+        &mut self,
+        (x, y): (u32, u32),
+        tile: &Tile,
+        outlined: bool,
+    ) -> Result<()> {
         let mut vertex = Vertex::default();
 
         // Retrieve either the regular or outline metrics for the tile's glyph.
         let metric = if outlined {
-            self.outline_metrics.get(&(tile.glyph as u32))
+            self.outline_metrics
+                .get(&(tile.glyph as u32))
                 .with_context(|| format!("Failed to load outline metric for glyph {}.", tile.glyph))
         } else {
-            self.regular_metrics.get(&(tile.glyph as u32))
+            self.regular_metrics
+                .get(&(tile.glyph as u32))
                 .with_context(|| format!("Failed to load regular metric for glyph {}.", tile.glyph))
         }?;
 
@@ -772,13 +784,15 @@ impl RendererV2 {
             {
                 continue;
             }
-            self.push_foreground_quad(coord, tile, false).context("Failed to push foreground regular quad")?;
+            self.push_foreground_quad(coord, tile, false)
+                .context("Failed to push foreground regular quad")?;
 
             // Skip adding the foreground outline quad if the tile is not outlined.
             if !tile.outlined {
                 continue;
             }
-            self.push_foreground_quad(coord, tile, true).context("Failed to push foreground outline quad")?;
+            self.push_foreground_quad(coord, tile, true)
+                .context("Failed to push foreground outline quad")?;
         }
 
         // Update the vertex buffer with the new vertex data.
@@ -794,7 +808,8 @@ impl RendererV2 {
             gl_error_unwrap!("Failed to map vertex buffer.");
 
             // Determine size of background vertices.
-            let background_vertices_size = self.background_vertices.len() * mem::size_of::<Vertex>();
+            let background_vertices_size =
+                self.background_vertices.len() * mem::size_of::<Vertex>();
 
             // If background vertices are present, copy them into the buffer.
             if !self.background_vertices.is_empty() {

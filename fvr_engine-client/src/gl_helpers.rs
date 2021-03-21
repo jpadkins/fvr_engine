@@ -1,7 +1,7 @@
-use std::ptr;
-use std::str;
 use std::ffi::CString;
 use std::fmt::Display;
+use std::ptr;
+use std::str;
 
 use anyhow::{anyhow, bail, Context, Result};
 
@@ -14,12 +14,15 @@ pub const VERTICES_PER_QUAD: usize = 4;
 pub const INDICES_PER_QUAD: usize = 6;
 
 // Checks the current OpenGL error state and returns it as a result.
-pub fn gl_error_unwrap<D>(msg: Option<D>) -> Result<()> where D: Display {
+pub fn gl_error_unwrap<D>(msg: Option<D>) -> Result<()>
+where
+    D: Display,
+{
     let error = unsafe { gl::GetError() };
 
     if error != gl::NO_ERROR {
         // Match the error string for the error type.
-        let e : String = match error {
+        let e: String = match error {
             gl::INVALID_ENUM => "[OpenGL] Error: INVALID_ENUM".into(),
             gl::INVALID_VALUE => "[OpenGL] Error: INVALID_VALUE".into(),
             gl::INVALID_OPERATION => "[OpenGL] Error: INVALID_OPERATION".into(),

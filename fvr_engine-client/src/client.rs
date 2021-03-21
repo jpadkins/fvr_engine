@@ -98,7 +98,8 @@ impl Client {
             (TERMINAL_WIDTH, TERMINAL_HEIGHT),
             "./resources/font_atlases/deja_vu_sans_mono.png",
             "./resources/font_atlases/deja_vu_sans_mono.toml",
-        ).context("Failed to create the renderer.")?;
+        )
+        .context("Failed to create the renderer.")?;
 
         // Terminal
         let terminal = Terminal::new(TERMINAL_WIDTH, TERMINAL_HEIGHT);
@@ -194,10 +195,10 @@ impl Client {
 
         // Sync the renderer with the terminal if changes have been made.
         // if self.terminal.dirty() {
-            self.renderer
-                .sync_with_terminal(&self.terminal)
-                .context("Failed to sync renderer state with terminal.")?;
-            // self.terminal.set_clean();
+        self.renderer
+            .sync_with_terminal(&self.terminal)
+            .context("Failed to sync renderer state with terminal.")?;
+        // self.terminal.set_clean();
         // }
 
         // Render a frame.
