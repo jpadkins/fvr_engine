@@ -6,12 +6,12 @@ in vec3 color;
 
 out vec4 v_color;
 
-uniform mat4 mvp;
+uniform mat4 projection;
 
 void main()
 {
     v_color = vec4(color, 1.0);
-    gl_Position = mvp * vec4(position, 1.0, 1.0);
+    gl_Position = projection * vec4(position, 1.0, 1.0);
 }
 "#;
 
@@ -40,20 +40,20 @@ in vec2 tex_coords;
 out vec4 v_color;
 out vec2 v_tex_coords;
 
-uniform mat4 mvp;
+uniform mat4 projection;
 
 void main()
 {
     v_color = color;
     v_tex_coords = tex_coords;
-    gl_Position = mvp * vec4(position, 1.0, 1.0);
+    gl_Position = projection * vec4(position, 1.0, 1.0);
 }
 "#;
 
 pub const FOREGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
 #version 330 core
 
-precision lowp float;
+precision highp float;
 
 in vec4 v_color;
 in vec2 v_tex_coords;

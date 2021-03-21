@@ -1,4 +1,4 @@
-use sdl2::pixels::Color as SdlColor;
+pub use sdl2::pixels::Color as SdlColor;
 use serde_derive::{Deserialize, Serialize};
 
 // Dummy external struct definition for serde.
@@ -12,7 +12,7 @@ struct SdlColorDef {
 }
 
 // Represents 8bit RGBA color.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct TileColor(#[serde(with = "SdlColorDef")] pub SdlColor);
 
 impl TileColor {

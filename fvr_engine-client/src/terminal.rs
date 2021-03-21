@@ -90,6 +90,12 @@ impl Terminal {
         self.dirty_tiles.data_mut().fill(true);
     }
 
+    pub fn tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
+        (0..self.width())
+            .cartesian_product(0..self.height())
+            .map(move |(x, y)| ((x, y), self.tiles.get_xy(x, y)))
+    }
+
     pub fn dirty_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())

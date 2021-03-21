@@ -9,6 +9,7 @@ use sdl2::{EventPump, Sdl, VideoSubsystem};
 
 use crate::debug_gui::*;
 use crate::renderer::*;
+use crate::renderer_v2::*;
 use crate::terminal::*;
 
 // TODO: Load these from config.
@@ -31,7 +32,7 @@ pub struct Client {
     window: Window,
     _gl_context: GLContext,
     debug_gui: DebugGui,
-    renderer: Renderer,
+    renderer: RendererV2,
     terminal: Terminal,
     debug_enabled: bool,
     last_frame: Instant,
@@ -92,14 +93,18 @@ impl Client {
         let debug_gui = DebugGui::new(&video_subsystem, &window);
 
         // Renderer
-        let mut renderer = Renderer::new(TERMINAL_WIDTH, TERMINAL_HEIGHT, TILE_WIDTH, TILE_HEIGHT)
-            .context("Failed to create the renderer.")?;
+        let mut renderer = RendererV2::new(
+            (TILE_WIDTH, TILE_HEIGHT),
+            (TERMINAL_WIDTH, TERMINAL_HEIGHT),
+            "./resources/font_atlases/deja_vu_sans_mono.png",
+            "./resources/font_atlases/deja_vu_sans_mono.toml",
+        ).context("Failed to create the renderer.")?;
 
         // Terminal
         let terminal = Terminal::new(TERMINAL_WIDTH, TERMINAL_HEIGHT);
 
         renderer
-            .update_from_terminal(&terminal)
+            .sync_with_terminal(&terminal)
             .context("Failed to sync renderer state with terminal.")?;
 
         Ok(Self {
@@ -188,12 +193,12 @@ impl Client {
         }
 
         // Sync the renderer with the terminal if changes have been made.
-        if self.terminal.dirty() {
+        // if self.terminal.dirty() {
             self.renderer
-                .update_from_terminal(&self.terminal)
+                .sync_with_terminal(&self.terminal)
                 .context("Failed to sync renderer state with terminal.")?;
-            self.terminal.set_clean();
-        }
+            // self.terminal.set_clean();
+        // }
 
         // Render a frame.
         self.renderer.render()?;

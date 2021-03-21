@@ -31,7 +31,7 @@ where
 {
     pub fn new(width: u32, height: u32) -> Result<Self> {
         let vertices = GridMap::new(width, height);
-        let indices = generate_indices(width * height);
+        let indices = generate_indices((width * height) as usize);
 
         let mut vbo = 0;
         unsafe {

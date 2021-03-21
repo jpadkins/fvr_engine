@@ -1,20 +1,25 @@
-use std::ffi::CString;
 use std::ptr;
 use std::str;
+use std::ffi::CString;
+use std::fmt::Display;
 
 use anyhow::{anyhow, bail, Context, Result};
 
 use gl::types::*;
 
-// Number of indices per quad when using glDrawElements.
-pub const INDICES_PER_QUAD: u32 = 6;
+// Number of vertices per quad when using glDrawElements.
+pub const VERTICES_PER_QUAD: usize = 4;
 
-// Checks the current OpenGL error state as returns it as a result.
-pub fn gl_error_unwrap() -> Result<()> {
+// Number of indices per quad when using glDrawElements.
+pub const INDICES_PER_QUAD: usize = 6;
+
+// Checks the current OpenGL error state and returns it as a result.
+pub fn gl_error_unwrap<D>(msg: Option<D>) -> Result<()> where D: Display {
     let error = unsafe { gl::GetError() };
 
     if error != gl::NO_ERROR {
-        let msg: String = match error {
+        // Match the error string for the error type.
+        let e : String = match error {
             gl::INVALID_ENUM => "[OpenGL] Error: INVALID_ENUM".into(),
             gl::INVALID_VALUE => "[OpenGL] Error: INVALID_VALUE".into(),
             gl::INVALID_OPERATION => "[OpenGL] Error: INVALID_OPERATION".into(),
@@ -27,7 +32,12 @@ pub fn gl_error_unwrap() -> Result<()> {
             _ => format!("[OpenGL] Error: {}", error),
         };
 
-        bail!(msg);
+        // Optionally print an error message.
+        if let Some(msg) = msg {
+            eprintln!("{}", msg);
+        }
+
+        bail!(e);
     }
 
     Ok(())
@@ -37,7 +47,11 @@ pub fn gl_error_unwrap() -> Result<()> {
 macro_rules! gl_error_unwrap {
     () => {
         #[cfg(debug_assertions)]
-        gl_error_unwrap()?;
+        gl_error_unwrap(None::<String>)?;
+    };
+    ($msg:expr) => {
+        #[cfg(debug_assertions)]
+        gl_error_unwrap(Some($msg))?;
     };
 }
 
@@ -157,11 +171,11 @@ pub fn get_uniform_location(program: GLuint, name: &str) -> Result<GLint> {
     }
 }
 
-pub fn generate_indices(num_quads: u32) -> Vec<GLuint> {
-    let num_indices = (num_quads * INDICES_PER_QUAD) as usize;
+pub fn generate_indices(num_quads: usize) -> Vec<GLuint> {
+    let num_indices = num_quads * INDICES_PER_QUAD;
     let mut indices = vec![0; num_indices];
 
-    let iter = (0..indices.len()).step_by(INDICES_PER_QUAD as usize).enumerate();
+    let iter = (0..indices.len()).step_by(INDICES_PER_QUAD).enumerate();
     for (i, idx) in iter {
         let i = (i * 4) as GLuint;
         indices[idx] = i;

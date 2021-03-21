@@ -4,6 +4,8 @@
 // 2. Populate one buffer every frame based on the terminal changes.
 // 3. Render the other buffer (i.e. double buffered vertices).
 // Background vertices can be updated so that there is only one vertex format.
+//
+// UPDATE: See RendererV2.
 use std::ffi::c_void;
 use std::mem;
 use std::ptr;
