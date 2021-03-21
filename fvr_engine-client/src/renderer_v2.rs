@@ -52,6 +52,17 @@ struct Vertex {
 
 //-------------------------------------------------------------------------------------------------
 // RendererV2: Batched and BackBuffered edition.
+//
+// RendererV2 creates two sets of array buffers and vertex arrays and flips them every frame to
+// avoid tying up the CPU and GPU. Drawing is done via DrawElements with a single index buffer.
+//
+// Every frame vertex data is generated from the current terminal state and uploaded to the array
+// buffer that is not currently in use (being drawn from).
+//
+// A single vertex specification is used for both the "background" (basic colored quads) and
+// "foreground" (colored and textured quads of glyphs or outlines). The background shader program
+// simply ignores the unneeded data from the array buffer. This allows us to only use one array
+// buffer for bother draw calls and avoid switching bindings.
 //-------------------------------------------------------------------------------------------------
 pub struct RendererV2 {
     // Dimensions of each tile in the terminal in # of pixels.
@@ -592,7 +603,7 @@ impl RendererV2 {
         // Upload the new uniform data to both the background and foreground shader programs.
         unsafe {
             gl::UseProgram(self.background_program);
-            gl_error_unwrap!();
+            gl_error_unwrap!("Failed to use background program for updating projection.");
 
             gl::UniformMatrix4fv(
                 self.background_projection_location,
@@ -600,10 +611,10 @@ impl RendererV2 {
                 gl::FALSE as GLboolean,
                 &mvp_data as *const f32,
             );
-            gl_error_unwrap!();
+            gl_error_unwrap!("Failed to update background projection matrix.");
 
             gl::UseProgram(self.foreground_program);
-            gl_error_unwrap!();
+            gl_error_unwrap!("Failed to use foreground program for updating projection.");
 
             gl::UniformMatrix4fv(
                 self.foreground_projection_location,
@@ -611,12 +622,15 @@ impl RendererV2 {
                 gl::FALSE as GLboolean,
                 &mvp_data as *const f32,
             );
-            gl_error_unwrap!();
+            gl_error_unwrap!("Failed to update foreground projection matrix.");
         }
 
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Push a colored quad onto the background vertices, based on a tile.
+    //---------------------------------------------------------------------------------------------
     fn push_background_quad(&mut self, (x, y): (u32, u32), tile: &Tile) {
         let mut vertex = Vertex::default();
 
@@ -646,6 +660,9 @@ impl RendererV2 {
         self.background_vertices.push(vertex);
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Calculate the offset for a glyph (in pixels) given a tile layout.
+    //---------------------------------------------------------------------------------------------
     fn calculate_glyph_offset(&self, metric: &GlyphMetric, layout: TileLayout) -> (f32, f32) {
         match layout {
             // Center the glyph.
@@ -668,6 +685,9 @@ impl RendererV2 {
         }
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Push a colored and textured quad onto the foreground vertices, based on a tile.
+    //---------------------------------------------------------------------------------------------
     fn push_foreground_quad(&mut self, (x, y): (u32, u32), tile: &Tile, outlined: bool) -> Result<()> {
         let mut vertex = Vertex::default();
 
@@ -813,7 +833,7 @@ impl RendererV2 {
 
     //---------------------------------------------------------------------------------------------
     // Render a frame and flip the backbuffer.
-    // (should be called once per frame (obviously)).
+    // (should be called once per frame (obviously lol)).
     //---------------------------------------------------------------------------------------------
     pub fn render(&mut self) -> Result<()> {
         // Clear the frame.
