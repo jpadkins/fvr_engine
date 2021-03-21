@@ -13,7 +13,6 @@ where
 }
 
 // Wraps and provides access to a 2D grid of T.
-#[allow(dead_code)]
 impl<T> GridMap<T>
 where
     T: Map2dType,

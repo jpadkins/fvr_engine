@@ -1,11 +1,20 @@
+//-------------------------------------------------------------------------------------------------
+// STD includes.
+//-------------------------------------------------------------------------------------------------
 use std::ffi::CString;
 use std::fmt::Display;
 use std::ptr;
 use std::str;
 
+//-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
 use anyhow::{anyhow, bail, Context, Result};
-
 use gl::types::*;
+
+//-------------------------------------------------------------------------------------------------
+// Constants.
+//-------------------------------------------------------------------------------------------------
 
 // Number of vertices per quad when using glDrawElements.
 pub const VERTICES_PER_QUAD: usize = 4;
@@ -13,7 +22,9 @@ pub const VERTICES_PER_QUAD: usize = 4;
 // Number of indices per quad when using glDrawElements.
 pub const INDICES_PER_QUAD: usize = 6;
 
+//-------------------------------------------------------------------------------------------------
 // Checks the current OpenGL error state and returns it as a result.
+//-------------------------------------------------------------------------------------------------
 pub fn gl_error_unwrap<D>(msg: Option<D>) -> Result<()>
 where
     D: Display,
@@ -46,7 +57,9 @@ where
     Ok(())
 }
 
+//-------------------------------------------------------------------------------------------------
 // Macro so that we can disable calls via attributes instead of runtime checks.
+//-------------------------------------------------------------------------------------------------
 macro_rules! gl_error_unwrap {
     () => {
         #[cfg(debug_assertions)]
@@ -58,7 +71,9 @@ macro_rules! gl_error_unwrap {
     };
 }
 
-// Creates and compiles a new shader from a source string anad type.
+//-------------------------------------------------------------------------------------------------
+// Creates and compiles a new shader from a source string and type.
+//-------------------------------------------------------------------------------------------------
 pub fn compile_shader(src: &str, shader_type: GLenum) -> Result<GLuint> {
     unsafe {
         let shader = gl::CreateShader(shader_type);
@@ -93,7 +108,9 @@ pub fn compile_shader(src: &str, shader_type: GLenum) -> Result<GLuint> {
     }
 }
 
+//-------------------------------------------------------------------------------------------------
 // Creates and links a new program with vertex and fragment shaders.
+//-------------------------------------------------------------------------------------------------
 pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GLuint> {
     unsafe {
         let program = gl::CreateProgram();
@@ -128,7 +145,9 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GL
     }
 }
 
+//-------------------------------------------------------------------------------------------------
 // Creates and links a new program from vertex and fragment shader sources.
+//-------------------------------------------------------------------------------------------------
 pub fn link_program_from_sources<S>(vertex_source: S, fragment_source: S) -> Result<GLuint>
 where
     S: AsRef<str>,
@@ -146,7 +165,9 @@ where
     Ok(program)
 }
 
+//-------------------------------------------------------------------------------------------------
 // Returns location of an attrib within a program.
+//-------------------------------------------------------------------------------------------------
 pub fn get_attrib_location(program: GLuint, name: &str) -> Result<GLint> {
     let c_str = CString::new(name)
         .map_err(|e| anyhow!(e))
@@ -160,7 +181,9 @@ pub fn get_attrib_location(program: GLuint, name: &str) -> Result<GLint> {
     }
 }
 
+//-------------------------------------------------------------------------------------------------
 // Returns location of a uniform within a program.
+//-------------------------------------------------------------------------------------------------
 pub fn get_uniform_location(program: GLuint, name: &str) -> Result<GLint> {
     let c_str = CString::new(name)
         .map_err(|e| anyhow!(e))
@@ -174,6 +197,9 @@ pub fn get_uniform_location(program: GLuint, name: &str) -> Result<GLint> {
     }
 }
 
+//-------------------------------------------------------------------------------------------------
+// Generates indices for rendering quad elements.
+//-------------------------------------------------------------------------------------------------
 pub fn generate_indices(num_quads: usize) -> Vec<GLuint> {
     let num_indices = num_quads * INDICES_PER_QUAD;
     let mut indices = vec![0; num_indices];
