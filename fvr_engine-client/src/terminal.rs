@@ -1,45 +1,62 @@
+//-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::Rng;
 
+//-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
 use fvr_engine_core::prelude::*;
 
+//-------------------------------------------------------------------------------------------------
+// Terminal contains the state of the faux terminal and exposes an API for updating it.
+//-------------------------------------------------------------------------------------------------
 pub struct Terminal {
     tiles: GridMap<Tile>,
-    dirty_tiles: GridMap<bool>,
-    dirty: bool,
 }
 
 impl Terminal {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new terminal.
+    // (there should only ever be one, for now)
+    //---------------------------------------------------------------------------------------------
     pub fn new(width: u32, height: u32) -> Self {
-        let tiles = GridMap::<Tile>::new(width, height);
-        let mut dirty_tiles = GridMap::<bool>::new(width, height);
-
-        // Every tile is dirty be default.
-        dirty_tiles.data_mut().fill(true);
-
-        Self { tiles, dirty_tiles, dirty: true }
+        Self { tiles: GridMap::<Tile>::new(width, height) }
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Returns the width of the terminal.
+    //---------------------------------------------------------------------------------------------
     pub fn width(&self) -> u32 {
         self.tiles.width()
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Returns the height of the terminal.
+    //---------------------------------------------------------------------------------------------
     pub fn height(&self) -> u32 {
         self.tiles.height()
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Returns a ref to the tile at an xy coord.
+    //---------------------------------------------------------------------------------------------
     pub fn tile(&self, x: u32, y: u32) -> &Tile {
         self.tiles.get_xy(x, y)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Updates the value of the tile at an xy coord with another tile's properties.
+    //---------------------------------------------------------------------------------------------
     pub fn update_tile(&mut self, x: u32, y: u32, tile: &Tile) {
-        // Set the tile to dirty.
-        self.dirty = true;
-        *self.dirty_tiles.get_xy_mut(x, y) = true;
         *self.tiles.get_xy_mut(x, y) = *tile;
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Updates the value of the tile at an xy coord with optional arguments.
+    //---------------------------------------------------------------------------------------------
     pub fn update_tile_fields(
         &mut self,
         x: u32,
@@ -51,9 +68,6 @@ impl Terminal {
         foreground_color: Option<TileColor>,
         outline_color: Option<TileColor>,
     ) {
-        // Set the tile to dirty.
-        self.dirty = true;
-        *self.dirty_tiles.get_xy_mut(x, y) = true;
         let tile = self.tiles.get_xy_mut(x, y);
 
         if let Some(glyph) = glyph {
@@ -76,33 +90,18 @@ impl Terminal {
         }
     }
 
-    pub fn dirty(&self) -> bool {
-        self.dirty
-    }
-
-    pub fn set_clean(&mut self) {
-        self.dirty = false;
-        self.dirty_tiles.data_mut().fill(false);
-    }
-
-    pub fn set_dirty(&mut self) {
-        self.dirty = true;
-        self.dirty_tiles.data_mut().fill(true);
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Iterates the xy coords in the terminal and their corresponding tiles.
+    //---------------------------------------------------------------------------------------------
     pub fn tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())
             .map(move |(x, y)| ((x, y), self.tiles.get_xy(x, y)))
     }
 
-    pub fn dirty_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
-        (0..self.width())
-            .cartesian_product(0..self.height())
-            .filter(move |(x, y)| *self.dirty_tiles.get_xy(*x, *y))
-            .map(move |(x, y)| ((x, y), self.tiles.get_xy(x, y)))
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Randomizes the tiles in the terminal for debugging purposes.
+    //---------------------------------------------------------------------------------------------
     pub fn randomize(&mut self) {
         let mut rng = rand::thread_rng();
 
@@ -115,7 +114,5 @@ impl Terminal {
             tile.outline_color =
                 TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
         }
-
-        self.set_dirty();
     }
 }

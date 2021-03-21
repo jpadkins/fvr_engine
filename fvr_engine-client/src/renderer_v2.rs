@@ -97,7 +97,7 @@ pub struct RendererV2 {
     // Main font atlas texture, containing both regular and outline glyphs.
     texture: GLuint,
     // Dimensions of the font atlas texture.
-    texture_dimensions: (u32, u32),
+    _texture_dimensions: (u32, u32),
     // Normalization values for texel in pixels to texel in OpenGL space.
     texel_normalize: (f32, f32),
     // Map of u32 codepoint to corresponding regular glyph metrics.
@@ -108,7 +108,7 @@ pub struct RendererV2 {
 
 impl RendererV2 {
     //---------------------------------------------------------------------------------------------
-    // Create a new renderer.
+    // Creates a new renderer.
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn new<P>(
@@ -558,7 +558,7 @@ impl RendererV2 {
             foreground_vertices,
             foreground_projection_location,
             texture,
-            texture_dimensions,
+            _texture_dimensions: texture_dimensions,
             texel_normalize,
             regular_metrics,
             outline_metrics,
@@ -603,7 +603,7 @@ impl RendererV2 {
         let translate = Mat4::from_translation(Vec3::new(x_translate, y_translate, 0.0));
         let scale = Mat4::from_scale(Vec3::new(scale, scale, 1.0));
 
-        let mvp_data = (projection * translate * scale).to_cols_array();
+        let projection_data = (projection * translate * scale).to_cols_array();
 
         // Upload the new uniform data to both the background and foreground shader programs.
         unsafe {
@@ -614,7 +614,7 @@ impl RendererV2 {
                 self.background_projection_location,
                 1,
                 gl::FALSE as GLboolean,
-                &mvp_data as *const f32,
+                &projection_data as *const f32,
             );
             gl_error_unwrap!("Failed to update background projection matrix.");
 
@@ -625,7 +625,7 @@ impl RendererV2 {
                 self.foreground_projection_location,
                 1,
                 gl::FALSE as GLboolean,
-                &mvp_data as *const f32,
+                &projection_data as *const f32,
             );
             gl_error_unwrap!("Failed to update foreground projection matrix.");
         }

@@ -9,6 +9,7 @@ use sdl2::video::Window;
 use sdl2::VideoSubsystem;
 
 // DebugGui contains everything related to the ImGui debug gui.
+// TODO: Build this out.
 pub struct DebugGui {
     imgui: ImguiContext,
     imgui_sdl2: ImguiSdl2,
