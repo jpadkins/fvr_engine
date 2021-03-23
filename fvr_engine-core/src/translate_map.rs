@@ -37,13 +37,13 @@ where
         if let Some(translation) = &self.translation {
             match translation {
                 TranslateMapTranslation::SubSection(rect) => {
-                    let (x, y) = reverse_index_2d(index, self.width());
-                    index_2d(x + rect.x1 as u32, y + rect.y1 as u32, rect.width() as u32)
+                    let (x, y) = Misc::reverse_index_2d(index, self.width());
+                    Misc::index_2d(x + rect.x1 as u32, y + rect.y1 as u32, rect.width() as u32)
                 }
                 TranslateMapTranslation::Lambda(lambda) => {
-                    let (x, y) = reverse_index_2d(index, self.width());
+                    let (x, y) = Misc::reverse_index_2d(index, self.width());
                     let (x, y) = lambda(x, y);
-                    index_2d(x, y, self.width())
+                    Misc::index_2d(x, y, self.width())
                 }
             }
         } else {

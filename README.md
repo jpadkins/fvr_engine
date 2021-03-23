@@ -8,6 +8,12 @@ A data-driven text-based roleplaying game engine.
 
 - implement everything from C# engine.
 
+Rendering TODO:
+- implement all: regular/outlined/italic/outlined italice/bold/outlined bold/italic bold/outlined italic bold/
+(8 textures!)
+
+- implement "huge" characters
+
 ## CRATES
 
 ### fvr_engine

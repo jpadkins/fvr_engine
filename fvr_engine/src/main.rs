@@ -12,8 +12,8 @@ const WINDOW_TITLE: &str = "FVR_ENGINE";
 const WINDOW_DIMENSIONS: (u32, u32) = (800, 600);
 const TERMINAL_DIMENSIONS: (u32, u32) = (81, 31); // 103, 37.
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
-const TEXTURE_PATH: &str = "./resources/font_atlases/deja_vu_sans_mono.png";
-const METRICS_PATH: &str = "./resources/font_atlases/deja_vu_sans_mono.toml";
+const TEXTURE_PATH: &str = "./resources/font_atlases/fantasque_sans_mono.png";
+const METRICS_PATH: &str = "./resources/font_atlases/fantasque_sans_mono.toml";
 
 fn main() -> Result<()> {
     let mut update_timer = Duration::default();
@@ -45,7 +45,6 @@ fn main() -> Result<()> {
             if key_state.contains(&Keycode::R) {
                 terminal.randomize();
             }
-
             update_timer -= Duration::from_millis(16);
         }
 

@@ -1,3 +1,5 @@
+use rand::distributions::{Distribution, Standard};
+use rand::Rng;
 pub use sdl2::pixels::Color as SdlColor;
 use serde_derive::{Deserialize, Serialize};
 
@@ -32,6 +34,62 @@ impl TileColor {
     }
 }
 
+// Impl random sampling of tile color.
+impl Distribution<TileColor> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TileColor {
+        TileColor::rgb(rng.gen(), rng.gen(), rng.gen())
+    }
+}
+
+// Describes the size of the tile's glyph when rendered.
+// Small    - The glyph is proportional to half the size of a tile.
+// Normal   - The glyph is proportional to the size of a tile.
+// Big      - The glyph is proportional to the size of 2x2 tiles.
+// Giant    - The glyph is proportional to the size of 3x3 tiles.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum TileSize {
+    Small = 0,
+    Normal = 1,
+    Big = 2,
+    Giant = 3,
+}
+pub const TILE_SIZE_COUNT: usize = 4;
+
+// Impl random sampling of enum.
+impl Distribution<TileSize> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TileSize {
+        match rng.gen_range(0..=3) {
+            0 => TileSize::Small,
+            1 => TileSize::Normal,
+            2 => TileSize::Big,
+            _ => TileSize::Giant,
+        }
+    }
+}
+
+// Describes the style of the glyph within the tile when rendered.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum TileStyle {
+    Regular = 0,
+    Bold = 1,
+    Italic = 2,
+    BoldItalic = 3,
+}
+pub const TILE_STYLE_COUNT: usize = 4;
+pub const TILE_STYLE_NAMES: &[&str] = &["regular", "bold", "italic", "bold_italic"];
+
+// Impl random sampling of enum.
+impl Distribution<TileStyle> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TileStyle {
+        match rng.gen_range(0..=3) {
+            0 => TileStyle::Regular,
+            1 => TileStyle::Bold,
+            2 => TileStyle::Italic,
+            _ => TileStyle::BoldItalic,
+        }
+    }
+}
+
 // Describes the position of the glyph within the tile when rendered:
 // Center   - centered within the tile
 // Floor    - centered horizontally but aligned with the bottom of the tile vertically
@@ -56,6 +114,8 @@ impl Default for TileLayout {
 pub struct Tile {
     pub glyph: char,
     pub layout: TileLayout,
+    pub style: TileStyle,
+    pub size: TileSize,
     pub outlined: bool,
     pub background_color: TileColor,
     pub foreground_color: TileColor,
@@ -67,6 +127,8 @@ impl Default for Tile {
         Self {
             glyph: '?',
             layout: Default::default(),
+            style: TileStyle::Regular,
+            size: TileSize::Normal,
             outlined: false,
             background_color: TileColor::BLUE,
             foreground_color: TileColor::RED,
@@ -88,8 +150,15 @@ pub struct GlyphMetric {
 }
 
 // (Intended to) describe a complete set of glyph metrics for all regular and outlined chars in Code Page 437.
+// Note: OLD.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FontMetrics {
     pub regular: Vec<GlyphMetric>,
     pub outline: Vec<GlyphMetric>,
+}
+
+// Array of glyph metrics for a font.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FontMetricsV2 {
+    pub metrics: Vec<GlyphMetric>,
 }

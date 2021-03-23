@@ -1,0 +1,2294 @@
+[[metrics]]
+codepoint = 32
+x = 2
+y = 2
+width = 13
+height = 13
+x_offset = -6
+y_offset = -6
+
+[[metrics]]
+codepoint = 33
+x = 17
+y = 2
+width = 20
+height = 54
+x_offset = 6
+y_offset = 7
+
+[[metrics]]
+codepoint = 34
+x = 39
+y = 2
+width = 30
+height = 33
+x_offset = 1
+y_offset = 2
+
+[[metrics]]
+codepoint = 35
+x = 71
+y = 2
+width = 40
+height = 55
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 36
+x = 113
+y = 2
+width = 41
+height = 65
+x_offset = -5
+y_offset = 1
+
+[[metrics]]
+codepoint = 37
+x = 156
+y = 2
+width = 43
+height = 55
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 38
+x = 201
+y = 2
+width = 42
+height = 56
+x_offset = -5
+y_offset = 6
+
+[[metrics]]
+codepoint = 39
+x = 245
+y = 2
+width = 19
+height = 33
+x_offset = 5
+y_offset = 2
+
+[[metrics]]
+codepoint = 40
+x = 266
+y = 2
+width = 33
+height = 67
+x_offset = 1
+y_offset = 2
+
+[[metrics]]
+codepoint = 41
+x = 301
+y = 2
+width = 33
+height = 67
+x_offset = -2
+y_offset = 2
+
+[[metrics]]
+codepoint = 42
+x = 336
+y = 2
+width = 42
+height = 44
+x_offset = -5
+y_offset = 13
+
+[[metrics]]
+codepoint = 43
+x = 380
+y = 2
+width = 41
+height = 41
+x_offset = -5
+y_offset = 18
+
+[[metrics]]
+codepoint = 44
+x = 423
+y = 2
+width = 22
+height = 33
+x_offset = 4
+y_offset = 40
+
+[[metrics]]
+codepoint = 45
+x = 447
+y = 2
+width = 37
+height = 18
+x_offset = -2
+y_offset = 29
+
+[[metrics]]
+codepoint = 46
+x = 486
+y = 2
+width = 20
+height = 21
+x_offset = 6
+y_offset = 40
+
+[[metrics]]
+codepoint = 47
+x = 508
+y = 2
+width = 37
+height = 62
+x_offset = -3
+y_offset = 3
+
+[[metrics]]
+codepoint = 48
+x = 547
+y = 2
+width = 36
+height = 54
+x_offset = -3
+y_offset = 7
+
+[[metrics]]
+codepoint = 49
+x = 585
+y = 2
+width = 31
+height = 54
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 50
+x = 618
+y = 2
+width = 36
+height = 53
+x_offset = -3
+y_offset = 7
+
+[[metrics]]
+codepoint = 51
+x = 656
+y = 2
+width = 38
+height = 54
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 52
+x = 696
+y = 2
+width = 38
+height = 54
+x_offset = -4
+y_offset = 7
+
+[[metrics]]
+codepoint = 53
+x = 736
+y = 2
+width = 37
+height = 53
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 54
+x = 775
+y = 2
+width = 38
+height = 54
+x_offset = -4
+y_offset = 7
+
+[[metrics]]
+codepoint = 55
+x = 815
+y = 2
+width = 42
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 56
+x = 859
+y = 2
+width = 39
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 57
+x = 900
+y = 2
+width = 39
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 58
+x = 941
+y = 2
+width = 20
+height = 44
+x_offset = 6
+y_offset = 16
+
+[[metrics]]
+codepoint = 59
+x = 963
+y = 2
+width = 22
+height = 57
+x_offset = 4
+y_offset = 16
+
+[[metrics]]
+codepoint = 60
+x = 447
+y = 22
+width = 36
+height = 47
+x_offset = -2
+y_offset = 15
+
+[[metrics]]
+codepoint = 61
+x = 380
+y = 45
+width = 39
+height = 33
+x_offset = -5
+y_offset = 22
+
+[[metrics]]
+codepoint = 62
+x = 336
+y = 48
+width = 36
+height = 47
+x_offset = -1
+y_offset = 15
+
+[[metrics]]
+codepoint = 63
+x = 987
+y = 2
+width = 35
+height = 54
+x_offset = -3
+y_offset = 6
+
+[[metrics]]
+codepoint = 64
+x = 815
+y = 57
+width = 42
+height = 60
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 65
+x = 859
+y = 57
+width = 43
+height = 53
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 66
+x = 904
+y = 57
+width = 39
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 67
+x = 2
+y = 58
+width = 41
+height = 54
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 68
+x = 618
+y = 58
+width = 41
+height = 54
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 69
+x = 736
+y = 58
+width = 39
+height = 53
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 70
+x = 547
+y = 58
+width = 39
+height = 53
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 71
+x = 661
+y = 58
+width = 43
+height = 53
+x_offset = -6
+y_offset = 8
+
+[[metrics]]
+codepoint = 72
+x = 45
+y = 59
+width = 39
+height = 53
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 73
+x = 987
+y = 58
+width = 35
+height = 53
+x_offset = -2
+y_offset = 8
+
+[[metrics]]
+codepoint = 74
+x = 156
+y = 59
+width = 41
+height = 53
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 75
+x = 199
+y = 60
+width = 40
+height = 54
+x_offset = -3
+y_offset = 7
+
+[[metrics]]
+codepoint = 76
+x = 945
+y = 61
+width = 39
+height = 53
+x_offset = -2
+y_offset = 8
+
+[[metrics]]
+codepoint = 77
+x = 485
+y = 66
+width = 38
+height = 53
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 78
+x = 86
+y = 69
+width = 39
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 79
+x = 421
+y = 71
+width = 42
+height = 54
+x_offset = -6
+y_offset = 7
+
+[[metrics]]
+codepoint = 80
+x = 241
+y = 71
+width = 39
+height = 54
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 81
+x = 282
+y = 71
+width = 41
+height = 58
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 82
+x = 374
+y = 80
+width = 41
+height = 54
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 83
+x = 325
+y = 97
+width = 41
+height = 54
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 84
+x = 859
+y = 112
+width = 41
+height = 54
+x_offset = -5
+y_offset = 8
+
+[[metrics]]
+codepoint = 85
+x = 902
+y = 112
+width = 40
+height = 54
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 86
+x = 525
+y = 113
+width = 43
+height = 55
+x_offset = -6
+y_offset = 6
+
+[[metrics]]
+codepoint = 87
+x = 570
+y = 113
+width = 45
+height = 54
+x_offset = -6
+y_offset = 7
+
+[[metrics]]
+codepoint = 88
+x = 706
+y = 113
+width = 43
+height = 56
+x_offset = -6
+y_offset = 6
+
+[[metrics]]
+codepoint = 89
+x = 751
+y = 113
+width = 42
+height = 55
+x_offset = -5
+y_offset = 6
+
+[[metrics]]
+codepoint = 90
+x = 661
+y = 113
+width = 42
+height = 53
+x_offset = -6
+y_offset = 8
+
+[[metrics]]
+codepoint = 91
+x = 986
+y = 113
+width = 29
+height = 67
+x_offset = 4
+y_offset = 2
+
+[[metrics]]
+codepoint = 92
+x = 617
+y = 114
+width = 37
+height = 62
+x_offset = -3
+y_offset = 3
+
+[[metrics]]
+codepoint = 93
+x = 127
+y = 114
+width = 29
+height = 67
+x_offset = -2
+y_offset = 2
+
+[[metrics]]
+codepoint = 94
+x = 2
+y = 114
+width = 42
+height = 32
+x_offset = -5
+y_offset = 14
+
+[[metrics]]
+codepoint = 95
+x = 158
+y = 116
+width = 42
+height = 17
+x_offset = -5
+y_offset = 54
+
+[[metrics]]
+codepoint = 96
+x = 46
+y = 114
+width = 32
+height = 30
+x_offset = 0
+y_offset = 2
+
+[[metrics]]
+codepoint = 97
+x = 795
+y = 119
+width = 41
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 98
+x = 944
+y = 116
+width = 38
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 99
+x = 465
+y = 121
+width = 41
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 100
+x = 80
+y = 124
+width = 38
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 101
+x = 417
+y = 127
+width = 39
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 102
+x = 202
+y = 127
+width = 41
+height = 57
+x_offset = -3
+y_offset = 4
+
+[[metrics]]
+codepoint = 103
+x = 245
+y = 131
+width = 40
+height = 57
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 104
+x = 158
+y = 135
+width = 40
+height = 57
+x_offset = -3
+y_offset = 4
+
+[[metrics]]
+codepoint = 105
+x = 368
+y = 136
+width = 42
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 106
+x = 287
+y = 131
+width = 35
+height = 69
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 107
+x = 2
+y = 148
+width = 40
+height = 58
+x_offset = -3
+y_offset = 4
+
+[[metrics]]
+codepoint = 108
+x = 324
+y = 153
+width = 42
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 109
+x = 795
+y = 166
+width = 44
+height = 46
+x_offset = -6
+y_offset = 16
+
+[[metrics]]
+codepoint = 110
+x = 656
+y = 168
+width = 42
+height = 46
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 111
+x = 458
+y = 168
+width = 39
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 112
+x = 841
+y = 168
+width = 38
+height = 57
+x_offset = -3
+y_offset = 16
+
+[[metrics]]
+codepoint = 113
+x = 881
+y = 168
+width = 38
+height = 57
+x_offset = -3
+y_offset = 16
+
+[[metrics]]
+codepoint = 114
+x = 570
+y = 169
+width = 38
+height = 45
+x_offset = -3
+y_offset = 16
+
+[[metrics]]
+codepoint = 115
+x = 499
+y = 170
+width = 37
+height = 45
+x_offset = -3
+y_offset = 16
+
+[[metrics]]
+codepoint = 116
+x = 751
+y = 170
+width = 40
+height = 52
+x_offset = -4
+y_offset = 9
+
+[[metrics]]
+codepoint = 117
+x = 705
+y = 171
+width = 41
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 118
+x = 412
+y = 174
+width = 40
+height = 46
+x_offset = -6
+y_offset = 15
+
+[[metrics]]
+codepoint = 119
+x = 921
+y = 175
+width = 43
+height = 46
+x_offset = -6
+y_offset = 15
+
+[[metrics]]
+codepoint = 120
+x = 610
+y = 178
+width = 40
+height = 46
+x_offset = -4
+y_offset = 15
+
+[[metrics]]
+codepoint = 121
+x = 966
+y = 182
+width = 40
+height = 56
+x_offset = -5
+y_offset = 16
+
+[[metrics]]
+codepoint = 122
+x = 44
+y = 183
+width = 40
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 123
+x = 120
+y = 183
+width = 32
+height = 67
+x_offset = 2
+y_offset = 2
+
+[[metrics]]
+codepoint = 124
+x = 538
+y = 170
+width = 18
+height = 65
+x_offset = 5
+y_offset = 2
+
+[[metrics]]
+codepoint = 125
+x = 86
+y = 183
+width = 32
+height = 67
+x_offset = -1
+y_offset = 2
+
+[[metrics]]
+codepoint = 126
+x = 200
+y = 186
+width = 43
+height = 23
+x_offset = -6
+y_offset = 25
+
+[[metrics]]
+codepoint = 161
+x = 245
+y = 190
+width = 20
+height = 54
+x_offset = 6
+y_offset = 16
+
+[[metrics]]
+codepoint = 162
+x = 154
+y = 194
+width = 35
+height = 45
+x_offset = -2
+y_offset = 16
+
+[[metrics]]
+codepoint = 163
+x = 368
+y = 195
+width = 42
+height = 55
+x_offset = -5
+y_offset = 6
+
+[[metrics]]
+codepoint = 165
+x = 267
+y = 202
+width = 42
+height = 56
+x_offset = -5
+y_offset = 5
+
+[[metrics]]
+codepoint = 167
+x = 2
+y = 208
+width = 37
+height = 66
+x_offset = -3
+y_offset = 5
+
+[[metrics]]
+codepoint = 170
+x = 191
+y = 211
+width = 37
+height = 44
+x_offset = -2
+y_offset = 0
+
+[[metrics]]
+codepoint = 171
+x = 311
+y = 212
+width = 38
+height = 42
+x_offset = -4
+y_offset = 18
+
+[[metrics]]
+codepoint = 172
+x = 793
+y = 214
+width = 36
+height = 26
+x_offset = -2
+y_offset = 29
+
+[[metrics]]
+codepoint = 176
+x = 454
+y = 215
+width = 29
+height = 29
+x_offset = 0
+y_offset = 6
+
+[[metrics]]
+codepoint = 177
+x = 652
+y = 216
+width = 40
+height = 44
+x_offset = -4
+y_offset = 12
+
+[[metrics]]
+codepoint = 178
+x = 558
+y = 216
+width = 31
+height = 36
+x_offset = 1
+y_offset = 1
+
+[[metrics]]
+codepoint = 181
+x = 485
+y = 217
+width = 41
+height = 57
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 182
+x = 700
+y = 218
+width = 40
+height = 55
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 183
+x = 412
+y = 222
+width = 20
+height = 21
+x_offset = 9
+y_offset = 28
+
+[[metrics]]
+codepoint = 186
+x = 921
+y = 223
+width = 36
+height = 44
+x_offset = -2
+y_offset = 1
+
+[[metrics]]
+codepoint = 187
+x = 748
+y = 224
+width = 38
+height = 41
+x_offset = -3
+y_offset = 18
+
+[[metrics]]
+codepoint = 188
+x = 591
+y = 226
+width = 41
+height = 70
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 189
+x = 831
+y = 227
+width = 41
+height = 70
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 191
+x = 874
+y = 227
+width = 35
+height = 54
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 196
+x = 41
+y = 230
+width = 43
+height = 63
+x_offset = -5
+y_offset = -2
+
+[[metrics]]
+codepoint = 197
+x = 959
+y = 240
+width = 43
+height = 64
+x_offset = -5
+y_offset = -3
+
+[[metrics]]
+codepoint = 198
+x = 434
+y = 246
+width = 45
+height = 53
+x_offset = -6
+y_offset = 8
+
+[[metrics]]
+codepoint = 199
+x = 788
+y = 242
+width = 41
+height = 66
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 201
+x = 351
+y = 252
+width = 39
+height = 69
+x_offset = -3
+y_offset = -7
+
+[[metrics]]
+codepoint = 209
+x = 392
+y = 252
+width = 40
+height = 65
+x_offset = -4
+y_offset = -4
+
+[[metrics]]
+codepoint = 214
+x = 86
+y = 252
+width = 42
+height = 64
+x_offset = -6
+y_offset = -3
+
+[[metrics]]
+codepoint = 220
+x = 130
+y = 252
+width = 40
+height = 65
+x_offset = -5
+y_offset = -3
+
+[[metrics]]
+codepoint = 223
+x = 528
+y = 254
+width = 41
+height = 55
+x_offset = -6
+y_offset = 7
+
+[[metrics]]
+codepoint = 224
+x = 172
+y = 257
+width = 41
+height = 61
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 225
+x = 215
+y = 257
+width = 41
+height = 61
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 226
+x = 258
+y = 260
+width = 41
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 228
+x = 301
+y = 260
+width = 41
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 229
+x = 634
+y = 262
+width = 41
+height = 59
+x_offset = -4
+y_offset = 2
+
+[[metrics]]
+codepoint = 230
+x = 742
+y = 267
+width = 43
+height = 44
+x_offset = -6
+y_offset = 16
+
+[[metrics]]
+codepoint = 231
+x = 911
+y = 269
+width = 41
+height = 56
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 232
+x = 694
+y = 275
+width = 39
+height = 61
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 233
+x = 481
+y = 276
+width = 39
+height = 61
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 234
+x = 2
+y = 295
+width = 39
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 235
+x = 43
+y = 295
+width = 39
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 236
+x = 571
+y = 298
+width = 42
+height = 62
+x_offset = -4
+y_offset = -1
+
+[[metrics]]
+codepoint = 237
+x = 831
+y = 299
+width = 42
+height = 61
+x_offset = -4
+y_offset = 0
+
+[[metrics]]
+codepoint = 238
+x = 434
+y = 301
+width = 42
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 239
+x = 954
+y = 306
+width = 42
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 241
+x = 787
+y = 310
+width = 42
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 242
+x = 522
+y = 311
+width = 39
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 243
+x = 735
+y = 313
+width = 39
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 244
+x = 84
+y = 318
+width = 39
+height = 59
+x_offset = -4
+y_offset = 2
+
+[[metrics]]
+codepoint = 246
+x = 125
+y = 319
+width = 39
+height = 56
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 247
+x = 392
+y = 319
+width = 37
+height = 45
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 249
+x = 301
+y = 319
+width = 41
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 250
+x = 166
+y = 320
+width = 41
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 251
+x = 209
+y = 320
+width = 41
+height = 60
+x_offset = -4
+y_offset = 1
+
+[[metrics]]
+codepoint = 252
+x = 252
+y = 322
+width = 41
+height = 57
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 255
+x = 344
+y = 323
+width = 40
+height = 68
+x_offset = -5
+y_offset = 4
+
+[[metrics]]
+codepoint = 402
+x = 615
+y = 323
+width = 42
+height = 67
+x_offset = -4
+y_offset = 4
+
+[[metrics]]
+codepoint = 915
+x = 875
+y = 327
+width = 39
+height = 53
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 920
+x = 677
+y = 338
+width = 42
+height = 54
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 931
+x = 478
+y = 339
+width = 40
+height = 53
+x_offset = -4
+y_offset = 8
+
+[[metrics]]
+codepoint = 934
+x = 2
+y = 357
+width = 42
+height = 53
+x_offset = -5
+y_offset = 7
+
+[[metrics]]
+codepoint = 937
+x = 563
+y = 362
+width = 44
+height = 54
+x_offset = -6
+y_offset = 7
+
+[[metrics]]
+codepoint = 945
+x = 831
+y = 362
+width = 42
+height = 46
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 948
+x = 431
+y = 363
+width = 39
+height = 56
+x_offset = -4
+y_offset = 5
+
+[[metrics]]
+codepoint = 949
+x = 916
+y = 365
+width = 40
+height = 45
+x_offset = -2
+y_offset = 16
+
+[[metrics]]
+codepoint = 960
+x = 958
+y = 365
+width = 44
+height = 47
+x_offset = -5
+y_offset = 14
+
+[[metrics]]
+codepoint = 963
+x = 386
+y = 366
+width = 43
+height = 44
+x_offset = -4
+y_offset = 16
+
+[[metrics]]
+codepoint = 964
+x = 776
+y = 369
+width = 43
+height = 45
+x_offset = -6
+y_offset = 16
+
+[[metrics]]
+codepoint = 966
+x = 721
+y = 375
+width = 42
+height = 58
+x_offset = -5
+y_offset = 16
+
+[[metrics]]
+codepoint = 8226
+x = 46
+y = 354
+width = 30
+height = 30
+x_offset = 1
+y_offset = 24
+
+[[metrics]]
+codepoint = 8252
+x = 520
+y = 373
+width = 36
+height = 54
+x_offset = -2
+y_offset = 7
+
+[[metrics]]
+codepoint = 8592
+x = 78
+y = 379
+width = 46
+height = 41
+x_offset = -6
+y_offset = 18
+
+[[metrics]]
+codepoint = 8593
+x = 295
+y = 381
+width = 41
+height = 60
+x_offset = -5
+y_offset = 5
+
+[[metrics]]
+codepoint = 8594
+x = 126
+y = 382
+width = 46
+height = 41
+x_offset = -6
+y_offset = 18
+
+[[metrics]]
+codepoint = 8595
+x = 252
+y = 381
+width = 41
+height = 60
+x_offset = -5
+y_offset = 4
+
+[[metrics]]
+codepoint = 8596
+x = 174
+y = 382
+width = 47
+height = 41
+x_offset = -6
+y_offset = 18
+
+[[metrics]]
+codepoint = 8597
+x = 609
+y = 392
+width = 41
+height = 59
+x_offset = -5
+y_offset = 5
+
+[[metrics]]
+codepoint = 8804
+x = 875
+y = 382
+width = 38
+height = 53
+x_offset = -2
+y_offset = 8
+
+[[metrics]]
+codepoint = 8805
+x = 338
+y = 393
+width = 38
+height = 53
+x_offset = -2
+y_offset = 8
+
+[[metrics]]
+codepoint = 9472
+x = 652
+y = 394
+width = 47
+height = 18
+x_offset = -6
+y_offset = 29
+
+[[metrics]]
+codepoint = 9474
+x = 1004
+y = 240
+width = 18
+height = 85
+x_offset = 7
+y_offset = -8
+
+[[metrics]]
+codepoint = 9484
+x = 472
+y = 394
+width = 32
+height = 47
+x_offset = 7
+y_offset = 29
+
+[[metrics]]
+codepoint = 9488
+x = 821
+y = 410
+width = 32
+height = 47
+x_offset = -6
+y_offset = 29
+
+[[metrics]]
+codepoint = 9492
+x = 915
+y = 412
+width = 32
+height = 56
+x_offset = 7
+y_offset = -8
+
+[[metrics]]
+codepoint = 9496
+x = 378
+y = 412
+width = 32
+height = 56
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9500
+x = 2
+y = 412
+width = 32
+height = 85
+x_offset = 7
+y_offset = -8
+
+[[metrics]]
+codepoint = 9508
+x = 36
+y = 412
+width = 32
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9516
+x = 949
+y = 414
+width = 47
+height = 47
+x_offset = -6
+y_offset = 29
+
+[[metrics]]
+codepoint = 9524
+x = 652
+y = 414
+width = 47
+height = 56
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9532
+x = 765
+y = 416
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9552
+x = 558
+y = 418
+width = 47
+height = 28
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9553
+x = 412
+y = 421
+width = 28
+height = 85
+x_offset = 2
+y_offset = -8
+
+[[metrics]]
+codepoint = 9554
+x = 70
+y = 422
+width = 32
+height = 53
+x_offset = 7
+y_offset = 24
+
+[[metrics]]
+codepoint = 9555
+x = 104
+y = 425
+width = 37
+height = 47
+x_offset = 2
+y_offset = 29
+
+[[metrics]]
+codepoint = 9556
+x = 143
+y = 425
+width = 37
+height = 53
+x_offset = 2
+y_offset = 24
+
+[[metrics]]
+codepoint = 9557
+x = 182
+y = 425
+width = 32
+height = 53
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9558
+x = 506
+y = 429
+width = 38
+height = 47
+x_offset = -6
+y_offset = 29
+
+[[metrics]]
+codepoint = 9559
+x = 701
+y = 435
+width = 38
+height = 53
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9560
+x = 216
+y = 425
+width = 32
+height = 61
+x_offset = 7
+y_offset = -8
+
+[[metrics]]
+codepoint = 9561
+x = 855
+y = 437
+width = 37
+height = 56
+x_offset = 2
+y_offset = -8
+
+[[metrics]]
+codepoint = 9562
+x = 250
+y = 443
+width = 37
+height = 61
+x_offset = 2
+y_offset = -8
+
+[[metrics]]
+codepoint = 9563
+x = 442
+y = 443
+width = 32
+height = 61
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9564
+x = 289
+y = 443
+width = 38
+height = 56
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9565
+x = 329
+y = 448
+width = 38
+height = 61
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9566
+x = 546
+y = 448
+width = 32
+height = 85
+x_offset = 7
+y_offset = -8
+
+[[metrics]]
+codepoint = 9567
+x = 607
+y = 453
+width = 37
+height = 85
+x_offset = 2
+y_offset = -8
+
+[[metrics]]
+codepoint = 9568
+x = 814
+y = 459
+width = 37
+height = 85
+x_offset = 2
+y_offset = -8
+
+[[metrics]]
+codepoint = 9569
+x = 949
+y = 463
+width = 32
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9570
+x = 983
+y = 463
+width = 38
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9571
+x = 369
+y = 470
+width = 38
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9572
+x = 894
+y = 470
+width = 47
+height = 53
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9573
+x = 646
+y = 472
+width = 47
+height = 47
+x_offset = -6
+y_offset = 29
+
+[[metrics]]
+codepoint = 9574
+x = 70
+y = 477
+width = 47
+height = 53
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9575
+x = 476
+y = 478
+width = 47
+height = 61
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9576
+x = 119
+y = 480
+width = 47
+height = 56
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9577
+x = 168
+y = 488
+width = 47
+height = 61
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9578
+x = 695
+y = 490
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9579
+x = 2
+y = 499
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9580
+x = 744
+y = 503
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9600
+x = 217
+y = 506
+width = 47
+height = 49
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9604
+x = 266
+y = 506
+width = 47
+height = 49
+x_offset = -6
+y_offset = 28
+
+[[metrics]]
+codepoint = 9608
+x = 409
+y = 508
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9612
+x = 853
+y = 495
+width = 30
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9616
+x = 315
+y = 511
+width = 30
+height = 85
+x_offset = 10
+y_offset = -8
+
+[[metrics]]
+codepoint = 9617
+x = 646
+y = 521
+width = 43
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9618
+x = 885
+y = 525
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9619
+x = 51
+y = 532
+width = 47
+height = 85
+x_offset = -6
+y_offset = -8
+
+[[metrics]]
+codepoint = 9632
+x = 525
+y = 535
+width = 40
+height = 40
+x_offset = -4
+y_offset = 17
+
+[[metrics]]
+codepoint = 8319
+x = 567
+y = 535
+width = 31
+height = 33
+x_offset = 4
+y_offset = 12
+
+[[metrics]]
+codepoint = 8359
+x = 100
+y = 538
+width = 51
+height = 60
+x_offset = -6
+y_offset = 6
+
+[[metrics]]
+codepoint = 8616
+x = 600
+y = 540
+width = 33
+height = 47
+x_offset = 2
+y_offset = 19
+
+[[metrics]]
+codepoint = 8729
+x = 458
+y = 541
+width = 31
+height = 31
+x_offset = 3
+y_offset = 22
+
+[[metrics]]
+codepoint = 8730
+x = 793
+y = 546
+width = 48
+height = 67
+x_offset = -5
+y_offset = 0
+
+[[metrics]]
+codepoint = 8734
+x = 943
+y = 550
+width = 48
+height = 37
+x_offset = -5
+y_offset = 21
+
+[[metrics]]
+codepoint = 8735
+x = 153
+y = 551
+width = 43
+height = 43
+x_offset = -3
+y_offset = 13
+
+[[metrics]]
+codepoint = 8745
+x = 198
+y = 557
+width = 41
+height = 50
+x_offset = -1
+y_offset = 16
+
+[[metrics]]
+codepoint = 8776
+x = 347
+y = 557
+width = 46
+height = 33
+x_offset = -4
+y_offset = 23
+
+[[metrics]]
+codepoint = 8801
+x = 241
+y = 557
+width = 46
+height = 41
+x_offset = -4
+y_offset = 19
+
+[[metrics]]
+codepoint = 8962
+x = 458
+y = 574
+width = 42
+height = 51
+x_offset = -2
+y_offset = 15
+
+[[metrics]]
+codepoint = 8976
+x = 691
+y = 577
+width = 46
+height = 28
+x_offset = -4
+y_offset = 26
+
+[[metrics]]
+codepoint = 8992
+x = 567
+y = 570
+width = 31
+height = 88
+x_offset = 10
+y_offset = -6
+
+[[metrics]]
+codepoint = 8993
+x = 502
+y = 577
+width = 31
+height = 88
+x_offset = -3
+y_offset = -7
+
+[[metrics]]
+codepoint = 9644
+x = 934
+y = 589
+width = 51
+height = 31
+x_offset = -6
+y_offset = 27
+
+[[metrics]]
+codepoint = 9650
+x = 739
+y = 590
+width = 51
+height = 51
+x_offset = -6
+y_offset = 17
+
+[[metrics]]
+codepoint = 9658
+x = 347
+y = 592
+width = 51
+height = 38
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9660
+x = 400
+y = 595
+width = 51
+height = 51
+x_offset = -6
+y_offset = 17
+
+[[metrics]]
+codepoint = 9668
+x = 289
+y = 598
+width = 51
+height = 38
+x_offset = -6
+y_offset = 24
+
+[[metrics]]
+codepoint = 9675
+x = 100
+y = 600
+width = 51
+height = 51
+x_offset = -6
+y_offset = 17
+
+[[metrics]]
+codepoint = 9688
+x = 635
+y = 608
+width = 52
+height = 63
+x_offset = -6
+y_offset = 4
+
+[[metrics]]
+codepoint = 9689
+x = 198
+y = 609
+width = 52
+height = 78
+x_offset = -6
+y_offset = 4
+
+[[metrics]]
+codepoint = 9786
+x = 843
+y = 612
+width = 49
+height = 49
+x_offset = -6
+y_offset = 11
+
+[[metrics]]
+codepoint = 9787
+x = 792
+y = 615
+width = 49
+height = 49
+x_offset = -6
+y_offset = 11
+
+[[metrics]]
+codepoint = 9788
+x = 2
+y = 619
+width = 49
+height = 49
+x_offset = -5
+y_offset = 11
+
+[[metrics]]
+codepoint = 9792
+x = 153
+y = 596
+width = 42
+height = 58
+x_offset = -2
+y_offset = 11
+
+[[metrics]]
+codepoint = 9794
+x = 894
+y = 622
+width = 50
+height = 49
+x_offset = -6
+y_offset = 11
+
+[[metrics]]
+codepoint = 9824
+x = 691
+y = 607
+width = 43
+height = 51
+x_offset = -3
+y_offset = 11
+
+[[metrics]]
+codepoint = 9827
+x = 946
+y = 622
+width = 48
+height = 51
+x_offset = -5
+y_offset = 11
+
+[[metrics]]
+codepoint = 9829
+x = 342
+y = 632
+width = 50
+height = 51
+x_offset = -6
+y_offset = 11
+
+[[metrics]]
+codepoint = 9830
+x = 53
+y = 619
+width = 42
+height = 51
+x_offset = -2
+y_offset = 11
+
+[[metrics]]
+codepoint = 9834
+x = 453
+y = 627
+width = 41
+height = 57
+x_offset = -1
+y_offset = 8
+
+[[metrics]]
+codepoint = 9835
+x = 252
+y = 638
+width = 44
+height = 63
+x_offset = -3
+y_offset = 8
+
+[[metrics]]
+codepoint = 65279
+x = 996
+y = 550
+width = 13
+height = 13
+x_offset = -6
+y_offset = -6

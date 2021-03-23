@@ -2,10 +2,11 @@ use std::fs::{self, File};
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::{App, AppSettings, SubCommand};
 use hashbrown::HashSet;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageBuffer, Rgba};
+use rect_packer::Packer;
 use xml::reader::{EventReader, XmlEvent};
 
 use fvr_engine_core::prelude::*;
@@ -20,17 +21,20 @@ const OUTPUT_DIR: &str = "./resources/font_atlases";
 // Directory of input bmfont files.
 const FONTS_DIR: &str = "./fvr_engine-atlas_generator/fonts";
 
+// Glyphs that are always copied from the default font.
+// const ALWAYS_DEFAULT_GLYPHS: &[u32] = &[
+// '♥' as u32,
+// '•' as u32,
+// '◘' as u32,
+// '○' as u32,
+// '◙' as u32,
+// ];
+
 // Dimensions of the output atlas.
 // 1024x1024 is enough for most 32px font rendering.
 // 1024x2048 for 64px rendering.
-const OUTPUT_WIDTH: u32 = 2048;
-const OUTPUT_HEIGHT: u32 = 2048;
-
-// Names of the four bmfont files.
-const REGULAR_FNT: &str = "regular.fnt";
-const REGULAR_PNG: &str = "regular.png";
-const OUTLINE_FNT: &str = "outline.fnt";
-const OUTLINE_PNG: &str = "outline.png";
+const OUTPUT_WIDTH: u32 = 1024;
+const OUTPUT_HEIGHT: u32 = 1024;
 
 fn load_image(file_path: &str) -> Result<DynamicImage> {
     let img = image::open(file_path).context("Failed to open image")?;
@@ -92,199 +96,100 @@ fn parse_metrics(file_path: &str) -> Result<Vec<GlyphMetric>> {
     Ok(char_metrics)
 }
 
-fn generate(
-    name: &str,
-    default_max_regular_height: u32,
-    default_max_outline_height: u32,
-    default_regular_metrics: &[GlyphMetric],
-    default_outline_metrics: &[GlyphMetric],
-    default_regular_atlas: &DynamicImage,
-    default_outline_atlas: &DynamicImage,
-) -> Result<()> {
-    const X_PADDING: u32 = 2;
-    const Y_PADDING: u32 = 2;
+fn generate(name: &str, font_name: &str) -> Result<()> {
+    // Load default metric and atlas.
+    let default_metrics =
+        parse_metrics(&format!("{}/{}/{}.fnt", FONTS_DIR, DEFAULT_FONT, font_name))?;
+    let default_atlas = load_image(&format!("{}/{}/{}_0.png", FONTS_DIR, DEFAULT_FONT, font_name))?;
 
-    // Remove files from previous run.
-    let output_atlas_path_str = format!("{}/{}.png", OUTPUT_DIR, name);
-    let output_atlas_path = Path::new(&output_atlas_path_str);
-    if output_atlas_path.exists() {
-        fs::remove_file(output_atlas_path)
-            .context("Failed to remove output atlas from previous run.")?;
-    }
-
-    let output_metrics_path_str = format!("{}/{}.toml", OUTPUT_DIR, name);
-    let output_metrics_path = Path::new(&output_metrics_path_str);
-    if output_metrics_path.exists() {
-        fs::remove_file(output_metrics_path)
-            .context("Failed to remove output metrics from previous run")?;
-    }
-
-    // Load the metrics and atlases for the font to generate.
-    let regular_metrics = parse_metrics(&format!("{}/{}/{}", FONTS_DIR, name, REGULAR_FNT))?;
-    let outline_metrics = parse_metrics(&format!("{}/{}/{}", FONTS_DIR, name, OUTLINE_FNT))?;
-    let regular_atlas = load_image(&format!("{}/{}/{}", FONTS_DIR, name, REGULAR_PNG))?;
-    let outline_atlas = load_image(&format!("{}/{}/{}", FONTS_DIR, name, OUTLINE_PNG))?;
+    // Load font metric and atlas.
+    let metrics = parse_metrics(&format!("{}/{}/{}.fnt", FONTS_DIR, name, font_name))?;
+    let atlas = load_image(&format!("{}/{}/{}_0.png", FONTS_DIR, name, font_name))?;
 
     // Create the output image buffer.
     let mut output_buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
     // Vectors for capturing the new metrics lists to serialize.
-    let mut output_metrics = FontMetrics { regular: Vec::new(), outline: Vec::new() };
+    let mut output_metrics = FontMetricsV2 { metrics: Vec::new() };
 
-    // Find the max height of the regular metrics and gather a set of font's codepoints.
+    // Gather a set of the font's codepoints.
     let mut codepoint_set = HashSet::new();
-    let mut max_regular_height = 0;
 
-    for metric in regular_metrics.iter() {
-        if metric.height > max_regular_height {
-            max_regular_height = metric.height;
-        }
-
-        // This codepoint will be skipped when processing the default font later.
+    // This codepoint will be skipped when processing the default font later.
+    for metric in metrics.iter() {
         codepoint_set.insert(metric.codepoint);
     }
 
+    // Initialize the rect packer.
+    let config = rect_packer::Config {
+        width: OUTPUT_WIDTH as i32,
+        height: OUTPUT_HEIGHT as i32,
+        border_padding: 2,
+        rectangle_padding: 2,
+    };
+    let mut packer = Packer::new(config);
+
     // Iterate over all regular metrics, copying the glyphs into the output buffer.
-    let mut x = 0;
-    let mut y = 0;
-
-    for metric in regular_metrics.iter() {
-        // Wrap to the next row if necessary.
-        if x + metric.width > OUTPUT_WIDTH {
-            x = 0;
-            y += max_regular_height + Y_PADDING;
-        }
-
+    for metric in metrics.iter() {
         // Copy the glyph.
-        let view = regular_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer.copy_from(&view, x, y).context("Failed to copy regular glyph")?;
+        let view = atlas.view(metric.x, metric.y, metric.width, metric.height);
+        let rect = packer
+            .pack(metric.width as i32, metric.height as i32, false)
+            .ok_or(anyhow!("Failed to pack rect."))?;
+
+        output_buffer
+            .copy_from(&view, rect.x as u32, rect.y as u32)
+            .context("Failed to copy glyph")?;
 
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x,
-            y,
+            x: rect.x as u32,
+            y: rect.y as u32,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
             y_offset: metric.y_offset,
         };
-        output_metrics.regular.push(output_metric);
-
-        // Move x position forward.
-        x += metric.width + X_PADDING;
+        output_metrics.metrics.push(output_metric);
     }
 
-    // Find the max height of the outline metrics.
-    let mut max_outline_height = 0;
-
-    for metric in outline_metrics.iter() {
-        if metric.height > max_outline_height {
-            max_outline_height = metric.height;
-        }
-    }
-
-    // Iterate over all outline metrics, copying the glyphs into the output buffer.
-    for metric in outline_metrics.iter() {
-        // Wrap to the next row if necessary.
-        if x + metric.width > OUTPUT_WIDTH {
-            x = 0;
-            y += max_outline_height + Y_PADDING;
-        }
-
-        // Copy the glyph.
-        let view = outline_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer.copy_from(&view, x, y).context("Failed to copy outline glyph")?;
-
-        // Push the new metric.
-        let output_metric = GlyphMetric {
-            codepoint: metric.codepoint,
-            x,
-            y,
-            width: metric.width,
-            height: metric.height,
-            x_offset: metric.x_offset,
-            y_offset: metric.y_offset,
-        };
-        output_metrics.outline.push(output_metric);
-
-        // Move x position forward.
-        x += metric.width + X_PADDING;
-    }
-
-    // Ensure that all of codepage 437 is covered by iterating and potentially copying the default
-    // glyphs and metrics for both regular and outline chars.
-
-    // Default regular.
-    for metric in default_regular_metrics.iter() {
+    // Ensure all glyphs are covered by iterating default font.
+    for metric in default_metrics.iter() {
         // Skip chars that where included in the main font.
         if codepoint_set.contains(&metric.codepoint) {
             continue;
         }
 
-        // Wrap to the next row if necessary.
-        if x + metric.width > OUTPUT_WIDTH {
-            x = 0;
-            y += default_max_regular_height + Y_PADDING;
-        }
-
         // Copy the glyph.
-        let view = default_regular_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer.copy_from(&view, x, y).context("Failed to copy default regular glyph")?;
+        let view = default_atlas.view(metric.x, metric.y, metric.width, metric.height);
+        let rect = packer
+            .pack(metric.width as i32, metric.height as i32, false)
+            .ok_or(anyhow!("Failed to pack rect."))?;
+
+        output_buffer
+            .copy_from(&view, rect.x as u32, rect.y as u32)
+            .context("Failed to copy default glyph")?;
 
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x,
-            y,
+            x: rect.x as u32,
+            y: rect.y as u32,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
             y_offset: metric.y_offset,
         };
-        output_metrics.regular.push(output_metric);
-
-        // Move x position forward.
-        x += metric.width + X_PADDING;
+        output_metrics.metrics.push(output_metric);
     }
 
-    // Default outline.
-    for metric in default_outline_metrics.iter() {
-        // Skip chars that where included in the main font.
-        if codepoint_set.contains(&metric.codepoint) {
-            continue;
-        }
+    // Save the atlas and metrics.
+    let output_atlas_path = format!("{}/{}/{}.png", OUTPUT_DIR, name, font_name);
 
-        // Wrap to the next row if necessary.
-        if x + metric.width > OUTPUT_WIDTH {
-            x = 0;
-            y += default_max_outline_height + Y_PADDING;
-        }
-
-        // Copy the glyph.
-        let view = default_outline_atlas.view(metric.x, metric.y, metric.width, metric.height);
-        output_buffer.copy_from(&view, x, y).context("Failed to copy default outline glyph")?;
-
-        // Push the new metric.
-        let output_metric = GlyphMetric {
-            codepoint: metric.codepoint,
-            x,
-            y,
-            width: metric.width,
-            height: metric.height,
-            x_offset: metric.x_offset,
-            y_offset: metric.y_offset,
-        };
-        output_metrics.outline.push(output_metric);
-
-        // Move x position forward.
-        x += metric.width + X_PADDING;
-    }
-
-    // Save the output atlas.
     output_buffer.save(output_atlas_path).context("Failed to save output atlas.")?;
 
-    // Save the output metrics.
+    let output_metrics_path = format!("{}/{}/{}.toml", OUTPUT_DIR, name, font_name);
     let toml = toml::to_string(&output_metrics).context("Failed to serialize output metrics.")?;
     let mut output_metrics_file =
         File::create(output_metrics_path).context("Failed to create output metrics file.")?;
@@ -294,52 +199,43 @@ fn generate(
 }
 
 fn generate_all() -> Result<()> {
-    // Load the default metrics and atlases.
-    let default_regular_metrics =
-        parse_metrics(&format!("{}/{}/{}", FONTS_DIR, DEFAULT_FONT, REGULAR_FNT))?;
-    let default_outline_metrics =
-        parse_metrics(&format!("{}/{}/{}", FONTS_DIR, DEFAULT_FONT, OUTLINE_FNT))?;
-    let default_regular_atlas =
-        load_image(&format!("{}/{}/{}", FONTS_DIR, DEFAULT_FONT, REGULAR_PNG))?;
-    let default_outline_atlas =
-        load_image(&format!("{}/{}/{}", FONTS_DIR, DEFAULT_FONT, OUTLINE_PNG))?;
+    // Names of the bmfonts.
+    const FONT_NAMES: &[&str] = &[
+        "regular",
+        "regular_outline",
+        "bold",
+        "bold_outline",
+        "italic",
+        "italic_outline",
+        "bold_italic",
+        "bold_italic_outline",
+    ];
 
-    // Find the max height of the default regular and outline metrics.
-    let mut default_max_regular_height = 0;
-    for metric in default_regular_metrics.iter() {
-        if metric.height > default_max_regular_height {
-            default_max_regular_height = metric.height;
-        }
-    }
-
-    let mut default_max_outline_height = 0;
-    for metric in default_outline_metrics.iter() {
-        if metric.height > default_max_outline_height {
-            default_max_outline_height = metric.height;
-        }
-    }
-
-    // Get a list of atlases to generate.
     let entries = fs::read_dir(FONTS_DIR).context("Failed to read fonts directory.")?;
 
-    // Generate atlases and metrics for all fonts.
     for entry in entries.filter_map(|e| e.ok()) {
         let path = entry.path();
         let name = path
             .file_name()
-            .context("Failed to retrieve directory name.")?
+            .context("Failed to read directory name.")?
             .to_str()
             .context("Failed to convert from OsStr.")?;
 
-        generate(
-            name,
-            default_max_regular_height,
-            default_max_outline_height,
-            &default_regular_metrics,
-            &default_outline_metrics,
-            &default_regular_atlas,
-            &default_outline_atlas,
-        )?;
+        // Ensure the output dir exists and is empty.
+        let output_dir = format!("{}/{}", OUTPUT_DIR, name);
+        let output_dir = Path::new(&output_dir);
+        if !output_dir.exists() {
+            fs::create_dir(output_dir).context("Failed to create directory")?;
+        }
+
+        for entry in fs::read_dir(output_dir)? {
+            fs::remove_file(entry?.path()).context("Failed to remove directory entries")?;
+        }
+
+        // Generate the fonts.
+        for font_name in FONT_NAMES.iter() {
+            generate(name, font_name).context("Failed to generate font.")?;
+        }
     }
 
     Ok(())

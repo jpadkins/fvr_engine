@@ -22,7 +22,7 @@ impl Terminal {
     // Creates a new terminal.
     // (there should only ever be one, for now)
     //---------------------------------------------------------------------------------------------
-    pub fn new(width: u32, height: u32) -> Self {
+    pub(crate) fn new(width: u32, height: u32) -> Self {
         Self { tiles: GridMap::<Tile>::new(width, height) }
     }
 
@@ -48,10 +48,10 @@ impl Terminal {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Updates the value of the tile at an xy coord with another tile's properties.
+    // Returns a mut ref to the tile at an xy coord.
     //---------------------------------------------------------------------------------------------
-    pub fn update_tile(&mut self, x: u32, y: u32, tile: &Tile) {
-        *self.tiles.get_xy_mut(x, y) = *tile;
+    pub fn tile_mut(&mut self, x: u32, y: u32) -> &mut Tile {
+        self.tiles.get_xy_mut(x, y)
     }
 
     //---------------------------------------------------------------------------------------------
@@ -63,6 +63,8 @@ impl Terminal {
         y: u32,
         glyph: Option<char>,
         layout: Option<TileLayout>,
+        style: Option<TileStyle>,
+        size: Option<TileSize>,
         outlined: Option<bool>,
         background_color: Option<TileColor>,
         foreground_color: Option<TileColor>,
@@ -75,6 +77,12 @@ impl Terminal {
         }
         if let Some(layout) = layout {
             tile.layout = layout;
+        }
+        if let Some(style) = style {
+            tile.style = style;
+        }
+        if let Some(size) = size {
+            tile.size = size;
         }
         if let Some(outlined) = outlined {
             tile.outlined = outlined;
@@ -107,12 +115,11 @@ impl Terminal {
 
         for tile in self.tiles.data_mut() {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
-            tile.outlined = rng.gen_range(0..=3) == 3;
+            tile.style = rand::random();
+            tile.outlined = rand::random();
             tile.background_color = TileColor::rgb(25, 50, 75);
-            tile.foreground_color =
-                TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
-            tile.outline_color =
-                TileColor(sdl2::pixels::Color::RGB(rng.gen(), rng.gen(), rng.gen()));
+            tile.foreground_color = rand::random();
+            tile.outline_color = rand::random();
         }
     }
 }

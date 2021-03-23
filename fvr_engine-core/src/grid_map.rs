@@ -46,12 +46,12 @@ where
     }
 
     fn get_xy(&self, x: u32, y: u32) -> &Self::Type {
-        let index = index_2d(x, y, self.width);
+        let index = Misc::index_2d(x, y, self.width);
         &self.data[index]
     }
 
     fn get_point(&self, point: &Point) -> &Self::Type {
-        let index = index_2d(point.x as u32, point.y as u32, self.width);
+        let index = Misc::index_2d(point.x as u32, point.y as u32, self.width);
         &self.data[index]
     }
 }
@@ -71,12 +71,12 @@ where
     }
 
     fn get_xy_mut(&mut self, x: u32, y: u32) -> &mut Self::Type {
-        let index = index_2d(x, y, self.width);
+        let index = Misc::index_2d(x, y, self.width);
         &mut self.data[index]
     }
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
-        let index = index_2d(point.x as u32, point.y as u32, self.width);
+        let index = Misc::index_2d(point.x as u32, point.y as u32, self.width);
         &mut self.data[index]
     }
 }
@@ -90,13 +90,13 @@ fn test_grid_map() {
     let mut grid_map = GridMap::new(width, height);
 
     // Test get*().
-    assert_eq!(*grid_map.get(index_2d(x, y, width)), u32::default());
+    assert_eq!(*grid_map.get(Misc::index_2d(x, y, width)), u32::default());
     assert_eq!(*grid_map.get_xy(x, y), u32::default());
     assert_eq!(*grid_map.get_point(&Point { x: x as i32, y: y as i32 }), u32::default());
 
     // Test get_*_mut();
-    *grid_map.get_mut(index_2d(x, y, width)) = 1;
-    assert_eq!(*grid_map.get(index_2d(x, y, width)), 1);
+    *grid_map.get_mut(Misc::index_2d(x, y, width)) = 1;
+    assert_eq!(*grid_map.get(Misc::index_2d(x, y, width)), 1);
 
     *grid_map.get_xy_mut(x, y) = 2;
     assert_eq!(*grid_map.get_xy(x, y), 2);
@@ -106,7 +106,7 @@ fn test_grid_map() {
 
     // Test iter().
     let mut expected = vec![Default::default(); 4 * 6];
-    expected[index_2d(x, y, grid_map.width())] = 3;
+    expected[Misc::index_2d(x, y, grid_map.width())] = 3;
     assert_eq!(grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(), expected);
 
     // Test iter_mut().

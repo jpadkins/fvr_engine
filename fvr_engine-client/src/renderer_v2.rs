@@ -48,6 +48,8 @@ struct Vertex {
     color: [GLfloat; 4],
     // Texture Position of the vertex [U, V].
     tex_coords: [GLfloat; 2],
+    // Index of the texture to sample.
+    tex_index: GLfloat,
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -94,16 +96,12 @@ pub struct RendererV2 {
     foreground_vertices: Vec<Vertex>,
     // Location of the projection matrix in the foreground shader program.
     foreground_projection_location: GLint,
-    // Main font atlas texture, containing both regular and outline glyphs.
-    texture: GLuint,
-    // Dimensions of the font atlas texture.
-    _texture_dimensions: (u32, u32),
-    // Normalization values for texel in pixels to texel in OpenGL space.
-    texel_normalize: (f32, f32),
-    // Map of u32 codepoint to corresponding regular glyph metrics.
-    regular_metrics: HashMap<u32, GlyphMetric>,
-    // Map of u32 codepoint to corresponding outline glyph metrics.
-    outline_metrics: HashMap<u32, GlyphMetric>,
+    // Array of font textures for every tile style.
+    textures: [GLuint; TILE_STYLE_COUNT * 2],
+    // Normalization values for texel in pixels to texel in OpenGL space for every font texture.
+    texel_normalize: [(f32, f32); TILE_STYLE_COUNT * 2],
+    // Map of u32 codepoint to corresponding glyph metrics for every font texture.
+    metrics: Vec<HashMap<u32, GlyphMetric>>,
 }
 
 impl RendererV2 {
@@ -118,7 +116,7 @@ impl RendererV2 {
         metrics_path: P,
     ) -> Result<Self>
     where
-        P: AsRef<Path> + Display,
+        P: AsRef<Path>,
     {
         // Default clear color (this will change).
         let clear_color = SdlColor::RGB(25, 50, 75);
@@ -169,10 +167,10 @@ impl RendererV2 {
         }
         gl_error_unwrap!("Failed to generate foreground vertex arrays");
 
-        // Generate the atlas texture.
-        let mut texture = 0;
+        // Generate the style textures.
+        let mut textures = [0; TILE_STYLE_COUNT * 2];
         unsafe {
-            gl::GenTextures(1, &mut texture);
+            gl::GenTextures((TILE_STYLE_COUNT * 2) as GLint, &mut textures[0]);
         }
         gl_error_unwrap!("Failed to generate texture.");
 
@@ -423,74 +421,91 @@ impl RendererV2 {
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable tex_coords attrib for foreground vertex array.");
             }
+
+            let location = get_attrib_location(foreground_program, "tex_index")
+                .context("Failed to get foreground tex_index attrib location.")?;
+
+            unsafe {
+                gl::VertexAttribPointer(
+                    // Attribute location.
+                    location as GLuint,
+                    // Size.
+                    1,
+                    // Type.
+                    gl::FLOAT,
+                    // Normalized.
+                    gl::FALSE as GLboolean,
+                    // Stride.
+                    mem::size_of::<Vertex>() as GLsizei,
+                    // Offset.
+                    (mem::size_of::<GLfloat>() * 8) as *const c_void,
+                );
+                gl_error_unwrap!(
+                    "Failed to set tex_index attrib pointer for foreground vertex array."
+                );
+
+                gl::EnableVertexAttribArray(location as GLuint);
+                gl_error_unwrap!("Failed to enable tex_index attrib for foreground vertex array.");
+            }
         }
 
-        // Load the texture image into memory and convert to the proper format.
+        // Load and bind the style textures.
         //-----------------------------------------------------------------------------------------
 
-        // Load the image data from disk.
-        let texture_data = image::open(&texture_path)
-            .map_err(|e| anyhow!(e))
-            .with_context(|| format!("Failed to load file at {}.", texture_path))?;
+        // Double length to account for outline versions.
+        let mut texel_normalize = [Default::default(); TILE_STYLE_COUNT * 2];
 
-        // Convert to RGBA8 if not already.
-        let texture_data = match texture_data {
-            DynamicImage::ImageRgba8(data) => data,
-            other => other.to_rgba8(),
-        };
-
-        // Query the dimensions
-        let texture_dimensions = texture_data.dimensions();
-
-        // Calculate texel normalization values.
-        let texel_normalize =
-            (1.0 / texture_dimensions.0 as f32, 1.0 / texture_dimensions.1 as f32);
-
-        // Set the texture settings and upload the texture data.
-        //-----------------------------------------------------------------------------------------
+        // Make sure the foreground program is in use before updating uniforms.
         unsafe {
-            // Bind the texture.
-            gl::BindTexture(gl::TEXTURE_2D, texture);
-            gl_error_unwrap!("Failed to bind texture.");
+            gl::UseProgram(foreground_program);
+            gl_error_unwrap!("Failed to use foreground program when binding textures.");
+        }
 
-            // Set the wrap to CLAMP_TO_EDGE to avoid seams at the edge of tiles.
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
-            gl_error_unwrap!("Failed to set TEXTURE_WRAP_S parameter.");
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-            gl_error_unwrap!("Failed to set TEXTURE_WRAP_T parameter.");
+        // Bind and upload the non-outlined textures.
+        for i in 0..TILE_STYLE_COUNT {
+            let path_string =
+                &["./resources/font_atlases/", "deja_vu_sans_mono/", TILE_STYLE_NAMES[i], ".png"]
+                    .concat();
 
-            // Set the filter to LINEAR to apply a blurring effect.
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-            gl_error_unwrap!("Failed to set TEXTURE_MIN_FILTER parameter.");
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
-            gl_error_unwrap!("Failed to set TEXTURE_MAG_FILTER parameter.");
+            let dimensions =
+                load_texture(Path::new(path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
+            texel_normalize[i] = (1.0 / dimensions.0 as f32, 1.0 / dimensions.1 as f32);
 
-            // Upload the texture data.
-            gl::TexImage2D(
-                // Target.
-                gl::TEXTURE_2D,
-                // Level.
-                0,
-                // Internal format.
-                gl::RGBA as GLint,
-                // Width.
-                texture_dimensions.0 as GLsizei,
-                // Height.
-                texture_dimensions.1 as GLsizei,
-                // Border.
-                0,
-                // Format.
-                gl::RGBA,
-                // Type.
-                gl::UNSIGNED_BYTE,
-                // Pointer.
-                texture_data.as_ptr() as *const c_void,
-            );
-            gl_error_unwrap!("Failed to upload texture data.");
+            let location = get_uniform_location(foreground_program, TILE_STYLE_NAMES[i])?;
+            unsafe {
+                gl::Uniform1i(location, i as GLint);
+                gl_error_unwrap!("Failed to set non-outlined sampler2D uniform value.");
+            }
+        }
 
-            // Generate Mipmaps for faster rasterization when scaling.
-            gl::GenerateMipmap(gl::TEXTURE_2D);
-            gl_error_unwrap!("Failed to generate mipmaps.");
+        // Bind and upload the outlined textures.
+        for i in 0..TILE_STYLE_COUNT {
+            let path_string = &[
+                "./resources/font_atlases/",
+                "deja_vu_sans_mono/",
+                TILE_STYLE_NAMES[i],
+                "_outline.png",
+            ]
+            .concat();
+
+            // Offset the index for outlined textures.
+            let index = i + TILE_STYLE_COUNT;
+
+            let dimensions = load_texture(
+                Path::new(path_string),
+                textures[index],
+                gl::TEXTURE0 + index as GLuint,
+            )?;
+            texel_normalize[index] = (1.0 / dimensions.0 as f32, 1.0 / dimensions.1 as f32);
+
+            let location = get_uniform_location(
+                foreground_program,
+                &format!("{}_outline", TILE_STYLE_NAMES[i]),
+            )?;
+            unsafe {
+                gl::Uniform1i(location, index as GLint);
+                gl_error_unwrap!("Failed to set outlined sampler2D uniform value.");
+            }
         }
 
         // Misc. OpenGL settings.
@@ -520,24 +535,51 @@ impl RendererV2 {
         // Load the glyph metrics.
         //-----------------------------------------------------------------------------------------
 
-        // Read in the data from the metrics file and parse it as TOML.
-        let metrics_toml = std::fs::read_to_string(&metrics_path)
-            .with_context(|| format!("Failed to read contents of file {}.", metrics_path))?;
+        let mut metrics = vec![HashMap::new(); TILE_STYLE_COUNT * 2];
 
-        let font_metrics: FontMetrics =
-            toml::from_str(&metrics_toml).context("Failed to parse font metrics TOML.")?;
+        // Load the non-outlined metrics.
+        for i in 0..TILE_STYLE_COUNT {
+            let path_string =
+                &["./resources/font_atlases/", "deja_vu_sans_mono/", TILE_STYLE_NAMES[i], ".toml"]
+                    .concat();
+            let path = Path::new(path_string);
 
-        // Populate hash maps with regular and outline metrics for easy access.
-        let mut regular_metrics = HashMap::new();
+            // Read in the data from the metrics file and parse it as TOML.
+            let metrics_toml = std::fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read contents of file {}.", path.display()))?;
 
-        for metric in font_metrics.regular {
-            regular_metrics.insert(metric.codepoint, metric);
+            let font_metrics: FontMetricsV2 =
+                toml::from_str(&metrics_toml).context("Failed to parse font metrics TOML.")?;
+
+            // Populate hash maps with non-outlined metrics for easy access.
+            for metric in font_metrics.metrics {
+                metrics[i].insert(metric.codepoint, metric);
+            }
         }
 
-        let mut outline_metrics = HashMap::new();
+        // Load the outlined metrics.
+        for i in 0..TILE_STYLE_COUNT {
+            let path_string = &[
+                "./resources/font_atlases/",
+                "deja_vu_sans_mono/",
+                TILE_STYLE_NAMES[i],
+                "_outline.toml",
+            ]
+            .concat();
+            let path = Path::new(path_string);
 
-        for metric in font_metrics.outline {
-            outline_metrics.insert(metric.codepoint, metric);
+            // Read in the data from the metrics file and parse it as TOML.
+            let metrics_toml = std::fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read contents of file {}.", path.display()))?;
+
+            let font_metrics: FontMetricsV2 =
+                toml::from_str(&metrics_toml).context("Failed to parse font metrics TOML.")?;
+
+            // Populate hash maps with outlined metrics for easy access.
+            // (remembering to offset the index for outlined metrics)
+            for metric in font_metrics.metrics {
+                metrics[i + TILE_STYLE_COUNT].insert(metric.codepoint, metric);
+            }
         }
 
         // ...and that's it!
@@ -557,11 +599,9 @@ impl RendererV2 {
             foreground_vertex_arrays,
             foreground_vertices,
             foreground_projection_location,
-            texture,
-            _texture_dimensions: texture_dimensions,
+            textures,
             texel_normalize,
-            regular_metrics,
-            outline_metrics,
+            metrics,
         })
     }
 
@@ -697,26 +737,29 @@ impl RendererV2 {
         &mut self,
         (x, y): (u32, u32),
         tile: &Tile,
-        outlined: bool,
+        outline_quad: bool,
     ) -> Result<()> {
         let mut vertex = Vertex::default();
 
-        // Retrieve either the regular or outline metrics for the tile's glyph.
-        let metric = if outlined {
-            self.outline_metrics
-                .get(&(tile.glyph as u32))
-                .with_context(|| format!("Failed to load outline metric for glyph {}.", tile.glyph))
-        } else {
-            self.regular_metrics
-                .get(&(tile.glyph as u32))
-                .with_context(|| format!("Failed to load regular metric for glyph {}.", tile.glyph))
-        }?;
+        // Find and set the texture/metric index.
+        let index =
+            if outline_quad { tile.style as usize + TILE_STYLE_COUNT } else { tile.style as usize };
+
+        vertex.tex_index = index as GLfloat;
+
+        // Retrieve the metrics for the tile's glyph and style.
+        let metric = self.metrics[index]
+            .get(&(tile.glyph as u32))
+            .with_context(|| format!("Failed to load outline metric for glyph {}.", tile.glyph))?;
 
         // Use either the foreground or outline color from the tile.
-        let color = if outlined { tile.outline_color } else { tile.foreground_color };
+        let color = if outline_quad { tile.outline_color } else { tile.foreground_color };
 
         // Calculate the glyph offset for the tile's layout.
         let offset = self.calculate_glyph_offset(&metric, tile.layout);
+
+        // Get the texel normalize values.
+        let texel_normalize = &self.texel_normalize[index];
 
         // Each vertex of the quad shares the same color values (for now).
         vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
@@ -727,29 +770,29 @@ impl RendererV2 {
         // Top left.
         vertex.position[0] = (x * self.tile_dimensions.0) as f32 + offset.0;
         vertex.position[1] = (y * self.tile_dimensions.1) as f32 + offset.1;
-        vertex.tex_coords[0] = (metric.x as f32) * self.texel_normalize.0;
-        vertex.tex_coords[1] = (metric.y as f32) * self.texel_normalize.1;
+        vertex.tex_coords[0] = (metric.x as f32) * texel_normalize.0;
+        vertex.tex_coords[1] = (metric.y as f32) * texel_normalize.1;
         self.foreground_vertices.push(vertex);
 
         // Top right.
         vertex.position[0] = ((x * self.tile_dimensions.0) + metric.width) as f32 + offset.0;
         vertex.position[1] = (y * self.tile_dimensions.1) as f32 + offset.1;
-        vertex.tex_coords[0] = ((metric.x + metric.width) as f32) * self.texel_normalize.0;
-        vertex.tex_coords[1] = (metric.y as f32) * self.texel_normalize.1;
+        vertex.tex_coords[0] = ((metric.x + metric.width) as f32) * texel_normalize.0;
+        vertex.tex_coords[1] = (metric.y as f32) * texel_normalize.1;
         self.foreground_vertices.push(vertex);
 
         // Bottom left.
         vertex.position[0] = ((x * self.tile_dimensions.0) + metric.width) as f32 + offset.0;
         vertex.position[1] = ((y * self.tile_dimensions.1) + metric.height) as f32 + offset.1;
-        vertex.tex_coords[0] = ((metric.x + metric.width) as f32) * self.texel_normalize.0;
-        vertex.tex_coords[1] = ((metric.y + metric.height) as f32) * self.texel_normalize.1;
+        vertex.tex_coords[0] = ((metric.x + metric.width) as f32) * texel_normalize.0;
+        vertex.tex_coords[1] = ((metric.y + metric.height) as f32) * texel_normalize.1;
         self.foreground_vertices.push(vertex);
 
         // Bottom right.
         vertex.position[0] = (x * self.tile_dimensions.0) as f32 + offset.0;
         vertex.position[1] = ((y * self.tile_dimensions.1) + metric.height) as f32 + offset.1;
-        vertex.tex_coords[0] = (metric.x as f32) * self.texel_normalize.0;
-        vertex.tex_coords[1] = ((metric.y + metric.height) as f32) * self.texel_normalize.1;
+        vertex.tex_coords[0] = (metric.x as f32) * texel_normalize.0;
+        vertex.tex_coords[1] = ((metric.y + metric.height) as f32) * texel_normalize.1;
         self.foreground_vertices.push(vertex);
 
         Ok(())
@@ -925,7 +968,7 @@ impl RendererV2 {
 impl Drop for RendererV2 {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteTextures(1, &self.texture);
+            gl::DeleteTextures((TILE_STYLE_COUNT * 2) as GLint, &self.textures[0]);
             gl::DeleteVertexArrays(2, &self.foreground_vertex_arrays[0]);
             gl::DeleteProgram(self.foreground_program);
             gl::DeleteVertexArrays(2, &self.background_vertex_arrays[0]);

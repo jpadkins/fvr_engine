@@ -8,4 +8,5 @@ mod terminal;
 
 pub mod prelude {
     pub use crate::client::*;
+    pub use crate::terminal::*;
 }
