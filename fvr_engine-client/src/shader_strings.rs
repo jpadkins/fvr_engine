@@ -92,7 +92,7 @@ void main()
     blur[7] = vec3( 1.0,  0.0, 2.0 / 16.0);
     blur[8] = vec3( 1.0,  1.0, 1.0 / 16.0);
 
-    // In GLSL 330 non-const expressions cannot be used for indexing arrays in fragment shaders.
+    // In GLSL 330 non-const values cannot be used for indexing arrays in fragment shaders.
     // Hence this garbage...
 
     int index = int(floor(v_tex_index));
@@ -165,5 +165,55 @@ void main()
     }
 
     color = v_color * modifier;
+}
+"#;
+
+pub const VIGNETTE_VERTEX_SHADER_SOURCE: &str = r#"
+#version 330 core
+
+out vec2 v_coords;
+
+void main()
+{
+    const vec2 positions[4] = vec2[](
+        vec2(-1, -1),
+        vec2( 1, -1),
+        vec2(-1,  1),
+        vec2( 1,  1)
+    );
+    const vec2 coords[4] = vec2[](
+        vec2(0, 0),
+        vec2(1, 0),
+        vec2(0, 1),
+        vec2(1, 1)
+    );
+
+    v_coords = coords[gl_VertexID];
+    gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+}
+"#;
+
+pub const VIGNETTE_FRAGMENT_SHADER_SOURCE: &str = r#"
+#version 330 core
+
+precision lowp float;
+
+in vec2 v_coords;
+
+out vec4 color;
+
+void main()
+{
+    vec2 coords = v_coords;
+    coords *= 1.0 - v_coords.yx;
+
+    // The multiplicand determines the dimness of the entire frame.
+    // Lower values increase dimness.
+    float vignette = coords.x * coords.y * 15.0;
+
+    // The exponent determines the intensity of the vignette.
+    vignette = pow(vignette, 0.25);
+
+    color = vec4(0.0, 0.0, 0.0, 1.0 - vignette);
 }
 "#;
