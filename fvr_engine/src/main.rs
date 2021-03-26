@@ -1,31 +1,39 @@
+//-------------------------------------------------------------------------------------------------
+// STD includes.
+//-------------------------------------------------------------------------------------------------
 use std::time::Duration;
 
+//-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
 use anyhow::Result;
-
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
+//-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
 use fvr_engine_client::prelude::*;
+use fvr_engine_core::prelude::*;
 
 // TODO: Load these from config.
 const WINDOW_TITLE: &str = "FVR_ENGINE";
 const WINDOW_DIMENSIONS: (u32, u32) = (800, 600);
 const TERMINAL_DIMENSIONS: (u32, u32) = (81, 31); // 103, 37.
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
-const TEXTURE_PATH: &str = "./resources/font_atlases/fantasque_sans_mono.png";
-const METRICS_PATH: &str = "./resources/font_atlases/fantasque_sans_mono.toml";
+const FONT_NAME: &str = "deja_vu_sans_mono";
 
 fn main() -> Result<()> {
-    let mut update_timer = Duration::default();
     let mut client = Client::new(
         WINDOW_TITLE,
         WINDOW_DIMENSIONS,
         TERMINAL_DIMENSIONS,
         TILE_DIMENSIONS,
-        TEXTURE_PATH,
-        METRICS_PATH,
+        FONT_NAME,
     )?;
     let mut terminal = client.create_terminal();
+    let mut input = InputManager::with_default_bindings();
+    let mut timer = Timer::new(Duration::from_millis(16));
 
     'main: loop {
         while let Some(event) = client.poll_event() {
@@ -40,15 +48,16 @@ fn main() -> Result<()> {
             }
         }
 
-        if update_timer.as_millis() >= 16 {
-            let key_state = client.key_state();
-            if key_state.contains(&Keycode::R) {
+        client.update_input(&mut input);
+
+        let delta = client.render_frame(&terminal)?;
+
+        if timer.update(delta) {
+            if input.action_pressed(InputAction::Accept) {
                 terminal.randomize();
             }
-            update_timer -= Duration::from_millis(16);
+            input.reset();
         }
-
-        update_timer += client.render_frame(&terminal)?;
     }
 
     Ok(())

@@ -209,7 +209,7 @@ void main()
 
     // The multiplicand determines the dimness of the entire frame.
     // Lower values increase dimness.
-    float vignette = coords.x * coords.y * 15.0;
+    float vignette = coords.x * coords.y * 50.0;
 
     // The exponent determines the intensity of the vignette.
     vignette = pow(vignette, 0.25);

@@ -1,9 +1,6 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashSet;
-use std::fmt::Display;
-use std::path::Path;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -12,7 +9,6 @@ use std::time::{Duration, Instant};
 //-------------------------------------------------------------------------------------------------
 use anyhow::{anyhow, Context, Result};
 use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 use sdl2::video::{GLContext, GLProfile, SwapInterval, Window};
 use sdl2::{EventPump, Sdl, VideoSubsystem};
 
@@ -20,8 +16,14 @@ use sdl2::{EventPump, Sdl, VideoSubsystem};
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::debug_gui::*;
+use crate::input_manager::*;
 use crate::renderer_v2::*;
 use crate::terminal::*;
+
+//-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
+use fvr_engine_core::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -34,7 +36,7 @@ const FRAME_DURATION: Duration = Duration::from_millis(1000 / 60);
 const SLEEP_DURATION: Duration = Duration::from_millis(1);
 
 // Interval at which to print the FPS.
-const FPS_LOG_DURATION: Duration = Duration::from_millis(5000);
+const FPS_LOG_DURATION: Duration = Duration::from_secs(5);
 
 //-------------------------------------------------------------------------------------------------
 // Client holds the window and rendering context and provides access to the terminal.
@@ -60,10 +62,10 @@ pub struct Client {
     debug_enabled: bool,
     // Time that the last frame began. Used to calculate frame delta time.
     last_frame: Instant,
-    // Duration used for limiting the rendering FPS.
-    frame_timer: Duration,
-    // Duration used for calculating the FPS.
-    fps_timer: Duration,
+    // Timer used for limiting the rendering FPS.
+    frame_timer: Timer,
+    // Timer used for calculating the FPS.
+    fps_log_timer: Timer,
     // Stores the frame count. Used for calculating the FPS.
     fps_counter: u32,
     // Whether the window has been resized this frame.
@@ -75,17 +77,15 @@ impl Client {
     // Creates a new client
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
-    pub fn new<S, P>(
+    pub fn new<S>(
         window_title: S,
         window_dimensions: (u32, u32),
         terminal_dimensions: (u32, u32),
         tile_dimensions: (u32, u32),
-        texture_path: P,
-        metrics_path: P,
+        font_name: S,
     ) -> Result<Self>
     where
         S: AsRef<str>,
-        P: AsRef<Path> + Display,
     {
         // Initialize SDL2.
         //-----------------------------------------------------------------------------------------
@@ -150,9 +150,8 @@ impl Client {
 
         // Initialize the renderer.
         //-----------------------------------------------------------------------------------------
-        let renderer =
-            RendererV2::new(tile_dimensions, terminal_dimensions, texture_path, metrics_path)
-                .context("Failed to create the renderer.")?;
+        let renderer = RendererV2::new(tile_dimensions, terminal_dimensions, font_name)
+            .context("Failed to create the renderer.")?;
 
         // ...and that's it!
         //-----------------------------------------------------------------------------------------
@@ -170,9 +169,9 @@ impl Client {
             // Last set last frame to current moment.
             last_frame: Instant::now(),
             // Set frame timer to an empty duration.
-            frame_timer: Default::default(),
+            frame_timer: Timer::new(FRAME_DURATION),
             // Set fps timer to an empty duration.
-            fps_timer: Default::default(),
+            fps_log_timer: Timer::new(FPS_LOG_DURATION),
             // Start the fps counter at 0.
             fps_counter: 0,
             // Set resized to true to update renderer on first frame.
@@ -221,12 +220,8 @@ impl Client {
     // Returns the current key state.
     // (should be consumed once per game loop)
     //---------------------------------------------------------------------------------------------
-    pub fn key_state(&self) -> HashSet<Keycode> {
-        self.event_pump
-            .keyboard_state()
-            .pressed_scancodes()
-            .filter_map(Keycode::from_scancode)
-            .collect()
+    pub fn update_input(&self, input: &mut InputManager) {
+        input.update(&self.event_pump.keyboard_state());
     }
 
     //---------------------------------------------------------------------------------------------
@@ -240,26 +235,21 @@ impl Client {
         let delta = now - self.last_frame;
         self.last_frame = now;
 
-        // Update timers.
-        //-----------------------------------------------------------------------------------------
-        self.frame_timer += delta;
-        self.fps_timer += delta;
-
         // Print FPS.
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
         self.fps_counter += 1;
 
-        if self.fps_timer >= FPS_LOG_DURATION {
-            println!("FPS: {}", self.fps_counter / 5);
+        if self.fps_log_timer.update(delta) {
+            const FPS_LOG_SECONDS: u32 = FPS_LOG_DURATION.as_secs() as u32;
+            println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
 
             self.fps_counter = 0;
-            self.fps_timer -= FPS_LOG_DURATION;
         }
 
         // Return early if minimum frame duration has not yet passed.
         //-----------------------------------------------------------------------------------------
-        if self.frame_timer < FRAME_DURATION {
+        if !self.frame_timer.update(delta) {
             // Sleep for a bit.
             thread::sleep(SLEEP_DURATION);
 
@@ -269,13 +259,12 @@ impl Client {
             self.last_frame = now;
 
             // Update the timers.
-            self.frame_timer += delta;
-            self.fps_timer += delta;
+            self.frame_timer.update_without_consuming(delta);
+            self.fps_log_timer.update_without_consuming(delta);
 
             // Return new passed time.
             return Ok(delta);
         }
-        self.frame_timer -= FRAME_DURATION;
 
         // Update the renderer viewport if the window has been resized.
         //-----------------------------------------------------------------------------------------

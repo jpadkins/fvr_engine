@@ -16,6 +16,8 @@ imgui-sdl2 = "0.14.0"
 itertools = "0.10.0"
 rand = "0.8.3"
 stopwatch = "0.0.7"
+strum = "0.20.0"
+strum_macros = "0.20.0"
 toml = "0.5.8"
 
 [dependencies.sdl2]

@@ -2,11 +2,13 @@ mod client;
 mod debug_gui;
 #[macro_use]
 mod gl_helpers;
+mod input_manager;
 mod renderer_v2;
 mod shader_strings;
 mod terminal;
 
 pub mod prelude {
     pub use crate::client::*;
+    pub use crate::input_manager::*;
     pub use crate::terminal::*;
 }

@@ -289,8 +289,8 @@ where
         gl_error_unwrap!("Failed to upload texture data.");
 
         // Generate Mipmaps for faster rasterization when scaling.
-        gl::GenerateMipmap(gl::TEXTURE_2D);
-        gl_error_unwrap!("Failed to generate mipmaps.");
+        // gl::GenerateMipmap(gl::TEXTURE_2D);
+        // gl_error_unwrap!("Failed to generate mipmaps.");
     }
 
     Ok(texture_dimensions)

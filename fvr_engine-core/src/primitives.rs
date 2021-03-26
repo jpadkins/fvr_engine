@@ -42,16 +42,17 @@ impl Distribution<TileColor> for Standard {
 }
 
 // Describes the size of the tile's glyph when rendered.
-// Small    - The glyph is proportional to half the size of a tile.
-// Normal   - The glyph is proportional to the size of a tile.
-// Big      - The glyph is proportional to the size of 2x2 tiles.
-// Giant    - The glyph is proportional to the size of 3x3 tiles.
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum TileSize {
+    // The glyph is proportional to half the size of a tile.
     Small = 0,
-    Normal = 1,
-    Big = 2,
-    Giant = 3,
+    // The glyph is proportional to the size of a tile.
+    Normal,
+    // The glyph is proportional to the size of 2x2 tiles.
+    Big,
+    // The glyph is proportional to the size of 4x4 tiles.
+    Giant,
 }
 pub const TILE_SIZE_COUNT: usize = 4;
 
@@ -68,12 +69,13 @@ impl Distribution<TileSize> for Standard {
 }
 
 // Describes the style of the glyph within the tile when rendered.
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum TileStyle {
     Regular = 0,
-    Bold = 1,
-    Italic = 2,
-    BoldItalic = 3,
+    Bold,
+    Italic,
+    BoldItalic,
 }
 pub const TILE_STYLE_COUNT: usize = 4;
 pub const TILE_STYLE_NAMES: &[&str] = &["regular", "bold", "italic", "bold_italic"];
@@ -91,15 +93,15 @@ impl Distribution<TileStyle> for Standard {
 }
 
 // Describes the position of the glyph within the tile when rendered:
-// Center   - centered within the tile
-// Floor    - centered horizontally but aligned with the bottom of the tile vertically
-// Text     - positioned based on font metrics (as though it was text)
-// Exact    - positioned based on offset values (from the center position)
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum TileLayout {
+    // Centered within the tile
     Center,
+    // Centered horizontally but aligned with the bottom of the tile vertically
     Floor,
+    // Positioned based on font metrics (as though it was text)
     Text,
+    // Positioned based on offset values (from the center position)
     Exact((i32, i32)),
 }
 

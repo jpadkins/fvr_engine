@@ -32,6 +32,9 @@ use crate::terminal::*;
 // Normalization value to convert u8 color to OpenGL float representation.
 const COLOR_NORMALIZE_8BIT: GLfloat = 1.0 / 255.0;
 
+// Relative path to the fonts directory.
+const FONTS_PATH: &str = "./resources/fonts/";
+
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
 // The background shader program will only use position and color[3].
@@ -99,10 +102,17 @@ pub struct RendererV2 {
     // A blank vertex array used when rendering the vignette.
     vignette_vertex_array: GLuint,
     // Array of font textures for every tile style.
+    // The first half of the array will contain the non-outlined textures.
+    // The second half of the array will contain the outlined textures.
     textures: [GLuint; TILE_STYLE_COUNT * 2],
     // Normalization values for texel in pixels to texel in OpenGL space for every font texture.
+    // The first half of the array will contain the non-outlined texture normalization values.
+    // The second half of the array will contain the outlined texture normalization values.
     texel_normalize: [(f32, f32); TILE_STYLE_COUNT * 2],
-    // Map of u32 codepoint to corresponding glyph metrics for every font texture.
+    // Vec of maps of u32 codepoint to corresponding glyph metrics for every font texture.
+    // Length will equal TILE_STYLE_COUNT * 2.
+    // The first half of the vec will contain maps for the non-outlined metrics.
+    // The second half of the vec will contain maps for the outlined metrics.
     metrics: Vec<HashMap<u32, GlyphMetric>>,
 }
 
@@ -111,14 +121,13 @@ impl RendererV2 {
     // Creates a new renderer.
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
-    pub fn new<P>(
+    pub fn new<S>(
         tile_dimensions: (u32, u32),
         terminal_dimensions: (u32, u32),
-        texture_path: P,
-        metrics_path: P,
+        font_name: S,
     ) -> Result<Self>
     where
-        P: AsRef<Path>,
+        S: AsRef<str>,
     {
         // Default clear color (this will change).
         let clear_color = SdlColor::RGB(25, 50, 75);
@@ -479,8 +488,7 @@ impl RendererV2 {
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
             let path_string =
-                &["./resources/font_atlases/", "fantasque_sans_mono/", TILE_STYLE_NAMES[i], ".png"]
-                    .concat();
+                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".png"].concat();
 
             let dimensions =
                 load_texture(Path::new(path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
@@ -495,13 +503,9 @@ impl RendererV2 {
 
         // Bind and upload the outlined textures.
         for i in 0..TILE_STYLE_COUNT {
-            let path_string = &[
-                "./resources/font_atlases/",
-                "fantasque_sans_mono/",
-                TILE_STYLE_NAMES[i],
-                "_outline.png",
-            ]
-            .concat();
+            let path_string =
+                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.png"]
+                    .concat();
 
             // Offset the index for outlined textures.
             let index = i + TILE_STYLE_COUNT;
@@ -554,13 +558,8 @@ impl RendererV2 {
 
         // Load the non-outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
-            let path_string = &[
-                "./resources/font_atlases/",
-                "fantasque_sans_mono/",
-                TILE_STYLE_NAMES[i],
-                ".toml",
-            ]
-            .concat();
+            let path_string =
+                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat();
             let path = Path::new(path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
@@ -578,13 +577,9 @@ impl RendererV2 {
 
         // Load the outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
-            let path_string = &[
-                "./resources/font_atlases/",
-                "fantasque_sans_mono/",
-                TILE_STYLE_NAMES[i],
-                "_outline.toml",
-            ]
-            .concat();
+            let path_string =
+                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.toml"]
+                    .concat();
             let path = Path::new(path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
