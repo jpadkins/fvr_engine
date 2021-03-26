@@ -65,7 +65,7 @@ struct Vertex {
 // A single vertex specification is used for both the "background" (basic colored quads) and
 // "foreground" (colored and textured quads of glyphs or outlines). The background shader program
 // simply ignores the unneeded data from the array buffer. This allows us to only use one array
-// buffer for bother draw calls and avoid switching bindings.
+// buffer for both draw calls and avoid switching bindings.
 //-------------------------------------------------------------------------------------------------
 pub struct RendererV2 {
     // Dimensions of each tile in the terminal in # of pixels.
@@ -999,6 +999,7 @@ impl Drop for RendererV2 {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures((TILE_STYLE_COUNT * 2) as GLint, &self.textures[0]);
+            gl::DeleteVertexArrays(1, &self.vignette_vertex_array);
             gl::DeleteVertexArrays(2, &self.foreground_vertex_arrays[0]);
             gl::DeleteProgram(self.foreground_program);
             gl::DeleteVertexArrays(2, &self.background_vertex_arrays[0]);
