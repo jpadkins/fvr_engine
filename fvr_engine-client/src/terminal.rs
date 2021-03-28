@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------------------------------------
 use itertools::Itertools;
 use rand::seq::SliceRandom;
+use rand::Rng;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -26,39 +27,11 @@ impl Terminal {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns the width of the terminal.
-    //---------------------------------------------------------------------------------------------
-    pub fn width(&self) -> u32 {
-        self.tiles.width()
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns the height of the terminal.
-    //---------------------------------------------------------------------------------------------
-    pub fn height(&self) -> u32 {
-        self.tiles.height()
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns a ref to the tile at an xy coord.
-    //---------------------------------------------------------------------------------------------
-    pub fn tile(&self, (x, y): (u32, u32)) -> &Tile {
-        self.tiles.get_xy(x, y)
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns a mut ref to the tile at an xy coord.
-    //---------------------------------------------------------------------------------------------
-    pub fn tile_mut(&mut self, (x, y): (u32, u32)) -> &mut Tile {
-        self.tiles.get_xy_mut(x, y)
-    }
-
-    //---------------------------------------------------------------------------------------------
     // Updates the value of the tile at an xy coord with optional arguments.
     //---------------------------------------------------------------------------------------------
     pub fn update_tile_fields(
         &mut self,
-        (x, y): (u32, u32),
+        xy: (u32, u32),
         glyph: Option<char>,
         layout: Option<TileLayout>,
         style: Option<TileStyle>,
@@ -68,7 +41,7 @@ impl Terminal {
         foreground_color: Option<TileColor>,
         outline_color: Option<TileColor>,
     ) {
-        let tile = self.tiles.get_xy_mut(x, y);
+        let tile = self.tiles.get_xy_mut(xy);
 
         if let Some(glyph) = glyph {
             tile.glyph = glyph;
@@ -102,7 +75,7 @@ impl Terminal {
     pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())
-            .map(move |(x, y)| ((x, y), self.tiles.get_xy(x, y)))
+            .map(move |xy| (xy, self.tiles.get_xy(xy)))
     }
 
     //---------------------------------------------------------------------------------------------
@@ -113,11 +86,65 @@ impl Terminal {
 
         for tile in self.tiles.data_mut() {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
-            tile.style = rand::random();
-            tile.outlined = rand::random();
+            tile.style = rng.gen();
+            tile.outlined = rng.gen();
             tile.background_color = TileColor::rgb(25, 50, 75);
-            tile.foreground_color = rand::random();
-            tile.outline_color = rand::random();
+            tile.foreground_color = rng.gen();
+            tile.outline_color = rng.gen();
         }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Impl Map2dView for Terminal.
+//-------------------------------------------------------------------------------------------------
+impl Map2dView for Terminal {
+    type Type = Tile;
+
+    fn width(&self) -> u32 {
+        self.tiles.width()
+    }
+
+    fn height(&self) -> u32 {
+        self.tiles.height()
+    }
+
+    fn data(&self) -> &[Self::Type] {
+        self.tiles.data()
+    }
+
+    fn get(&self, index: usize) -> &Self::Type {
+        self.tiles.get(index)
+    }
+
+    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+        self.tiles.get_xy(xy)
+    }
+
+    fn get_point(&self, point: &Point) -> &Self::Type {
+        self.tiles.get_point(point)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Impl Map2dViewMut for Terminal.
+//-------------------------------------------------------------------------------------------------
+impl Map2dViewMut for Terminal {
+    type Type = Tile;
+
+    fn data_mut(&mut self) -> &mut [Self::Type] {
+        self.tiles.data_mut()
+    }
+
+    fn get_mut(&mut self, index: usize) -> &mut Self::Type {
+        self.tiles.get_mut(index)
+    }
+
+    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
+        self.tiles.get_xy_mut(xy)
+    }
+
+    fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
+        self.tiles.get_point_mut(point)
     }
 }

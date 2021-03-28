@@ -3,7 +3,7 @@ use criterion::*;
 use fvr_engine_parser::prelude::*;
 
 const TEST_RICH_STR: &str =
-    "<l:t><o:f>\n<fc:Y><bc:k><<<oc:k>Hello, <l:c><o:t><fc:k><oc:R>world<l:t>\n<o:f><fc:Y>!";
+    "<l:t><si:n><st:bi><o:f>\n<fc:Y><bc:k><<<oc:k>Hello, <l:c><o:t><fc:k><oc:R>world<l:t>\n<o:f><fc:Y>!";
 
 pub fn benchmark(c: &mut Criterion) {
     let short: &str = TEST_RICH_STR;

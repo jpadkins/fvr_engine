@@ -1,4 +1,4 @@
-use bracket_geometry::prelude::Point;
+pub use bracket_geometry::prelude::Point;
 
 pub trait Map2dType: Copy + Default {}
 impl<T> Map2dType for T where T: Copy + Default {}
@@ -14,7 +14,7 @@ pub trait Map2dView {
 
     fn get(&self, index: usize) -> &Self::Type;
 
-    fn get_xy(&self, x: u32, y: u32) -> &Self::Type;
+    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type;
 
     fn get_point(&self, point: &Point) -> &Self::Type;
 }
@@ -26,7 +26,7 @@ pub trait Map2dViewMut {
 
     fn get_mut(&mut self, index: usize) -> &mut Self::Type;
 
-    fn get_xy_mut(&mut self, x: u32, y: u32) -> &mut Self::Type;
+    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type;
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type;
 }

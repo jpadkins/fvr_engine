@@ -5,7 +5,7 @@ use crate::traits::*;
 
 pub enum TranslateMapTranslation {
     SubSection(Rect),
-    Lambda(Box<dyn Fn(u32, u32) -> (u32, u32)>),
+    Lambda(Box<dyn Fn((u32, u32)) -> (u32, u32)>),
 }
 
 // Provides GridMap functionality for a subsection of a GridMap.
@@ -38,12 +38,12 @@ where
             match translation {
                 TranslateMapTranslation::SubSection(rect) => {
                     let (x, y) = Misc::reverse_index_2d(index, self.width());
-                    Misc::index_2d(x + rect.x1 as u32, y + rect.y1 as u32, rect.width() as u32)
+                    Misc::index_2d((x + rect.x1 as u32, y + rect.y1 as u32), rect.width() as u32)
                 }
                 TranslateMapTranslation::Lambda(lambda) => {
-                    let (x, y) = Misc::reverse_index_2d(index, self.width());
-                    let (x, y) = lambda(x, y);
-                    Misc::index_2d(x, y, self.width())
+                    let xy = Misc::reverse_index_2d(index, self.width());
+                    let xy = lambda(xy);
+                    Misc::index_2d(xy, self.width())
                 }
             }
         } else {
@@ -51,13 +51,13 @@ where
         }
     }
 
-    fn translate_xy(&self, x: u32, y: u32) -> (u32, u32) {
+    fn translate_xy(&self, (x, y): (u32, u32)) -> (u32, u32) {
         if let Some(translation) = &self.translation {
             match translation {
                 TranslateMapTranslation::SubSection(rect) => {
                     (x + rect.x1 as u32, y + rect.y1 as u32)
                 }
-                TranslateMapTranslation::Lambda(lambda) => lambda(x, y),
+                TranslateMapTranslation::Lambda(lambda) => lambda((x, y)),
             }
         } else {
             (x, y)
@@ -71,7 +71,7 @@ where
                     Point::new(point.x + rect.x1, point.y + rect.y1)
                 }
                 TranslateMapTranslation::Lambda(lambda) => {
-                    let (x, y) = lambda(point.x as u32, point.y as u32);
+                    let (x, y) = lambda((point.x as u32, point.y as u32));
                     Point::new(x as i32, y as i32)
                 }
             }
@@ -103,9 +103,9 @@ where
         self.base_map.get(self.translate(index))
     }
 
-    fn get_xy(&self, x: u32, y: u32) -> &Self::Type {
-        let (x, y) = self.translate_xy(x, y);
-        self.base_map.get_xy(x, y)
+    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+        let xy = self.translate_xy(xy);
+        self.base_map.get_xy(xy)
     }
 
     fn get_point(&self, point: &Point) -> &Self::Type {
@@ -127,9 +127,9 @@ where
         self.base_map.get_mut(self.translate(index))
     }
 
-    fn get_xy_mut(&mut self, x: u32, y: u32) -> &mut Self::Type {
-        let (x, y) = self.translate_xy(x, y);
-        self.base_map.get_xy_mut(x, y)
+    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
+        let xy = self.translate_xy(xy);
+        self.base_map.get_xy_mut(xy)
     }
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
@@ -139,31 +139,40 @@ where
 
 #[test]
 fn test_view_map() {
-    fn test_trait_obj_function<T>(obj: &dyn Map2dView<Type = T>) -> T
+    fn trait_func<M, T>(obj: &M) -> T
+    where
+        T: Map2dType,
+        M: Map2dView<Type = T>,
+    {
+        *obj.get_xy((4, 5))
+    }
+
+    fn dyn_trait_func<T>(obj: &dyn Map2dView<Type = T>) -> T
     where
         T: Map2dType,
     {
-        *obj.get_xy(4, 5)
+        *obj.get_xy((4, 5))
     }
 
     let mut grid_map = crate::grid_map::GridMap::new(10, 10);
-    *grid_map.get_xy_mut(1, 0) = 10;
-    *grid_map.get_xy_mut(5, 5) = 10;
+    *grid_map.get_xy_mut((1, 0)) = 10;
+    *grid_map.get_xy_mut((5, 5)) = 10;
 
     let view_map = TranslateMap::new(&mut grid_map, None);
-    assert_eq!(*view_map.get_xy(1, 0), 10);
-    assert_eq!(*view_map.get_xy(5, 5), 10);
+    assert_eq!(*view_map.get_xy((1, 0)), 10);
+    assert_eq!(*view_map.get_xy((5, 5)), 10);
 
     let translation = TranslateMapTranslation::SubSection(Rect::with_size(1, 0, 10, 10));
     let view_map = TranslateMap::new(&mut grid_map, Some(translation));
     assert_eq!(*view_map.get(0), 10);
-    assert_eq!(*view_map.get_xy(4, 5), 10);
+    assert_eq!(*view_map.get_xy((4, 5)), 10);
     assert_eq!(*view_map.get_point(&Point::new(4, 5)), 10);
 
-    let translation = TranslateMapTranslation::Lambda(Box::new(|x, y| (x + 1, y)));
+    let translation = TranslateMapTranslation::Lambda(Box::new(|(x, y)| (x + 1, y)));
     let view_map = TranslateMap::new(&mut grid_map, Some(translation));
     assert_eq!(*view_map.get(0), 10);
-    assert_eq!(*view_map.get_xy(4, 5), 10);
+    assert_eq!(*view_map.get_xy((4, 5)), 10);
     assert_eq!(*view_map.get_point(&Point::new(4, 5)), 10);
-    assert_eq!(test_trait_obj_function(&view_map), 10);
+    assert_eq!(trait_func(&view_map), 10);
+    assert_eq!(dyn_trait_func(&view_map), 10);
 }

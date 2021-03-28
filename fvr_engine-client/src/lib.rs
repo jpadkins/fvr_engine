@@ -7,8 +7,12 @@ mod renderer_v2;
 mod shader_strings;
 mod terminal;
 
+mod widgets;
+
 pub mod prelude {
     pub use crate::client::*;
     pub use crate::input_manager::*;
     pub use crate::terminal::*;
+
+    pub use crate::widgets::prelude::*;
 }

@@ -29,6 +29,13 @@ fn main() -> Result<()> {
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings();
 
+    let mut test_wrapper = RichTextWrapper::new(20, 2);
+    test_wrapper.append("<l:c>Hello,<<foo> world! Can't <fc:r>BELIEVE<fc:Y> this is working!!")?;
+    test_wrapper.draw((0, 0));
+    println!("-------------------");
+    test_wrapper.scroll_down(1);
+    test_wrapper.draw((0, 0));
+
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
