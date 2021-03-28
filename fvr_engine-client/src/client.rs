@@ -221,7 +221,18 @@ impl Client {
     // (should be consumed once per game loop)
     //---------------------------------------------------------------------------------------------
     pub fn update_input(&self, input: &mut InputManager) {
-        input.update(&self.event_pump.keyboard_state());
+        // Skip updating input if the debug gui is currently enabled.
+        if self.debug_enabled {
+            return;
+        }
+
+        // Calculate the terminal coord of the mouse if it is within bounds.
+        let mouse_state = &self.event_pump.mouse_state();
+        let mouse_coord =
+            self.renderer.screen_to_terminal_coords((mouse_state.x(), mouse_state.y()));
+
+        // Update input.
+        input.update(&self.event_pump.keyboard_state(), mouse_state, mouse_coord);
     }
 
     //---------------------------------------------------------------------------------------------
@@ -283,7 +294,7 @@ impl Client {
             .sync_with_terminal(terminal)
             .context("Failed to sync renderer state with terminal.")?;
 
-        // Actually render a frame.
+        // Render a frame.
         //-----------------------------------------------------------------------------------------
         self.renderer.render()?;
 

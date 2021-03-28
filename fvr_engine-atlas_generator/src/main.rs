@@ -100,7 +100,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
     // Load default metric and atlas.
     let default_metrics =
         parse_metrics(&format!("{}/{}/{}.fnt", FONTS_DIR, DEFAULT_FONT, font_name))?;
-    let default_atlas = load_image(&format!("{}/{}/{}_0.png", FONTS_DIR, DEFAULT_FONT, font_name))?;
+    let default_atlas =
+        load_image(&format!("{}/{}/{}_0.png", FONTS_DIR, DEFAULT_FONT, font_name))?;
 
     // Load font metric and atlas.
     let metrics = parse_metrics(&format!("{}/{}/{}.fnt", FONTS_DIR, name, font_name))?;

@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 //-------------------------------------------------------------------------------------------------
 use sdl2::keyboard::KeyboardState;
 pub use sdl2::keyboard::Keycode as SdlKey;
+use sdl2::mouse::MouseState;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -56,6 +57,12 @@ pub enum InputBinding {
 //-------------------------------------------------------------------------------------------------
 #[derive(Debug, Default)]
 pub struct InputManager {
+    // Current pressed state of left and right mouse buttons.
+    mouse_pressed: (bool, bool),
+    // Current clicked (just pressed) state of left and right mouse buttons.
+    mouse_clicked: (bool, bool),
+    // Current coord of the mouse within the faux terminal (or none if it is out of bounds).
+    mouse_coord: Option<(u32, u32)>,
     // Set of keys that are currently pressed.
     pressed_keys: HashSet<SdlKey>,
     // Set of keys that have become pressed this frame.
@@ -117,7 +124,12 @@ impl InputManager {
     // Updates the input manager from current keyboard state.
     // (should be called once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update(&mut self, keyboard_state: &KeyboardState) {
+    pub fn update(
+        &mut self,
+        keyboard_state: &KeyboardState,
+        mouse_state: &MouseState,
+        mouse_coord: Option<(u32, u32)>,
+    ) {
         // Update key states.
         //-----------------------------------------------------------------------------------------
 
@@ -165,6 +177,19 @@ impl InputManager {
                 }
             }
         }
+
+        // Update mouse states.
+        //-----------------------------------------------------------------------------------------
+
+        // Set clicked to true if the mouse button was not pressed last frame.
+        self.mouse_clicked.0 = !self.mouse_pressed.0 && mouse_state.left();
+        self.mouse_clicked.1 = !self.mouse_pressed.1 && mouse_state.right();
+
+        // Set remaining state.
+        self.mouse_pressed.0 = mouse_state.left();
+        self.mouse_pressed.1 = mouse_state.right();
+
+        self.mouse_coord = mouse_coord;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -179,6 +204,27 @@ impl InputManager {
         // Clear the action state.
         self.pressed_actions.clear();
         self.just_pressed_actions.clear();
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns current pressed state of the mouse buttons
+    //---------------------------------------------------------------------------------------------
+    pub fn mouse_pressed(&self) -> (bool, bool) {
+        self.mouse_pressed
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns current clicked state of the mouse buttons
+    //---------------------------------------------------------------------------------------------
+    pub fn mouse_clicked(&self) -> (bool, bool) {
+        self.mouse_clicked
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns current mouse coord within the faux terminal (or none if out of bounds).
+    //---------------------------------------------------------------------------------------------
+    pub fn mouse_coord(&self) -> Option<(u32, u32)> {
+        self.mouse_coord
     }
 
     //---------------------------------------------------------------------------------------------

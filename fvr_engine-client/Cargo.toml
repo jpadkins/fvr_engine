@@ -8,7 +8,7 @@ edition = "2018"
 fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 anyhow = "1.0.38"
 gl = "0.14.0"
-glam = "0.12.0"
+glam = "0.13.1"
 image = "0.23.14"
 imgui = "0.7.0"
 imgui-opengl-renderer = "0.11.0"

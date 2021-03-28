@@ -1,9 +1,4 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
-//-------------------------------------------------------------------------------------------------
-use std::time::Duration;
-
-//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
@@ -33,7 +28,6 @@ fn main() -> Result<()> {
     )?;
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings();
-    let mut timer = Timer::new(Duration::from_millis(16));
 
     'main: loop {
         while let Some(event) = client.poll_event() {
@@ -50,14 +44,27 @@ fn main() -> Result<()> {
 
         client.update_input(&mut input);
 
-        let delta = client.render_frame(&terminal)?;
-
-        if timer.update(delta) {
-            if input.action_pressed(InputAction::Accept) {
-                terminal.randomize();
-            }
-            input.reset();
+        if input.action_pressed(InputAction::Accept) {
+            terminal.randomize();
         }
+        if let Some(coord) = input.mouse_coord() {
+            if input.mouse_pressed().0 {
+                terminal.update_tile_fields(
+                    coord,
+                    Some('#'),
+                    None,
+                    Some(TileStyle::Regular),
+                    None,
+                    Some(false),
+                    Some(TileColor::BLUE),
+                    Some(TileColor::RED),
+                    None,
+                );
+            }
+        }
+        input.reset();
+
+        let _ = client.render_frame(&terminal)?;
     }
 
     Ok(())

@@ -42,14 +42,14 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Returns a ref to the tile at an xy coord.
     //---------------------------------------------------------------------------------------------
-    pub fn tile(&self, x: u32, y: u32) -> &Tile {
+    pub fn tile(&self, (x, y): (u32, u32)) -> &Tile {
         self.tiles.get_xy(x, y)
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns a mut ref to the tile at an xy coord.
     //---------------------------------------------------------------------------------------------
-    pub fn tile_mut(&mut self, x: u32, y: u32) -> &mut Tile {
+    pub fn tile_mut(&mut self, (x, y): (u32, u32)) -> &mut Tile {
         self.tiles.get_xy_mut(x, y)
     }
 
@@ -58,8 +58,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     pub fn update_tile_fields(
         &mut self,
-        x: u32,
-        y: u32,
+        (x, y): (u32, u32),
         glyph: Option<char>,
         layout: Option<TileLayout>,
         style: Option<TileStyle>,
@@ -100,7 +99,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Iterates the xy coords in the terminal and their corresponding tiles.
     //---------------------------------------------------------------------------------------------
-    pub fn tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
+    pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())
             .map(move |(x, y)| ((x, y), self.tiles.get_xy(x, y)))

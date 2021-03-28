@@ -158,7 +158,8 @@ fn test_layout_value_parser() {
     assert_eq!(layout_value_parser("f"), Ok(("", "f")));
     assert_eq!(layout_value_parser("t"), Ok(("", "t")));
 
-    let error = nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
     assert_eq!(layout_value_parser("z"), Err(error));
 }
 
@@ -213,7 +214,8 @@ fn test_outlined_value_parser() {
     assert_eq!(outlined_value_parser("t"), Ok(("", "t")));
     assert_eq!(outlined_value_parser("f"), Ok(("", "f")));
 
-    let error = nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
     assert_eq!(outlined_value_parser("z"), Err(error));
 }
 
@@ -352,19 +354,31 @@ fn test_parse_rich_text() {
         vec![
             RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() },
             RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "f".into() },
-            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "Y".into() },
-            RichTextValue::FormatHint { key: RichTextHintType::BackgroundColor, value: "k".into() },
+            RichTextValue::FormatHint {
+                key: RichTextHintType::ForegroundColor,
+                value: "Y".into()
+            },
+            RichTextValue::FormatHint {
+                key: RichTextHintType::BackgroundColor,
+                value: "k".into()
+            },
             RichTextValue::Text("<".into()),
             RichTextValue::FormatHint { key: RichTextHintType::OutlineColor, value: "k".into() },
             RichTextValue::Text("Hello, ".into()),
             RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "c".into() },
             RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "t".into() },
-            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "k".into() },
+            RichTextValue::FormatHint {
+                key: RichTextHintType::ForegroundColor,
+                value: "k".into()
+            },
             RichTextValue::FormatHint { key: RichTextHintType::OutlineColor, value: "R".into() },
             RichTextValue::Text("world".into()),
             RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() },
             RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "f".into() },
-            RichTextValue::FormatHint { key: RichTextHintType::ForegroundColor, value: "Y".into() },
+            RichTextValue::FormatHint {
+                key: RichTextHintType::ForegroundColor,
+                value: "Y".into()
+            },
             RichTextValue::Text("!".into()),
         ]
     );

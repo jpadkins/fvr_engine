@@ -35,6 +35,9 @@ const COLOR_NORMALIZE_8BIT: GLfloat = 1.0 / 255.0;
 // Relative path to the fonts directory.
 const FONTS_PATH: &str = "./resources/fonts/";
 
+// Whether to alternate drawing/updating between two sets of array buffers and vertex arrays.
+const USE_DOUBLE_BUFFERS: bool = true;
+
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
 // The background shader program will only use position and color[3].
@@ -74,6 +77,10 @@ pub struct RendererV2 {
     terminal_dimensions: (u32, u32),
     // Frame clear color.
     clear_color: SdlColor,
+    // Cached current size of the viewport.
+    viewport: [GLint; 4],
+    // Inverse projection matrix for converting screen coords to world coords.
+    inverse_projection: Mat4,
     // Stores index of current vertex buffer and vertex array (0 or 1).
     target_backbuffer: bool,
     // Single index buffer to store indices of max # of quads.
@@ -89,6 +96,8 @@ pub struct RendererV2 {
     background_vertices: Vec<Vertex>,
     // Location of the projection matrix in the background shader program.
     background_projection_location: GLint,
+    // Cached count of background indices for use when drawing.
+    background_indices_len: [GLsizei; 2],
     // Shader program used for rendering the foreground.
     foreground_program: GLuint,
     // Vertex Arrays for storing foreground vertex attributes.
@@ -97,6 +106,8 @@ pub struct RendererV2 {
     foreground_vertices: Vec<Vertex>,
     // Location of the projection matrix in the foreground shader program.
     foreground_projection_location: GLint,
+    // Cached count of foreground indices for use when drawing.
+    foreground_indices_len: [GLsizei; 2],
     // Shader program used for rendering the vignette.
     vignette_program: GLuint,
     // A blank vertex array used when rendering the vignette.
@@ -131,6 +142,12 @@ impl RendererV2 {
     {
         // Default clear color (this will change).
         let clear_color = SdlColor::RGB(25, 50, 75);
+
+        // Viewport will be set the first time the viewport is updated.
+        let viewport = [GLint::default(); 4];
+
+        // Inverse projection will be set the first time the viewport is updated.
+        let inverse_projection = Mat4::IDENTITY;
 
         // Start the vertex buffer / vertex array index at 0.
         let target_backbuffer = false;
@@ -200,11 +217,18 @@ impl RendererV2 {
 
         // Find the location of the projection matrix uniforms.
         //-----------------------------------------------------------------------------------------
-        let background_projection_location = get_uniform_location(background_program, "projection")
-            .context("Failed to obtain background projection matrix uniform location.")?;
+        let background_projection_location =
+            get_uniform_location(background_program, "projection")
+                .context("Failed to obtain background projection matrix uniform location.")?;
 
-        let foreground_projection_location = get_uniform_location(foreground_program, "projection")
-            .context("Failed to obtain foreground projection matrix uniform location.")?;
+        let foreground_projection_location =
+            get_uniform_location(foreground_program, "projection")
+                .context("Failed to obtain foreground projection matrix uniform location.")?;
+
+        // Indices len will be updated whenever the vertex data is updated.
+        //-----------------------------------------------------------------------------------------
+        let background_indices_len = [Default::default(); 2];
+        let foreground_indices_len = [Default::default(); 2];
 
         // Populate index buffer with max # of quads.
         //-----------------------------------------------------------------------------------------
@@ -341,7 +365,9 @@ impl RendererV2 {
                     // Offset.
                     (mem::size_of::<GLfloat>() * 2) as *const c_void,
                 );
-                gl_error_unwrap!("Failed to set color attrib pointer for background vertex array.");
+                gl_error_unwrap!(
+                    "Failed to set color attrib pointer for background vertex array."
+                );
 
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable color attrib for background vertex array.");
@@ -414,7 +440,9 @@ impl RendererV2 {
                     // Offset.
                     (mem::size_of::<GLfloat>() * 2) as *const c_void,
                 );
-                gl_error_unwrap!("Failed to set color attrib pointer for foreground vertex array.");
+                gl_error_unwrap!(
+                    "Failed to set color attrib pointer for foreground vertex array."
+                );
 
                 gl::EnableVertexAttribArray(location as GLuint);
                 gl_error_unwrap!("Failed to enable color attrib for foreground vertex array.");
@@ -443,7 +471,9 @@ impl RendererV2 {
                 );
 
                 gl::EnableVertexAttribArray(location as GLuint);
-                gl_error_unwrap!("Failed to enable tex_coords attrib for foreground vertex array.");
+                gl_error_unwrap!(
+                    "Failed to enable tex_coords attrib for foreground vertex array."
+                );
             }
 
             let location = get_attrib_location(foreground_program, "tex_index")
@@ -541,6 +571,9 @@ impl RendererV2 {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl_error_unwrap!("Failed to set blend func.");
 
+            // Ensure depth testing is disblaed.
+            gl::Disable(gl::DEPTH_TEST);
+
             // Update the OpenGL clear color.
             gl::ClearColor(
                 clear_color.r as GLfloat * COLOR_NORMALIZE_8BIT,
@@ -602,6 +635,8 @@ impl RendererV2 {
             tile_dimensions,
             terminal_dimensions,
             clear_color,
+            viewport,
+            inverse_projection,
             target_backbuffer,
             index_buffer,
             vertex_buffers,
@@ -609,10 +644,12 @@ impl RendererV2 {
             background_vertex_arrays,
             background_vertices,
             background_projection_location,
+            background_indices_len,
             foreground_program,
             foreground_vertex_arrays,
             foreground_vertices,
             foreground_projection_location,
+            foreground_indices_len,
             vignette_program,
             vignette_vertex_array,
             textures,
@@ -625,10 +662,14 @@ impl RendererV2 {
     // Update the OpenGL viewport and projection matrices for a new window size.
     // (should be called whenever the window size changes and no more than once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update_viewport(&self, (width, height): (u32, u32)) -> Result<()> {
-        // Update the OpenGL viewport.
+    pub fn update_viewport(&mut self, (width, height): (u32, u32)) -> Result<()> {
+        // Update the OpenGL viewport and query and save the new size.
         unsafe {
             gl::Viewport(0, 0, width as GLsizei, height as GLsizei);
+            gl_error_unwrap!();
+
+            gl::GetIntegerv(gl::VIEWPORT, &mut self.viewport[0]);
+            gl_error_unwrap!();
         }
 
         // Find the dimensions (in pixels) of the quad grid.
@@ -658,8 +699,9 @@ impl RendererV2 {
         let projection = Mat4::orthographic_lh(0.0, width as f32, height as f32, 0.0, 0.0, 1.0);
         let translate = Mat4::from_translation(Vec3::new(x_translate, y_translate, 0.0));
         let scale = Mat4::from_scale(Vec3::new(scale, scale, 1.0));
+        let combined = projection * translate * scale;
 
-        let projection_data = (projection * translate * scale).to_cols_array();
+        let uniform_data = combined.to_cols_array();
 
         // Upload the new uniform data to both the background and foreground shader programs.
         unsafe {
@@ -670,7 +712,7 @@ impl RendererV2 {
                 self.background_projection_location,
                 1,
                 gl::FALSE as GLboolean,
-                &projection_data as *const f32,
+                &uniform_data as *const f32,
             );
             gl_error_unwrap!("Failed to update background projection matrix.");
 
@@ -681,12 +723,56 @@ impl RendererV2 {
                 self.foreground_projection_location,
                 1,
                 gl::FALSE as GLboolean,
-                &projection_data as *const f32,
+                &uniform_data as *const f32,
             );
             gl_error_unwrap!("Failed to update foreground projection matrix.");
         }
 
+        // Save the inverse projection matrix for converting screen coords to world coords.
+        self.inverse_projection = combined.inverse();
+
         Ok(())
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Convert a coord in screen space to the corresponding coord in world space.
+    //---------------------------------------------------------------------------------------------
+    pub fn screen_to_world_coords(&self, (x, y): (i32, i32)) -> Option<(i32, i32)> {
+        // Convert the screen coords to [-1, 1]
+        let normalized_x = -1.0 + 2.0 * x as f32 / self.viewport[2] as f32;
+        let normalized_y = 1.0 - 2.0 * y as f32 / self.viewport[3] as f32;
+
+        // Apply the invert projection matrix to convert to world coords.
+        let projected = self.inverse_projection.mul_vec4(glam::Vec4::new(
+            normalized_x,
+            normalized_y,
+            1.0,
+            1.0,
+        ));
+
+        // Cast the coords to int.
+        let x = projected.x as i32;
+        let y = projected.y as i32;
+
+        // Return the world coords if they are in bounds of the faux terminal.
+        if x >= 0
+            && x < (self.terminal_dimensions.0 * self.tile_dimensions.0) as i32
+            && y >= 0
+            && y < (self.terminal_dimensions.1 * self.tile_dimensions.1) as i32
+        {
+            Some((x, y))
+        } else {
+            None
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Convert a coord in screen space to the corresponding tile coord in the faux terminal.
+    //---------------------------------------------------------------------------------------------
+    pub fn screen_to_terminal_coords(&self, (x, y): (i32, i32)) -> Option<(u32, u32)> {
+        let world = self.screen_to_world_coords((x, y))?;
+
+        Some((world.0 as u32 / self.tile_dimensions.0, world.1 as u32 / self.tile_dimensions.1))
     }
 
     //---------------------------------------------------------------------------------------------
@@ -758,8 +844,11 @@ impl RendererV2 {
         let mut vertex = Vertex::default();
 
         // Find and set the texture/metric index.
-        let index =
-            if outline_quad { tile.style as usize + TILE_STYLE_COUNT } else { tile.style as usize };
+        let index = if outline_quad {
+            tile.style as usize + TILE_STYLE_COUNT
+        } else {
+            tile.style as usize
+        };
 
         vertex.tex_index = index as GLfloat;
 
@@ -823,12 +912,9 @@ impl RendererV2 {
         self.background_vertices.clear();
         self.foreground_vertices.clear();
 
-        // Determine index for the current vertex buffer and vertex arrays.
-        let noncurrent_index = !self.target_backbuffer as usize;
-
         // Iterate over all tiles, pushing quads for those that are visible.
         //-----------------------------------------------------------------------------------------
-        for (coord, tile) in terminal.tiles_iter() {
+        for (coord, tile) in terminal.coords_and_tiles_iter() {
             // Skip the background quad if it is not visible.
             if tile.background_color != TileColor::TRANSPARENT
                 && tile.background_color.0 != self.clear_color
@@ -856,6 +942,11 @@ impl RendererV2 {
 
         // Update the vertex buffer with the new vertex data.
         //-----------------------------------------------------------------------------------------
+
+        // Determine index for the current vertex buffer and vertex arrays.
+        let noncurrent_index =
+            if USE_DOUBLE_BUFFERS { !self.target_backbuffer } else { self.target_backbuffer }
+                as usize;
 
         // Bind the vertex buffer not currently being rendered.
         unsafe {
@@ -902,6 +993,13 @@ impl RendererV2 {
             gl_error_unwrap!("Failed to unmap vertex buffer.");
         }
 
+        // Calculate and cache the indices counts.
+        self.background_indices_len[noncurrent_index] =
+            ((self.background_vertices.len() / VERTICES_PER_QUAD) * INDICES_PER_QUAD) as GLsizei;
+
+        self.foreground_indices_len[noncurrent_index] =
+            ((self.foreground_vertices.len() / VERTICES_PER_QUAD) * INDICES_PER_QUAD) as GLsizei;
+
         Ok(())
     }
 
@@ -918,13 +1016,6 @@ impl RendererV2 {
         // Determine index for the current vertex arrays.
         let current_index = self.target_backbuffer as usize;
 
-        // Calculate the index length and offset.
-        let background_indices_len =
-            (self.background_vertices.len() / VERTICES_PER_QUAD) * INDICES_PER_QUAD;
-        let foreground_indices_len =
-            (self.foreground_vertices.len() / VERTICES_PER_QUAD) * INDICES_PER_QUAD;
-        let foreground_indices_offset = mem::size_of::<GLuint>() * background_indices_len;
-
         // Draw the background (solid colored quads).
         unsafe {
             // Enable the background shader program and vertex array.
@@ -939,7 +1030,7 @@ impl RendererV2 {
                 // Mode.
                 gl::TRIANGLES,
                 // Size.
-                background_indices_len as GLint,
+                self.background_indices_len[current_index],
                 // Type.
                 gl::UNSIGNED_INT,
                 // Pointer (null because the background starts at the beginning of the VBO).
@@ -947,6 +1038,10 @@ impl RendererV2 {
             );
             gl_error_unwrap!("Failed to draw background elements.");
         }
+
+        // Calculate the foreground offset.
+        let foreground_indices_offset =
+            mem::size_of::<GLuint>() * self.background_indices_len[current_index] as usize;
 
         // Draw the foreground (regular + outline glyphs).
         unsafe {
@@ -962,7 +1057,7 @@ impl RendererV2 {
                 // Mode.
                 gl::TRIANGLES,
                 // Size.
-                foreground_indices_len as GLint,
+                self.foreground_indices_len[current_index],
                 // Type.
                 gl::UNSIGNED_INT,
                 // Pointer (offset by # of background indices).
@@ -986,7 +1081,9 @@ impl RendererV2 {
         }
 
         // Flip the targeted buffer / vertex arrays.
-        self.target_backbuffer = !self.target_backbuffer;
+        if USE_DOUBLE_BUFFERS {
+            self.target_backbuffer = !self.target_backbuffer;
+        }
 
         Ok(())
     }

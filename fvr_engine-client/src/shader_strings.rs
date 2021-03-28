@@ -77,20 +77,20 @@ void main()
 {
     // Apply a subtle blur to reduce scaling artifacts.
     // TODO: Render to framebuffer instead and use better shading techniques?
+    const vec3 blur[9] = vec3[](
+        vec3(-1.0,  1.0, 1.0 / 16.0),
+        vec3(-1.0,  0.0, 2.0 / 16.0),
+        vec3(-1.0,  1.0, 1.0 / 16.0),
+        vec3( 0.0, -1.0, 2.0 / 16.0),
+        vec3( 0.0,  0.0, 4.0 / 16.0),
+        vec3( 0.0,  1.0, 2.0 / 16.0),
+        vec3( 1.0, -1.0, 1.0 / 16.0),
+        vec3( 1.0,  0.0, 2.0 / 16.0),
+        vec3( 1.0,  1.0, 1.0 / 16.0)
+    );
 
     vec2 texel;
-    vec3 blur[9];
     vec4 modifier = vec4(0.0);
-
-    blur[0] = vec3(-1.0,  1.0, 1.0 / 16.0);
-    blur[1] = vec3(-1.0,  0.0, 2.0 / 16.0);
-    blur[2] = vec3(-1.0,  1.0, 1.0 / 16.0);
-    blur[3] = vec3( 0.0, -1.0, 2.0 / 16.0);
-    blur[4] = vec3( 0.0,  0.0, 4.0 / 16.0);
-    blur[5] = vec3( 0.0,  1.0, 2.0 / 16.0);
-    blur[6] = vec3( 1.0, -1.0, 1.0 / 16.0);
-    blur[7] = vec3( 1.0,  0.0, 2.0 / 16.0);
-    blur[8] = vec3( 1.0,  1.0, 1.0 / 16.0);
 
     // In GLSL 330 non-const values cannot be used for indexing arrays in fragment shaders.
     // Hence this garbage...

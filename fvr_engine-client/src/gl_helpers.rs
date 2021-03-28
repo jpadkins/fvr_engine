@@ -27,6 +27,7 @@ pub const INDICES_PER_QUAD: usize = 6;
 //-------------------------------------------------------------------------------------------------
 // Checks the current OpenGL error state and returns it as a result.
 //-------------------------------------------------------------------------------------------------
+#[allow(dead_code)]
 pub fn gl_error_unwrap<D>(msg: Option<D>) -> Result<()>
 where
     D: Display,
@@ -288,9 +289,9 @@ where
         );
         gl_error_unwrap!("Failed to upload texture data.");
 
-        // Generate Mipmaps for faster rasterization when scaling.
-        // gl::GenerateMipmap(gl::TEXTURE_2D);
-        // gl_error_unwrap!("Failed to generate mipmaps.");
+        // Generate Mipmaps. TODO: Do we need to do this?
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        gl_error_unwrap!("Failed to generate mipmaps.");
     }
 
     Ok(texture_dimensions)
