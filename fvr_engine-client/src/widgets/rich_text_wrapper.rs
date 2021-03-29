@@ -1,6 +1,3 @@
-// BEWARE YE WHO ENTER HERE!
-// This code is ANCIENT and EVIL and GENERALLY VERY MESSY.
-
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
@@ -28,7 +25,9 @@ const SPACE_CHARACTER: char = ' ';
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, Default)]
 struct NewlineDescriptor {
+    // Index of the newline in the rich text.
     pub index: usize,
+    // Length of the initial format tag.
     pub offset: usize,
 }
 
@@ -37,14 +36,23 @@ struct NewlineDescriptor {
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Debug, Default)]
 struct FormatState {
+    // Whether the tag string has changed and needs to be rebuilt.
     updated: bool,
+    // The current tag string
     tag_string: RefCell<String>,
+    // Optional layout tag value.
     layout: Option<String>,
+    // Optional style tag value.
     style: Option<String>,
+    // Optional size tag value.
     size: Option<String>,
+    // Optional outlined tag value.
     outlined: Option<String>,
+    // Optional foreground color tag value.
     foreground_color: Option<String>,
+    // Optional background color tag value.
     background_color: Option<String>,
+    // Optional outline color tag value.
     outline_color: Option<String>,
 }
 
@@ -87,6 +95,7 @@ impl FormatState {
             return self.tag_string.borrow();
         }
 
+        // Update the tag string in a new scope so the mut borrow doesn't fight the return ref.
         {
             let mut tag_string = self.tag_string.borrow_mut();
             tag_string.clear();
@@ -359,8 +368,10 @@ impl RichTextWrapper {
     // Append rich text to the rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn append(&mut self, text: &str) -> Result<()> {
+        // Parse the rich text.
         let parsed_values = parse_rich_text(text).context("Failed to parse rich text string.")?;
 
+        // Iterate over and handle each of the parsed values.
         for value in parsed_values.into_iter() {
             match value {
                 RichTextValue::FormatHint { key, value } => self.handle_hint(key, value),
@@ -369,6 +380,7 @@ impl RichTextWrapper {
             }
         }
 
+        // Always update visible area metrics.
         self.refresh_visible_area_metrics();
 
         Ok(())

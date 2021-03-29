@@ -30,3 +30,15 @@ pub trait Map2dViewMut {
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type;
 }
+
+pub trait Map2d<T>: Map2dView<Type = T> + Map2dViewMut<Type = T>
+where
+    T: Map2dType,
+{
+}
+impl<M, T> Map2d<T> for M
+where
+    M: Map2dView<Type = T> + Map2dViewMut<Type = T>,
+    T: Map2dType,
+{
+}

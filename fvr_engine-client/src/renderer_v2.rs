@@ -742,7 +742,7 @@ impl RendererV2 {
         let normalized_x = -1.0 + 2.0 * x as f32 / self.viewport[2] as f32;
         let normalized_y = 1.0 - 2.0 * y as f32 / self.viewport[3] as f32;
 
-        // Apply the invert projection matrix to convert to world coords.
+        // Apply the inverse projection matrix to convert to world coords.
         let projected = self.inverse_projection.mul_vec4(glam::Vec4::new(
             normalized_x,
             normalized_y,
@@ -915,29 +915,25 @@ impl RendererV2 {
         // Iterate over all tiles, pushing quads for those that are visible.
         //-----------------------------------------------------------------------------------------
         for (coord, tile) in terminal.coords_and_tiles_iter() {
-            // Skip the background quad if it is not visible.
-            if tile.background_color != TileColor::TRANSPARENT
-                && tile.background_color.0 != self.clear_color
-            {
+            // Skip the background if it would not be visible.
+            if tile.background_color.0.a != 0 && tile.background_color.0 != self.clear_color {
                 self.push_background_quad(coord, tile);
             }
 
-            // Skip adding the foreground quads if they are not visible.
-            if tile.glyph == ' '
-                || tile.foreground_color == TileColor::TRANSPARENT
-                || tile.foreground_color == tile.background_color
+            // Skip the foreground if it would not be visible
+            if tile.glyph != ' '
+                && tile.foreground_color.0.a != 0
+                && tile.foreground_color != tile.background_color
             {
-                continue;
+                self.push_foreground_quad(coord, tile, false)
+                    .context("Failed to push foreground regular quad")?;
             }
-            self.push_foreground_quad(coord, tile, false)
-                .context("Failed to push foreground regular quad")?;
 
-            // Skip adding the foreground outline quad if the tile is not outlined.
-            if !tile.outlined {
-                continue;
+            // Skip the foreground outline if it is not enabled or would not be visible.
+            if tile.outlined && tile.outline_color.0.a != 0 {
+                self.push_foreground_quad(coord, tile, true)
+                    .context("Failed to push foreground outline quad")?;
             }
-            self.push_foreground_quad(coord, tile, true)
-                .context("Failed to push foreground outline quad")?;
         }
 
         // Update the vertex buffer with the new vertex data.

@@ -53,7 +53,14 @@ fn main() -> Result<()> {
 
         if input.action_pressed(InputAction::Accept) {
             terminal.randomize();
+
+            RichTextWriter::write(
+                &mut terminal,
+                (0, 0),
+                "<l:t><fc:Y><bc:T><o:f><st:r>Hello, world!",
+            )?;
         }
+
         if let Some(coord) = input.mouse_coord() {
             if input.mouse_pressed().0 {
                 terminal.update_tile_fields(
