@@ -18,6 +18,14 @@ const TERMINAL_DIMENSIONS: (u32, u32) = (81, 31); // 103, 37.
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
 
+const TEST_STR: &str = r#"<l:t><st:r><o:f><fc:Y><bc:T>Hello
+World
+This-
+Text-
+has a
+Seven
+Lines"#;
+
 fn main() -> Result<()> {
     let mut client = Client::new(
         WINDOW_TITLE,
@@ -29,12 +37,8 @@ fn main() -> Result<()> {
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings();
 
-    let mut test_wrapper = RichTextWrapper::new(20, 2);
-    test_wrapper.append("<l:c>Hello,<<foo> world! Can't <fc:r>BELIEVE<fc:Y> this is working!!")?;
-    test_wrapper.draw((0, 0));
-    println!("-------------------");
-    test_wrapper.scroll_down(1);
-    test_wrapper.draw((0, 0));
+    let mut text_wrapper = RichTextWrapper::new(20, 3);
+    text_wrapper.append(TEST_STR)?;
 
     'main: loop {
         while let Some(event) = client.poll_event() {
@@ -53,12 +57,17 @@ fn main() -> Result<()> {
 
         if input.action_pressed(InputAction::Accept) {
             terminal.randomize();
+            text_wrapper.draw(&mut terminal, (0, 0))?;
+        }
 
-            RichTextWriter::write(
-                &mut terminal,
-                (0, 0),
-                "<l:t><fc:Y><bc:T><o:f><st:r>Hello, world!",
-            )?;
+        if input.action_just_pressed(InputAction::North) {
+            text_wrapper.scroll_up(1);
+            text_wrapper.draw(&mut terminal, (0, 0))?;
+        }
+
+        if input.action_just_pressed(InputAction::South) {
+            text_wrapper.scroll_down(1);
+            text_wrapper.draw(&mut terminal, (0, 0))?;
         }
 
         if let Some(coord) = input.mouse_coord() {

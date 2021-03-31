@@ -10,8 +10,14 @@ use std::cmp;
 use anyhow::{Context, Result};
 
 //-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::widgets::rich_text_writer::*;
+
+//-------------------------------------------------------------------------------------------------
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
+use fvr_engine_core::prelude::*;
 use fvr_engine_parser::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -19,17 +25,6 @@ use fvr_engine_parser::prelude::*;
 //-------------------------------------------------------------------------------------------------
 const NEWLINE_CHARACTER: char = '\n';
 const SPACE_CHARACTER: char = ' ';
-
-//-------------------------------------------------------------------------------------------------
-// Helper struct for storing extra info needed for newlines.
-//-------------------------------------------------------------------------------------------------
-#[derive(Clone, Copy, Debug, Default)]
-struct NewlineDescriptor {
-    // Index of the newline in the rich text.
-    pub index: usize,
-    // Length of the initial format tag.
-    pub offset: usize,
-}
 
 //-------------------------------------------------------------------------------------------------
 // Helper struct for storing current format state.
@@ -126,13 +121,6 @@ impl FormatState {
         self.updated = false;
         self.tag_string.borrow()
     }
-
-    //---------------------------------------------------------------------------------------------
-    // Return the length of the tag string.
-    //---------------------------------------------------------------------------------------------
-    pub fn tag_string_len(&self) -> usize {
-        self.tag_string.borrow().len()
-    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -155,15 +143,15 @@ pub struct RichTextWrapper {
     // The wrapped rich text.
     wrapped_text: String,
     // Vec of newline indices in the rich text.
-    newlines: Vec<NewlineDescriptor>,
+    newline_indices: Vec<usize>,
     // Current length of the last line.
-    last_line_length: u32,
+    last_line_length: usize,
     // Start index of the visible area (in the rich text).
-    visible_start_index: usize,
+    visible_start: usize,
     // End index of the visible area (in the rich text).
-    visible_end_index: usize,
+    visible_end: usize,
     // Index of the newline at the beginning of the current visible area.
-    current_newline_index: usize,
+    current_line: usize,
 }
 
 impl RichTextWrapper {
@@ -171,10 +159,10 @@ impl RichTextWrapper {
     // Creates a new rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn new(width: u32, height: u32) -> Self {
-        // Push a newline descriptor for the beginning of the wrapped text.
-        let newlines = vec![NewlineDescriptor { index: 0, offset: 0 }];
+        // Push a newline index for the beginning of the wrapped text.
+        let newline_indices = vec![0];
 
-        Self { width, height, newlines, ..Default::default() }
+        Self { width, height, newline_indices, ..Default::default() }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -230,8 +218,7 @@ impl RichTextWrapper {
     // When handling hints we want to...
     // 1. Create the inline tag string to append to the wrapped text.
     // 2. Update the format state.
-    // 3. Update the offset for the current line to reflect the added tag.
-    // 4. Append the inline tag string to the wrapped text.
+    // 3. Append the inline tag string to the wrapped text.
     //---------------------------------------------------------------------------------------------
     fn handle_hint(&mut self, key: RichTextHintType, value: String) {
         // Generate the inline format tag.
@@ -239,9 +226,6 @@ impl RichTextWrapper {
 
         // Update the format state.
         self.format_state.update_from_hint(key, value);
-
-        // Newlines will always contain at least one entry.
-        self.newlines.last_mut().unwrap().offset += self.format_state.tag_string_len();
 
         // Append the inline format tag.
         self.wrapped_text.push_str(&inline_tag);
@@ -266,10 +250,7 @@ impl RichTextWrapper {
         self.wrapped_text.push(NEWLINE_CHARACTER);
 
         // Update the vec of newline descriptors.
-        self.newlines.push(NewlineDescriptor {
-            index: self.wrapped_text.len(),
-            offset: self.format_state.tag_string_len(),
-        });
+        self.newline_indices.push(self.wrapped_text.len());
 
         // Append the current format tag string.
         self.wrapped_text.push_str(&self.format_state.tag_string());
@@ -316,13 +297,13 @@ impl RichTextWrapper {
         debug_assert!(word.is_empty() == false, "Parsed an empty word.");
 
         // If there is not enough room to append the word on this line, break to the next line.
-        if self.last_line_length + word.len() as u32 >= self.width {
+        if self.last_line_length + word.len() >= self.width as usize {
             self.handle_newline();
         }
 
         // Append the word and update the last line length.
         self.wrapped_text.push_str(word);
-        self.last_line_length += word.len() as u32;
+        self.last_line_length += word.len();
     }
 
     //---------------------------------------------------------------------------------------------
@@ -331,36 +312,33 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     fn refresh_visible_area_metrics(&mut self) {
         // Total lines is the # of newlines.
-        self.total_lines = self.newlines.len() as u32;
+        self.total_lines = self.newline_indices.len() as u32;
 
         // Lines up is always equal to the current newline index.
-        self.lines_up = self.current_newline_index as u32;
+        self.lines_up = self.current_line as u32;
 
         // Lines down is the difference between total lines and the last visible line.
-        self.lines_down = cmp::max(
-            self.total_lines as i32 - (self.current_newline_index as i32 + self.height as i32),
-            0,
-        ) as u32;
+        self.lines_down =
+            cmp::max(self.total_lines as i32 - (self.current_line as i32 + self.height as i32), 0)
+                as u32;
 
         // Visible start is the newline index of the current line.
-        self.visible_start_index = self.newlines[self.current_newline_index as usize].index;
+        self.visible_start = self.newline_indices[self.current_line];
 
         // Depending on whether there is room to fill the entire height of the text wrapper, set
         // the visible end index.
         if self.total_lines > self.height {
-            let max_visible_index = self.current_newline_index as u32 + self.height;
-
-            if max_visible_index >= self.total_lines {
+            if self.current_line as u32 + self.height >= self.total_lines {
                 // The entire remainder of the wrapped text is visible.
-                self.visible_end_index = self.wrapped_text.len();
+                self.visible_end = self.wrapped_text.len();
             } else {
                 // The remainder of the wrapped text must be cut off after height.
-                self.visible_end_index =
-                    self.newlines[self.current_newline_index + self.height as usize].index - 1;
+                self.visible_end =
+                    self.newline_indices[self.current_line + self.height as usize] - 1;
             }
         } else {
             // The entire remainder of the wrapped text is visible.
-            self.visible_end_index = self.wrapped_text.len();
+            self.visible_end = self.wrapped_text.len();
         }
     }
 
@@ -391,7 +369,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     pub fn scroll_up(&mut self, lines: u32) {
         // Decrement the current line index, stopping at 0.
-        self.current_newline_index = cmp::max(self.current_newline_index - lines as usize, 0);
+        self.current_line = cmp::max(self.current_line as i32 - lines as i32, 0) as usize;
 
         // Always update visible area metrics.
         self.refresh_visible_area_metrics();
@@ -404,8 +382,8 @@ impl RichTextWrapper {
         // Only scroll down if there is text that might not be visible
         if self.total_lines > self.height {
             // Increment the current line index, stopping at the bottom of the visible area.
-            self.current_newline_index = cmp::min(
-                self.current_newline_index + lines as usize,
+            self.current_line = cmp::min(
+                self.current_line + lines as usize,
                 (self.total_lines - self.height) as usize,
             );
 
@@ -418,7 +396,7 @@ impl RichTextWrapper {
     // Scrolls the visible area to the top.
     //---------------------------------------------------------------------------------------------
     pub fn scroll_to_top(&mut self) {
-        self.current_newline_index = 0;
+        self.current_line = 0;
 
         // Always update visible area metrics.
         self.refresh_visible_area_metrics();
@@ -430,7 +408,7 @@ impl RichTextWrapper {
     pub fn scroll_to_bottom(&mut self) {
         // Only scroll if there is text that might not be visible.
         if self.total_lines > self.height {
-            self.current_newline_index = (self.total_lines - self.height) as usize;
+            self.current_line = (self.total_lines - self.height) as usize;
 
             // Always update visible area metrics.
             self.refresh_visible_area_metrics();
@@ -441,26 +419,31 @@ impl RichTextWrapper {
     // Clear the contents of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn clear(&mut self) {
-        self.current_newline_index = 0;
+        self.current_line = 0;
         self.wrapped_text.clear();
         self.format_state.clear();
-        self.newlines.clear();
-
-        self.newlines.push(NewlineDescriptor { index: 0, offset: 0 });
+        self.newline_indices.clear();
+        self.newline_indices.push(0);
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws the rich text wrapper at an origin point.
     //---------------------------------------------------------------------------------------------
-    pub fn draw(&self, xy: (u32, u32)) {
-        // No need to draw if the wrapped text is empty.
-        if self.total_lines < 1 {
-            return;
+    pub fn draw<M>(&self, map: &mut M, xy: (u32, u32)) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Return if there is no text to draw.
+        if self.total_lines < 1 || self.visible_end - self.visible_start < 1 {
+            return Ok(());
         }
 
         // Create a slice of visible rich text.
-        let visible_slice = &self.wrapped_text[self.visible_start_index..self.visible_end_index];
+        let visible_slice = &self.wrapped_text[self.visible_start..self.visible_end];
 
-        println!("Drawing:\n{}", visible_slice);
+        // Draw the wrapped rich text.
+        RichTextWriter::write(map, xy, visible_slice)?;
+
+        Ok(())
     }
 }
