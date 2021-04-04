@@ -9,23 +9,74 @@ A data-driven text-based roleplaying game engine.
 ## TODO
 
 - implement everything from C# engine.
+  - [x] faux terminal rendering
+  - [x] rich text parsing and drawing
+  - [x] user input & derivative actions handling
+  - [x] input repeater
+  - [x] scenes:
+    - [ ] initial
+    - [ ] main menu
+    - [ ] demo (explore)
+    - [ ] credits
+    - [ ] help
+    - [ ] fade in/out animations
+    - [ ] transition animations
+  - [ ] tile cache deserialized
+  - [ ] cell cache deserialized
+  - [ ] color palette deserialized
+  - [ ] dynamic prefabs
+  - [ ] shadowcasting fov
+  - [ ] geometrical types
+  - [ ] line drawing
+  - [ ] modal popups
+  - [ ] scrolling dialogue windows
 
 - implement "huge" characters
+  - perhaps also per-tile implement animations that "live" in the client?
+    - shake
+    - rotate
+    - wobble back and forth
+    - grow and shrink
 
 ## CRATES
 
 ### fvr_engine
 The main FVR_ENGINE crate. Runs a game from config files.
 
+Includes a "scene stack" for managing game scenes.
+
 ### fvr_engine-core
 Lib containing commonly shared types.
 
+- traits for map2d
+- tile and related structs
+- glyph/font metrics for deserialization
+- timer
+- translate map for viewing map2d with translation
+- grid map for exposing map2d backed by vec
+- cp437 helpers
+
 ### fvr_engine-atlas_generator
+
 Utility for generating atlas textures for codepage 437 from TTF fonts.
 Ensures that all codepoints are covered by filling in any missing entries with DejaVuSansMono.
 
+TODO: Write more detailed tutorial
+
+Basic steps:
+
+  - generate 64pt regular, italic, bold, bold-italic & outline versions for each from bmfont
+    - use glyphs.txt to choose codepoints
+  - rename to remove page number from filenames
+  - open each outlined texture in gimp and do the following:
+    - pick `color to alpha` to remove white
+    - pick `colorize` to change black outlined back to white
+  - stick in directory under fonts/
+  - run with `cargo run -p fvr_engine-atlas_generator -- run` while in root dir of project
+  - output goes to resources/fonts/
+
 ### fvr_engine-client
-Lib for handling the game window and drawing to the faux terminal.
+Lib for handling the game window, user input, and drawing to the faux terminal.
 
 ### fvr_engine-parser
 Lib containing text parsers, including:
