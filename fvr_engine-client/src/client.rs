@@ -29,11 +29,13 @@ use crate::terminal::*;
 // Constants.
 //-------------------------------------------------------------------------------------------------
 
+// TODO: Load these from config?
+
 // Render at 60 fps.
 const FRAME_DURATION: Duration = Duration::from_millis(1000 / 60);
 
 // Duration to sleep when frame duration has not yet passed.
-const SLEEP_DURATION: Duration = Duration::from_millis(1);
+const SLEEP_DURATION: Duration = Duration::from_millis(2);
 
 // Interval at which to print the FPS.
 const FPS_LOG_DURATION: Duration = Duration::from_secs(5);
@@ -240,15 +242,13 @@ impl Client {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Renders a frame.
+    // Renders a frame if enough time as passed and returns whether a frame was rendererd.
     // (this should be called in a loop)
     //---------------------------------------------------------------------------------------------
-    pub fn render_frame(&mut self, terminal: &Terminal) -> Result<()> {
+    pub fn render_frame(&mut self, terminal: &Terminal) -> Result<bool> {
         // Print FPS.
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
-        self.fps_counter += 1;
-
         if self.fps_log_timer.update(&self.delta_time) {
             const FPS_LOG_SECONDS: u32 = FPS_LOG_DURATION.as_secs() as u32;
             println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
@@ -262,8 +262,11 @@ impl Client {
             // Sleep for a bit.
             thread::sleep(SLEEP_DURATION);
 
-            return Ok(());
+            return Ok(false);
         }
+
+        // Update frame counter - we are rendering a frame this loop.
+        self.fps_counter += 1;
 
         // Update the renderer viewport if the window has been resized.
         //-----------------------------------------------------------------------------------------
@@ -296,6 +299,6 @@ impl Client {
         //-----------------------------------------------------------------------------------------
         self.window.gl_swap_window();
 
-        Ok(())
+        Ok(true)
     }
 }

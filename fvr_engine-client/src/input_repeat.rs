@@ -16,7 +16,7 @@ use crate::input_manager::*;
 //-------------------------------------------------------------------------------------------------
 // Represents the possible states of the input repeat.
 //-------------------------------------------------------------------------------------------------
-enum InputRepeatState {
+enum State {
     // The input is currently released.
     Released,
     // The input is currently pressed, but the initial step has not yet passed.
@@ -42,7 +42,7 @@ pub struct InputRepeat {
     // The tracked key or input action.
     key_or_action: InputKeyOrAction,
     // The current state.
-    state: InputRepeatState,
+    state: State,
     // The input timer.
     timer: Timer,
     // Duration between firing pressed events when the input has been continually pressed.
@@ -64,7 +64,7 @@ impl InputRepeat {
 
         Self {
             timer,
-            state: InputRepeatState::Released,
+            state: State::Released,
             key_or_action: InputKeyOrAction::Key(key),
             held_step,
             initial_step,
@@ -87,7 +87,7 @@ impl InputRepeat {
 
         Self {
             timer,
-            state: InputRepeatState::Released,
+            state: State::Released,
             key_or_action: InputKeyOrAction::Action(action),
             held_step,
             initial_step,
@@ -123,7 +123,7 @@ impl InputRepeat {
     // Resets the state of the input repeat.
     //-----------------------------------------------------------------------------------------------
     pub fn reset(&mut self) {
-        self.state = InputRepeatState::Released;
+        self.state = State::Released;
         self.reset_timer();
     }
 
@@ -135,14 +135,14 @@ impl InputRepeat {
         match self.key_or_action {
             InputKeyOrAction::Key(key) => {
                 if input.key_just_pressed(key) {
-                    self.state = InputRepeatState::Pressed;
+                    self.state = State::Pressed;
                     self.reset_timer();
                     return true;
                 }
             }
             InputKeyOrAction::Action(action) => {
                 if input.action_just_pressed(action) {
-                    self.state = InputRepeatState::Pressed;
+                    self.state = State::Pressed;
                     self.reset_timer();
                     return true;
                 }
@@ -161,13 +161,13 @@ impl InputRepeat {
         match self.key_or_action {
             InputKeyOrAction::Key(key) => {
                 if !input.key_pressed(key) {
-                    self.state = InputRepeatState::Released;
+                    self.state = State::Released;
                     return false;
                 }
             }
             InputKeyOrAction::Action(action) => {
                 if !input.action_pressed(action) {
-                    self.state = InputRepeatState::Released;
+                    self.state = State::Released;
                     return false;
                 }
             }
@@ -175,7 +175,7 @@ impl InputRepeat {
 
         // Else if the initial step has passed, update the state and timer and return true.
         if self.timer.update(dt) {
-            self.state = InputRepeatState::Held;
+            self.state = State::Held;
             self.timer.interval = self.held_step;
             return true;
         }
@@ -192,13 +192,13 @@ impl InputRepeat {
         match self.key_or_action {
             InputKeyOrAction::Key(key) => {
                 if !input.key_pressed(key) {
-                    self.state = InputRepeatState::Released;
+                    self.state = State::Released;
                     return false;
                 }
             }
             InputKeyOrAction::Action(action) => {
                 if !input.action_pressed(action) {
-                    self.state = InputRepeatState::Released;
+                    self.state = State::Released;
                     return false;
                 }
             }
@@ -213,9 +213,9 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     pub fn update(&mut self, dt: &Duration, input: &InputManager) -> bool {
         match self.state {
-            InputRepeatState::Released => self.released_update(input),
-            InputRepeatState::Pressed => self.pressed_update(dt, input),
-            InputRepeatState::Held => self.held_update(dt, input),
+            State::Released => self.released_update(input),
+            State::Pressed => self.pressed_update(dt, input),
+            State::Held => self.held_update(dt, input),
         }
     }
 }

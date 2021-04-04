@@ -29,7 +29,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Updates the value of the tile at an xy coord with optional arguments.
     //---------------------------------------------------------------------------------------------
-    pub fn update_tile_fields(
+    pub fn update_tile(
         &mut self,
         xy: (u32, u32),
         glyph: Option<char>,

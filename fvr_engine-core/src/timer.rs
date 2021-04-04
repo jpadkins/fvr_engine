@@ -41,8 +41,8 @@ impl Timer {
     //---------------------------------------------------------------------------------------------
     // Updates the timer with delta time, but does not check if the interval has been met.
     //---------------------------------------------------------------------------------------------
-    pub fn update_without_consuming(&mut self, delta: Duration) {
-        self.passed += delta;
+    pub fn increment_passed(&mut self, delta: &Duration) {
+        self.passed += *delta;
     }
 
     //---------------------------------------------------------------------------------------------
