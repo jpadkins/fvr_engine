@@ -1,4 +1,9 @@
 //-------------------------------------------------------------------------------------------------
+// STD includes.
+//-------------------------------------------------------------------------------------------------
+use std::slice::{Iter, IterMut};
+
+//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use itertools::Itertools;
@@ -70,6 +75,48 @@ impl Terminal {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Updates the value of all tiles in the terminal with optional arguments.
+    //---------------------------------------------------------------------------------------------
+    pub fn update_all_tiles(
+        &mut self,
+        glyph: Option<char>,
+        layout: Option<TileLayout>,
+        style: Option<TileStyle>,
+        size: Option<TileSize>,
+        outlined: Option<bool>,
+        background_color: Option<TileColor>,
+        foreground_color: Option<TileColor>,
+        outline_color: Option<TileColor>,
+    ) {
+        for tile in self.tiles.data_mut().iter_mut() {
+            if let Some(glyph) = glyph {
+                tile.glyph = glyph;
+            }
+            if let Some(layout) = layout {
+                tile.layout = layout;
+            }
+            if let Some(style) = style {
+                tile.style = style;
+            }
+            if let Some(size) = size {
+                tile.size = size;
+            }
+            if let Some(outlined) = outlined {
+                tile.outlined = outlined;
+            }
+            if let Some(background_color) = background_color {
+                tile.background_color = background_color;
+            }
+            if let Some(foreground_color) = foreground_color {
+                tile.foreground_color = foreground_color;
+            }
+            if let Some(outline_color) = outline_color {
+                tile.outline_color = outline_color;
+            }
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Iterates the xy coords in the terminal and their corresponding tiles.
     //---------------------------------------------------------------------------------------------
     pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
@@ -124,6 +171,10 @@ impl Map2dView for Terminal {
     fn get_point(&self, point: &Point) -> &Self::Type {
         self.tiles.get_point(point)
     }
+
+    fn iter(&self) -> Iter<'_, Self::Type> {
+        self.tiles.data().iter()
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -146,5 +197,9 @@ impl Map2dViewMut for Terminal {
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
         self.tiles.get_point_mut(point)
+    }
+
+    fn iter_mut(&mut self) -> IterMut<'_, Self::Type> {
+        self.tiles.data_mut().iter_mut()
     }
 }

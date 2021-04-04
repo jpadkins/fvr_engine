@@ -61,21 +61,16 @@ impl Scene for Initial {
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
     fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
-        for x in 0..terminal.width() {
-            for y in 0..terminal.height() {
-                terminal.update_tile(
-                    (x, y),
-                    Some(' '),
-                    Some(TileLayout::Text),
-                    None,
-                    None,
-                    None,
-                    Some(TileColor::TRANSPARENT),
-                    Some(TileColor::WHITE),
-                    None,
-                );
-            }
-        }
+        terminal.update_all_tiles(
+            Some(' '),
+            Some(TileLayout::Text),
+            None,
+            None,
+            None,
+            Some(TileColor::TRANSPARENT),
+            Some(TileColor::WHITE),
+            None,
+        );
 
         let mut logo_width = 0;
         let mut logo_height = 0;

@@ -1,3 +1,5 @@
+use std::slice::{Iter, IterMut};
+
 use bracket_geometry::prelude::Point;
 
 use crate::misc::*;
@@ -54,6 +56,10 @@ where
         let index = Misc::index_2d((point.x as u32, point.y as u32), self.width);
         &self.data[index]
     }
+
+    fn iter(&self) -> Iter<'_, Self::Type> {
+        self.data.iter()
+    }
 }
 
 impl<T> Map2dViewMut for GridMap<T>
@@ -78,6 +84,10 @@ where
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
         let index = Misc::index_2d((point.x as u32, point.y as u32), self.width);
         &mut self.data[index]
+    }
+
+    fn iter_mut(&mut self) -> IterMut<'_, Self::Type> {
+        self.data.iter_mut()
     }
 }
 

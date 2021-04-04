@@ -1,3 +1,5 @@
+use std::slice::{Iter, IterMut};
+
 pub use bracket_geometry::prelude::Point;
 
 pub trait Map2dType: Copy + Default {}
@@ -17,6 +19,8 @@ pub trait Map2dView {
     fn get_xy(&self, xy: (u32, u32)) -> &Self::Type;
 
     fn get_point(&self, point: &Point) -> &Self::Type;
+
+    fn iter(&self) -> Iter<'_, Self::Type>;
 }
 
 pub trait Map2dViewMut {
@@ -29,6 +33,8 @@ pub trait Map2dViewMut {
     fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type;
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type;
+
+    fn iter_mut(&mut self) -> IterMut<'_, Self::Type>;
 }
 
 pub trait Map2d<T>: Map2dView<Type = T> + Map2dViewMut<Type = T>

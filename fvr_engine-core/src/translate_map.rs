@@ -1,9 +1,11 @@
+use std::slice::{Iter, IterMut};
+
 use bracket_geometry::prelude::{Point, Rect};
 
 use crate::misc::*;
 use crate::traits::*;
 
-pub enum TranslateMapTranslation {
+pub enum MapTranslation {
     SubSection(Rect),
     Lambda(Box<dyn Fn((u32, u32)) -> (u32, u32)>),
 }
@@ -14,33 +16,33 @@ where
     M: Map2dView + Map2dViewMut,
 {
     base_map: &'a mut M,
-    translation: Option<TranslateMapTranslation>,
+    translation: Option<MapTranslation>,
 }
 
 impl<'a, M> TranslateMap<'a, M>
 where
     M: Map2dView + Map2dViewMut,
 {
-    pub fn new(base_map: &'a mut M, translation: Option<TranslateMapTranslation>) -> Self {
+    pub fn new(base_map: &'a mut M, translation: Option<MapTranslation>) -> Self {
         Self { base_map, translation }
     }
 
-    pub fn translation(&self) -> &Option<TranslateMapTranslation> {
+    pub fn translation(&self) -> &Option<MapTranslation> {
         &self.translation
     }
 
-    pub fn translation_mut(&mut self) -> &Option<TranslateMapTranslation> {
+    pub fn translation_mut(&mut self) -> &Option<MapTranslation> {
         &mut self.translation
     }
 
     fn translate(&self, index: usize) -> usize {
         if let Some(translation) = &self.translation {
             match translation {
-                TranslateMapTranslation::SubSection(rect) => {
+                MapTranslation::SubSection(rect) => {
                     let (x, y) = Misc::reverse_index_2d(index, self.width());
                     Misc::index_2d((x + rect.x1 as u32, y + rect.y1 as u32), rect.width() as u32)
                 }
-                TranslateMapTranslation::Lambda(lambda) => {
+                MapTranslation::Lambda(lambda) => {
                     let xy = Misc::reverse_index_2d(index, self.width());
                     let xy = lambda(xy);
                     Misc::index_2d(xy, self.width())
@@ -54,10 +56,8 @@ where
     fn translate_xy(&self, (x, y): (u32, u32)) -> (u32, u32) {
         if let Some(translation) = &self.translation {
             match translation {
-                TranslateMapTranslation::SubSection(rect) => {
-                    (x + rect.x1 as u32, y + rect.y1 as u32)
-                }
-                TranslateMapTranslation::Lambda(lambda) => lambda((x, y)),
+                MapTranslation::SubSection(rect) => (x + rect.x1 as u32, y + rect.y1 as u32),
+                MapTranslation::Lambda(lambda) => lambda((x, y)),
             }
         } else {
             (x, y)
@@ -67,10 +67,10 @@ where
     fn translate_point(&self, point: &Point) -> Point {
         if let Some(translation) = &self.translation {
             match translation {
-                TranslateMapTranslation::SubSection(rect) => {
+                MapTranslation::SubSection(rect) => {
                     Point::new(point.x + rect.x1, point.y + rect.y1)
                 }
-                TranslateMapTranslation::Lambda(lambda) => {
+                MapTranslation::Lambda(lambda) => {
                     let (x, y) = lambda((point.x as u32, point.y as u32));
                     Point::new(x as i32, y as i32)
                 }
@@ -96,6 +96,9 @@ where
     }
 
     fn data(&self) -> &[Self::Type] {
+        // TODO: This method should never be called.
+        debug_assert!(false);
+
         self.base_map.data()
     }
 
@@ -111,6 +114,10 @@ where
     fn get_point(&self, point: &Point) -> &Self::Type {
         self.base_map.get_point(&self.translate_point(point))
     }
+
+    fn iter(&self) -> Iter<'_, Self::Type> {
+        self.base_map.data().iter()
+    }
 }
 
 impl<'a, M> Map2dViewMut for TranslateMap<'a, M>
@@ -120,6 +127,9 @@ where
     type Type = <M as Map2dViewMut>::Type;
 
     fn data_mut(&mut self) -> &mut [Self::Type] {
+        // TODO: This method should never be called.
+        debug_assert!(false);
+
         self.base_map.data_mut()
     }
 
@@ -134,6 +144,10 @@ where
 
     fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
         self.base_map.get_point_mut(&self.translate_point(point))
+    }
+
+    fn iter_mut(&mut self) -> IterMut<'_, Self::Type> {
+        self.base_map.data_mut().iter_mut()
     }
 }
 
@@ -162,13 +176,13 @@ fn test_view_map() {
     assert_eq!(*view_map.get_xy((1, 0)), 10);
     assert_eq!(*view_map.get_xy((5, 5)), 10);
 
-    let translation = TranslateMapTranslation::SubSection(Rect::with_size(1, 0, 10, 10));
+    let translation = MapTranslation::SubSection(Rect::with_size(1, 0, 10, 10));
     let view_map = TranslateMap::new(&mut grid_map, Some(translation));
     assert_eq!(*view_map.get(0), 10);
     assert_eq!(*view_map.get_xy((4, 5)), 10);
     assert_eq!(*view_map.get_point(&Point::new(4, 5)), 10);
 
-    let translation = TranslateMapTranslation::Lambda(Box::new(|(x, y)| (x + 1, y)));
+    let translation = MapTranslation::Lambda(Box::new(|(x, y)| (x + 1, y)));
     let view_map = TranslateMap::new(&mut grid_map, Some(translation));
     assert_eq!(*view_map.get(0), 10);
     assert_eq!(*view_map.get_xy((4, 5)), 10);
