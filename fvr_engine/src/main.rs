@@ -1,4 +1,9 @@
 //-------------------------------------------------------------------------------------------------
+// STD includes.
+//-------------------------------------------------------------------------------------------------
+use std::time::Duration;
+
+//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
@@ -18,7 +23,7 @@ const TERMINAL_DIMENSIONS: (u32, u32) = (81, 31); // 103, 37.
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
 
-const TEST_STR: &str = r#"<l:t><st:r><o:f><fc:Y><bc:T>Hello
+const TEST_STR: &str = r#"<l:t><st:bi><o:f><fc:Y><bc:T>Hello
 World
 This-
 Text-
@@ -40,6 +45,14 @@ fn main() -> Result<()> {
     let mut text_wrapper = RichTextWrapper::new(20, 3);
     text_wrapper.append(TEST_STR)?;
 
+    let mut accept_repeat = InputRepeat::for_action(
+        InputAction::Accept,
+        Duration::from_millis(250),
+        Some(Duration::from_millis(500)),
+    );
+
+    let mut dt;
+
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
@@ -53,9 +66,9 @@ fn main() -> Result<()> {
             }
         }
 
-        client.update_input(&mut input);
+        dt = client.update_input(&mut input);
 
-        if input.action_pressed(InputAction::Accept) {
+        if accept_repeat.update(&dt, &input) {
             terminal.randomize();
             text_wrapper.draw(&mut terminal, (0, 0))?;
         }
@@ -87,7 +100,7 @@ fn main() -> Result<()> {
         }
         input.reset();
 
-        let _ = client.render_frame(&terminal)?;
+        client.render_frame(&terminal)?;
     }
 
     Ok(())

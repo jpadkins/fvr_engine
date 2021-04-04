@@ -13,17 +13,17 @@ use sdl2::video::{GLContext, GLProfile, SwapInterval, Window};
 use sdl2::{EventPump, Sdl, VideoSubsystem};
 
 //-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
+use fvr_engine_core::prelude::*;
+
+//-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::debug_gui::*;
 use crate::input_manager::*;
 use crate::renderer_v2::*;
 use crate::terminal::*;
-
-//-------------------------------------------------------------------------------------------------
-// Workspace includes.
-//-------------------------------------------------------------------------------------------------
-use fvr_engine_core::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -62,6 +62,8 @@ pub struct Client {
     debug_enabled: bool,
     // Time that the last frame began. Used to calculate frame delta time.
     last_frame: Instant,
+    // Delta time for the current frame.
+    delta_time: Duration,
     // Timer used for limiting the rendering FPS.
     frame_timer: Timer,
     // Timer used for calculating the FPS.
@@ -164,17 +166,12 @@ impl Client {
             _gl_context,
             debug_gui,
             renderer,
-            // Disable the debug gui by default.
             debug_enabled: false,
-            // Last set last frame to current moment.
             last_frame: Instant::now(),
-            // Set frame timer to an empty duration.
+            delta_time: Duration::from_secs(0),
             frame_timer: Timer::new(FRAME_DURATION),
-            // Set fps timer to an empty duration.
             fps_log_timer: Timer::new(FPS_LOG_DURATION),
-            // Start the fps counter at 0.
             fps_counter: 0,
-            // Set resized to true to update renderer on first frame.
             resized: true,
         })
     }
@@ -217,13 +214,13 @@ impl Client {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns the current key state.
+    // Sets the the current input state and returns the delta time.
     // (should be consumed once per game loop)
     //---------------------------------------------------------------------------------------------
-    pub fn update_input(&self, input: &mut InputManager) {
+    pub fn update_input(&mut self, input: &mut InputManager) -> Duration {
         // Skip updating input if the debug gui is currently enabled.
         if self.debug_enabled {
-            return;
+            return self.delta_time;
         }
 
         // Calculate the terminal coord of the mouse if it is within bounds.
@@ -233,25 +230,26 @@ impl Client {
 
         // Update input.
         input.update(&self.event_pump.keyboard_state(), mouse_state, mouse_coord);
+
+        // Calculate and return the delta time since input was last updated.
+        let now = Instant::now();
+        self.delta_time = now - self.last_frame;
+        self.last_frame = now;
+
+        self.delta_time
     }
 
     //---------------------------------------------------------------------------------------------
     // Renders a frame.
     // (this should be called in a loop)
     //---------------------------------------------------------------------------------------------
-    pub fn render_frame(&mut self, terminal: &Terminal) -> Result<Duration> {
-        // Calculate delta time.
-        //-----------------------------------------------------------------------------------------
-        let now = Instant::now();
-        let delta = now - self.last_frame;
-        self.last_frame = now;
-
+    pub fn render_frame(&mut self, terminal: &Terminal) -> Result<()> {
         // Print FPS.
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
         self.fps_counter += 1;
 
-        if self.fps_log_timer.update(delta) {
+        if self.fps_log_timer.update(&self.delta_time) {
             const FPS_LOG_SECONDS: u32 = FPS_LOG_DURATION.as_secs() as u32;
             println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
 
@@ -260,21 +258,11 @@ impl Client {
 
         // Return early if minimum frame duration has not yet passed.
         //-----------------------------------------------------------------------------------------
-        if !self.frame_timer.update(delta) {
+        if !self.frame_timer.update(&self.delta_time) {
             // Sleep for a bit.
             thread::sleep(SLEEP_DURATION);
 
-            // Calculate the new delta time.
-            let now = Instant::now();
-            let delta = delta + (now - self.last_frame);
-            self.last_frame = now;
-
-            // Update the timers.
-            self.frame_timer.update_without_consuming(delta);
-            self.fps_log_timer.update_without_consuming(delta);
-
-            // Return new passed time.
-            return Ok(delta);
+            return Ok(());
         }
 
         // Update the renderer viewport if the window has been resized.
@@ -301,13 +289,13 @@ impl Client {
         // Optionally render the debug gui as well.
         //-----------------------------------------------------------------------------------------
         if self.debug_enabled {
-            self.debug_gui.render(&delta, &self.window, &self.event_pump.mouse_state());
+            self.debug_gui.render(&self.delta_time, &self.window, &self.event_pump.mouse_state());
         }
 
         // Swap the window buffers and return the delta time.
         //-----------------------------------------------------------------------------------------
         self.window.gl_swap_window();
 
-        Ok(delta)
+        Ok(())
     }
 }

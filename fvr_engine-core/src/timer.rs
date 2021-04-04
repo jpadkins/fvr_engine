@@ -9,7 +9,7 @@ use std::time::Duration;
 #[derive(Clone, Copy, Debug)]
 pub struct Timer {
     // Interval duration tracked by the timer.
-    interval: Duration,
+    pub interval: Duration,
     // Passed time since the last interval was reached.
     passed: Duration,
 }
@@ -25,8 +25,8 @@ impl Timer {
     //---------------------------------------------------------------------------------------------
     // Updates the timer with delta time, returning whether the interval has passed.
     //---------------------------------------------------------------------------------------------
-    pub fn update(&mut self, delta: Duration) -> bool {
-        self.passed += delta;
+    pub fn update(&mut self, delta: &Duration) -> bool {
+        self.passed += *delta;
 
         // If the passed time is greater than the interval, return true and reset the time.
         // Otherwise, return false.
@@ -43,5 +43,12 @@ impl Timer {
     //---------------------------------------------------------------------------------------------
     pub fn update_without_consuming(&mut self, delta: Duration) {
         self.passed += delta;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Resets the passed time.
+    //---------------------------------------------------------------------------------------------
+    pub fn reset(&mut self) {
+        self.passed = Duration::from_secs(0);
     }
 }
