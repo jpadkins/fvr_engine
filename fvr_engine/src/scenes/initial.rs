@@ -18,13 +18,15 @@ use fvr_engine_core::prelude::*;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::scene_stack::*;
+use crate::scenes::transitions::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
 
+const OPACITY_STEP: f32 = 0.025;
 const INITIAL_BLANK_INTERVAL: Duration = Duration::from_millis(1500);
-const PAUSE_INTERVAL: Duration = Duration::from_millis(1500);
+const PAUSE_INTERVAL: Duration = Duration::from_millis(2000);
 const FINAL_BLANK_INTERVAL: Duration = Duration::from_millis(750);
 const LOGO_TEXT: &str = r#" _______                                       _
 (_______)                                     (_)
@@ -41,30 +43,48 @@ const LOGO_TEXT: &str = r#" _______                                       _
 //-------------------------------------------------------------------------------------------------
 // Represents the possible states of the initial scene.
 //-------------------------------------------------------------------------------------------------
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum State {
     InitialBlank,
     FadeIn,
     Pause,
     FadeOut,
+    FinalBlank,
     Finished,
 }
 
 //-------------------------------------------------------------------------------------------------
 // The initial scene will always be loaded first.
 //-------------------------------------------------------------------------------------------------
-pub struct Initial {}
+pub struct Initial {
+    state: State,
+    timer: Timer,
+    fade_in: FadeIn,
+    fade_out: FadeOut,
+}
 
-impl Initial {}
+impl Initial {
+    pub fn new() -> Self {
+        Self {
+            state: State::InitialBlank,
+            timer: Timer::new(INITIAL_BLANK_INTERVAL),
+            fade_in: FadeIn::new(OPACITY_STEP, 0.0, 1.0),
+            fade_out: FadeOut::new(OPACITY_STEP, 1.0, 0.0),
+        }
+    }
+}
 
 impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
     fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
+        terminal.set_transparent();
+
         terminal.update_all_tiles(
             Some(' '),
             Some(TileLayout::Text),
-            None,
+            Some(TileStyle::Bold),
             None,
             None,
             Some(TileColor::TRANSPARENT),
@@ -117,11 +137,48 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        _dt: &Duration,
+        dt: &Duration,
         input: &InputManager,
-        _terminal: &mut Terminal,
+        terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        if input.action_just_pressed(InputAction::Accept) {
+        if input.any_key_pressed() {
+            return Ok(SceneAction::Pop);
+        }
+
+        match self.state {
+            State::InitialBlank => {
+                if self.timer.update(dt) {
+                    self.state = State::FadeIn;
+                }
+            }
+            State::FadeIn => {
+                if self.fade_in.update(terminal) {
+                    self.timer.reset();
+                    self.timer.interval = PAUSE_INTERVAL;
+                    self.state = State::Pause;
+                }
+            }
+            State::Pause => {
+                if self.timer.update(dt) {
+                    self.state = State::FadeOut;
+                }
+            }
+            State::FadeOut => {
+                if self.fade_out.update(terminal) {
+                    self.timer.reset();
+                    self.timer.interval = FINAL_BLANK_INTERVAL;
+                    self.state = State::FinalBlank;
+                }
+            }
+            State::FinalBlank => {
+                if self.timer.update(dt) {
+                    self.state = State::Finished;
+                }
+            }
+            _ => {}
+        }
+
+        if self.state == State::FinalBlank {
             Ok(SceneAction::Pop)
         } else {
             Ok(SceneAction::Noop)

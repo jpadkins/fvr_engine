@@ -23,6 +23,7 @@ mod scene_stack;
 use scene_stack::*;
 
 mod scenes;
+use scenes::Initial;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -60,7 +61,7 @@ fn main() -> Result<()> {
     let mut update = true;
 
     let mut scene_stack = SceneStack::new();
-    scene_stack.push(Box::new(scenes::Initial {}), &mut terminal)?;
+    scene_stack.push(Box::new(Initial::new()), &mut terminal)?;
 
     'main: loop {
         while let Some(event) = client.poll_event() {

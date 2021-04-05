@@ -1,6 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
+use std::fmt::{Display, Formatter};
 use std::time::Duration;
 
 //-------------------------------------------------------------------------------------------------
@@ -25,6 +26,17 @@ pub enum SceneAction {
     Pop,
     // The scene stack should swap the current scene with a new scene.
     Swap(Box<dyn Scene>),
+}
+
+impl Display for SceneAction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            SceneAction::Noop => write!(f, "SceneAction::Noop"),
+            SceneAction::Push(_) => write!(f, "SceneAction::Push"),
+            SceneAction::Pop => write!(f, "SceneAction::Pop"),
+            SceneAction::Swap(_) => write!(f, "SceneAction::Swap"),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -83,6 +95,9 @@ impl SceneStack {
     // Pushes a new scene onto the stack.
     //---------------------------------------------------------------------------------------------
     pub fn push(&mut self, scene: Box<dyn Scene>, terminal: &mut Terminal) -> Result<()> {
+        #[cfg(debug_assertions)]
+        println!("[SceneStack] Push - current stack len: {}.", self.scenes.len());
+
         // Unfocus the current scene if present.
         match self.scenes.last_mut() {
             Some(s) => s.unfocus(terminal),
@@ -102,6 +117,9 @@ impl SceneStack {
     // Pops the current scene off the stack.
     //---------------------------------------------------------------------------------------------
     pub fn pop(&mut self, terminal: &mut Terminal) -> Result<()> {
+        #[cfg(debug_assertions)]
+        println!("[SceneStack] Pop  - current stack len: {}.", self.scenes.len());
+
         // Call unload on the current scene.
         self.scenes.last_mut().unwrap().unload(terminal)?;
 
@@ -121,6 +139,9 @@ impl SceneStack {
     // Swaps the current scene with a new scene.
     //---------------------------------------------------------------------------------------------
     pub fn swap(&mut self, scene: Box<dyn Scene>, terminal: &mut Terminal) -> Result<()> {
+        #[cfg(debug_assertions)]
+        println!("[SceneStack] Swap - current stack len: {}.", self.scenes.len());
+
         // Call unload on the current scene.
         self.scenes.last_mut().unwrap().unload(terminal)?;
 
