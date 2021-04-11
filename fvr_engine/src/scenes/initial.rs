@@ -86,7 +86,7 @@ impl Scene for Initial {
             Some(TileLayout::Text),
             Some(TileStyle::Bold),
             None,
-            None,
+            Some(false),
             Some(TileColor::TRANSPARENT),
             Some(TileColor::WHITE),
             None,

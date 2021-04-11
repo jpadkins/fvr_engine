@@ -196,24 +196,33 @@ void main()
 pub const VIGNETTE_FRAGMENT_SHADER_SOURCE: &str = r#"
 #version 330 core
 
-precision lowp float;
+precision highp float;
 
 in vec2 v_coords;
 
 out vec4 color;
 
+// Adapted from https://shader-tutorial.dev/advanced/color-banding-dithering/
+float random(vec2 coords) {
+   return fract(sin(dot(coords.xy, vec2(12.9898,78.233))) * 43758.5453);
+}
+
 void main()
 {
+    // Invert the coords so that the center is brigher.
     vec2 coords = v_coords;
     coords *= 1.0 - v_coords.yx;
 
-    // The multiplicand determines the dimness of the entire frame.
-    // Lower values increase dimness.
-    float vignette = coords.x * coords.y * 50.0;
+    // The multiplicand literal determines the inner radius of the vignette.
+    float vignette = coords.x * coords.y * 10.0;
 
     // The exponent determines the intensity of the vignette.
-    vignette = pow(vignette, 0.25);
+    vignette = pow(vignette, 0.5);
 
     color = vec4(0.0, 0.0, 0.0, 1.0 - vignette);
+
+    // Determines the noise level. Less than 5.0 results in noticeable banding.
+    const float granularity = 5.0 / 255.0;
+    color.a += mix(-granularity, granularity, color.a + random(coords));
 }
 "#;

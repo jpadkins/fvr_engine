@@ -141,7 +141,7 @@ impl RendererV2 {
         S: AsRef<str>,
     {
         // Default clear color (this will change).
-        let clear_color = SdlColor::RGB(25, 50, 75);
+        let clear_color = SdlColor::RGB(15, 25, 35);
 
         // Viewport will be set the first time the viewport is updated.
         let viewport = [GLint::default(); 4];
@@ -570,6 +570,21 @@ impl RendererV2 {
 
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl_error_unwrap!("Failed to set blend func.");
+
+            // Sub pixel rendering.
+            gl::Disable(gl::DITHER);
+
+            gl::Hint(gl::LINE_SMOOTH, gl::NICEST);
+            gl_error_unwrap!("Failed to set line smooth hint.");
+
+            gl::Hint(gl::POLYGON_SMOOTH, gl::NICEST);
+            gl_error_unwrap!("Failed to set polygon smooth hint.");
+
+            gl::Enable(gl::LINE_SMOOTH);
+            gl_error_unwrap!("Failed to enable smooth lines.");
+
+            gl::Enable(gl::POLYGON_SMOOTH);
+            gl_error_unwrap!("Failed to enable smooth polygons.");
 
             // Ensure depth testing is disblaed.
             gl::Disable(gl::DEPTH_TEST);
