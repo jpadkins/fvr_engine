@@ -164,7 +164,7 @@ impl Terminal {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
             tile.style = rng.gen();
             tile.outlined = rng.gen();
-            tile.background_color = TileColor::rgb(25, 50, 75);
+            tile.background_color = TileColor::TRANSPARENT;
             tile.foreground_color = rng.gen();
             tile.outline_color = rng.gen();
         }

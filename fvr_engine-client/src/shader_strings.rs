@@ -217,7 +217,7 @@ void main()
     float vignette = coords.x * coords.y * 10.0;
 
     // The exponent determines the intensity of the vignette.
-    vignette = pow(vignette, 0.5);
+    vignette = pow(vignette, 0.15);
 
     color = vec4(0.0, 0.0, 0.0, 1.0 - vignette);
 

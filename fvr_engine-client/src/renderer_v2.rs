@@ -574,12 +574,6 @@ impl RendererV2 {
             // Sub pixel rendering.
             gl::Disable(gl::DITHER);
 
-            gl::Hint(gl::LINE_SMOOTH, gl::NICEST);
-            gl_error_unwrap!("Failed to set line smooth hint.");
-
-            gl::Hint(gl::POLYGON_SMOOTH, gl::NICEST);
-            gl_error_unwrap!("Failed to set polygon smooth hint.");
-
             gl::Enable(gl::LINE_SMOOTH);
             gl_error_unwrap!("Failed to enable smooth lines.");
 

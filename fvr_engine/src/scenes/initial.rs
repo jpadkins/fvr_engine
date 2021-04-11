@@ -18,12 +18,12 @@ use fvr_engine_core::prelude::*;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::scene_stack::*;
+use crate::scenes::main_menu::*;
 use crate::scenes::transitions::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-
 const OPACITY_STEP: f32 = 0.025;
 const INITIAL_BLANK_INTERVAL: Duration = Duration::from_millis(1500);
 const PAUSE_INTERVAL: Duration = Duration::from_millis(2000);
@@ -142,7 +142,7 @@ impl Scene for Initial {
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
         if input.any_key_pressed() {
-            return Ok(SceneAction::Pop);
+            return Ok(SceneAction::Swap(Box::new(MainMenu::new())));
         }
 
         match self.state {
@@ -179,7 +179,7 @@ impl Scene for Initial {
         }
 
         if self.state == State::FinalBlank {
-            Ok(SceneAction::Pop)
+            Ok(SceneAction::Swap(Box::new(MainMenu::new())))
         } else {
             Ok(SceneAction::Noop)
         }
