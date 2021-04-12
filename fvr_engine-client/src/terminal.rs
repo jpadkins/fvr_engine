@@ -61,6 +61,15 @@ impl Terminal {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Sets all tiles to default.
+    //---------------------------------------------------------------------------------------------
+    pub fn set_all_tiles_default(&mut self) {
+        for tile in self.tiles.data_mut().iter_mut() {
+            *tile = Default::default();
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Updates the value of the tile at an xy coord with optional arguments.
     //---------------------------------------------------------------------------------------------
     pub fn update_tile(
@@ -116,6 +125,8 @@ impl Terminal {
         background_color: Option<TileColor>,
         foreground_color: Option<TileColor>,
         outline_color: Option<TileColor>,
+        foreground_opacity: Option<f32>,
+        outline_opacity: Option<f32>,
     ) {
         for tile in self.tiles.data_mut().iter_mut() {
             if let Some(glyph) = glyph {
@@ -141,6 +152,12 @@ impl Terminal {
             }
             if let Some(outline_color) = outline_color {
                 tile.outline_color = outline_color;
+            }
+            if let Some(foreground_opacity) = foreground_opacity {
+                tile.foreground_opacity = foreground_opacity;
+            }
+            if let Some(outline_opacity) = outline_opacity {
+                tile.outline_opacity = outline_opacity;
             }
         }
     }

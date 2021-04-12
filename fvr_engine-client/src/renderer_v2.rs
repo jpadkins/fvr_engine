@@ -877,10 +877,25 @@ impl RendererV2 {
         let texel_normalize = &self.texel_normalize[index];
 
         // Each vertex of the quad shares the same color values (for now).
-        vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT * opacity;
-        vertex.color[1] = color.0.g as GLfloat * COLOR_NORMALIZE_8BIT * opacity;
-        vertex.color[2] = color.0.b as GLfloat * COLOR_NORMALIZE_8BIT * opacity;
-        vertex.color[3] = color.0.a as GLfloat * COLOR_NORMALIZE_8BIT * opacity;
+        if outline_quad {
+            vertex.color[0] =
+                color.0.r as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
+            vertex.color[1] =
+                color.0.g as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
+            vertex.color[2] =
+                color.0.b as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
+            vertex.color[3] =
+                color.0.a as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
+        } else {
+            vertex.color[0] =
+                color.0.r as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
+            vertex.color[1] =
+                color.0.g as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
+            vertex.color[2] =
+                color.0.b as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
+            vertex.color[3] =
+                color.0.a as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
+        }
 
         // Top left.
         vertex.position[0] = (x * self.tile_dimensions.0) as f32 + offset.0;

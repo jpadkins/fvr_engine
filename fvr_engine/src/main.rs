@@ -31,17 +31,9 @@ use scenes::Initial;
 // TODO: Load these from config.
 const WINDOW_TITLE: &str = "FVR_ENGINE";
 const WINDOW_DIMENSIONS: (u32, u32) = (800, 600);
-const TERMINAL_DIMENSIONS: (u32, u32) = (81, 31); // 103, 37.
+const TERMINAL_DIMENSIONS: (u32, u32) = (85, 33);
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
-
-const TEST_STR: &str = r#"<l:t><st:bi><o:f><fc:Y><bc:T>Hello
-World
-This-
-Text-
-has a
-Seven
-Lines"#;
 
 fn main() -> Result<()> {
     let mut client = Client::new(
@@ -53,9 +45,6 @@ fn main() -> Result<()> {
     )?;
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings();
-
-    let mut text_wrapper = RichTextWrapper::new(20, 3);
-    text_wrapper.append(TEST_STR)?;
 
     let mut dt = Duration::from_secs(0);
     let mut update = true;

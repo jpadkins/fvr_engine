@@ -28,7 +28,8 @@ const OPACITY_STEP: f32 = 0.025;
 const INITIAL_BLANK_INTERVAL: Duration = Duration::from_millis(1500);
 const PAUSE_INTERVAL: Duration = Duration::from_millis(2000);
 const FINAL_BLANK_INTERVAL: Duration = Duration::from_millis(750);
-const LOGO_TEXT: &str = r#" _______                                       _
+const LOGO_TEXT: &str = r#"<l:t><st:b><fc:Y>
+ _______                                       _
 (_______)                                     (_)
  _       ___  ____  ____  _____ ____  _   _    _       ___   ____  ___
 | |     / _ \|    \|  _ \(____ |  _ \| | | |  | |     / _ \ / _  |/ _ \
@@ -79,19 +80,11 @@ impl Scene for Initial {
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
     fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
+        // Reset the terminal.
         terminal.set_transparent();
+        terminal.set_all_tiles_default();
 
-        terminal.update_all_tiles(
-            Some(' '),
-            Some(TileLayout::Text),
-            Some(TileStyle::Bold),
-            None,
-            Some(false),
-            Some(TileColor::TRANSPARENT),
-            Some(TileColor::WHITE),
-            None,
-        );
-
+        // Find dimensions of the title text.
         let mut logo_width = 0;
         let mut logo_height = 0;
 
@@ -103,8 +96,14 @@ impl Scene for Initial {
             logo_height += 1;
         }
 
-        let logo_xy =
-            ((terminal.width() - logo_width as u32) / 2, (terminal.height() - logo_height) / 2);
+        // Ignore the first newline.
+        logo_height -= 1;
+
+        // -1 y aligns the logo in the center.
+        let logo_xy = (
+            (terminal.width() - logo_width as u32) / 2,
+            ((terminal.height() - logo_height) / 2) - 1,
+        );
 
         RichTextWriter::write(terminal, logo_xy, LOGO_TEXT)?;
 

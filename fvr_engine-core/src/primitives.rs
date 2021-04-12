@@ -190,6 +190,12 @@ impl TileStyle {
     }
 }
 
+impl Default for TileStyle {
+    fn default() -> Self {
+        Self::Regular
+    }
+}
+
 // Impl random sampling of enum.
 impl Distribution<TileStyle> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TileStyle {
@@ -235,6 +241,12 @@ impl TileSize {
             "g" => Ok(TileSize::Giant),
             _ => Err(anyhow!(format!("Failed to find tile size for {}.", hint))),
         }
+    }
+}
+
+impl Default for TileSize {
+    fn default() -> Self {
+        Self::Normal
     }
 }
 
@@ -301,6 +313,8 @@ pub struct Tile {
     pub background_color: TileColor,
     pub foreground_color: TileColor,
     pub outline_color: TileColor,
+    pub foreground_opacity: f32,
+    pub outline_opacity: f32,
 }
 
 impl Default for Tile {
@@ -308,12 +322,14 @@ impl Default for Tile {
         Self {
             glyph: '?',
             layout: Default::default(),
-            style: TileStyle::Regular,
-            size: TileSize::Normal,
+            style: Default::default(),
+            size: Default::default(),
             outlined: false,
-            background_color: TileColor::BLUE,
-            foreground_color: TileColor::RED,
+            background_color: TileColor::TRANSPARENT,
+            foreground_color: TileColor::TRANSPARENT,
             outline_color: TileColor::TRANSPARENT,
+            foreground_opacity: 1.0,
+            outline_opacity: 1.0,
         }
     }
 }

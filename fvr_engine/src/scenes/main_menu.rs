@@ -24,14 +24,17 @@ use crate::scenes::transitions::*;
 // Constants.
 //-------------------------------------------------------------------------------------------------
 const OPACITY_STEP: f32 = 0.025;
-
-//   ________ ___      ___ ________   _______   ________   ________  ___  ________   _______
-// |\  _____\\  \    /  /|\   __  \ |\  ___ \ |\   ___  \|\   ____\|\  \|\   ___  \|\  ___ \
-//  \ \  \__/\ \  \  /  / | \  \|\  \\ \   __/|\ \  \\ \  \ \  \___|\ \  \ \  \\ \  \ \   __/|
-//   \ \   __\\ \  \/  / / \ \   _  _\\ \  \_|/_\ \  \\ \  \ \  \  __\ \  \ \  \\ \  \ \  \_|/__
-//    \ \  \_| \ \    / /   \ \  \\  \|\ \  \_|\ \ \  \\ \  \ \  \|\  \ \  \ \  \\ \  \ \  \_|\ \
-//     \ \__\   \ \__/ /     \ \__\\ _\ \ \_______\ \__\\ \__\ \_______\ \__\ \__\\ \__\ \_______\
-//      \|__|    \|__|/       \|__|\|__| \|_______|\|__| \|__|\|_______|\|__|\|__| \|__|\|_______|
+const TITLE_TOP_OFFSET: u32 = 2;
+const TITLE_TEXT: &str = r#"
+888'Y88 Y8b Y88888P 888 88e      888'Y88 Y88b Y88   e88'Y88  888 Y88b Y88 888'Y88
+888 ,'Y  Y8b Y888P  888 888D     888 ,'Y  Y88b Y8  d888  'Y  888  Y88b Y8 888 ,'Y
+888C8     Y8b Y8P   888 88"      888C8   b Y88b Y C8888 eeee 888 b Y88b Y 888C8
+888 "      Y8b Y    888 b,       888 ",d 8b Y88b   Y888 888P 888 8b Y88b  888 ",d
+888         Y8P     888 88b,     888,d88 88b Y88b   "88 88"  888 88b Y88b 888,d88
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Y8P~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"#;
+const VERSION_TEXT: &str = "Alpha v0.0.1";
+const COPYRIGHT_TEXT: &str =
+    "Copyright (c) 2019-2021 Waco Paul (wacopaul@pm.me) All Rights Reserved.";
 
 //-------------------------------------------------------------------------------------------------
 // Represents the possible states of the main menu scene.
@@ -69,21 +72,7 @@ impl Scene for MainMenu {
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
     fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
-        terminal.set_transparent();
-
-        terminal.update_all_tiles(
-            Some(' '),
-            Some(TileLayout::Text),
-            Some(TileStyle::Bold),
-            None,
-            Some(false),
-            Some(TileColor::TRANSPARENT),
-            Some(TileColor::WHITE),
-            None,
-        );
-
-        terminal.randomize();
-
+        self.focus(terminal)?;
         Ok(())
     }
 
@@ -97,10 +86,66 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, terminal: &mut Terminal) -> Result<()> {
+        // Reset state.
         self.state = State::FadeIn;
         self.fade_in.reset();
         self.fade_out.reset();
+
+        // Reset the terminal.
+        terminal.set_transparent();
+        terminal.set_all_tiles_default();
+
+        // Find dimensions of the title text.
+        let mut title_width = 0;
+
+        for line in TITLE_TEXT.lines() {
+            if line.len() > title_width {
+                title_width = line.len();
+            }
+        }
+
+        let mut format_settings = RichTextFormatSettings {
+            layout: Some(TileLayout::Text),
+            style: Some(TileStyle::Bold),
+            outlined: Some(true),
+            foreground_color: Some(PaletteColor::DarkGrey.into()),
+            outline_color: Some(PaletteColor::White.into()),
+            ..Default::default()
+        };
+
+        // Draw the title text
+        let title_xy = ((terminal.width() - title_width as u32) / 2, TITLE_TOP_OFFSET);
+        RichTextWriter::write_plain_with_settings(
+            terminal,
+            title_xy,
+            TITLE_TEXT,
+            &format_settings,
+        );
+
+        format_settings.foreground_color = Some(TileColor::TRANSPARENT);
+        format_settings.outline_opacity = Some(0.5);
+
+        // Draw the version text.
+        let version_xy =
+            ((terminal.width() - VERSION_TEXT.len() as u32) / 2, terminal.height() - 2);
+        RichTextWriter::write_plain_with_settings(
+            terminal,
+            version_xy,
+            VERSION_TEXT,
+            &&format_settings,
+        );
+
+        // Draw the copyright text.
+        let copyright_xy =
+            ((terminal.width() - COPYRIGHT_TEXT.len() as u32) / 2, terminal.height() - 1);
+        RichTextWriter::write_plain_with_settings(
+            terminal,
+            copyright_xy,
+            COPYRIGHT_TEXT,
+            &&format_settings,
+        );
+
         Ok(())
     }
 
@@ -143,7 +188,6 @@ impl Scene for MainMenu {
                     return Ok(next_scene);
                 }
             }
-            _ => {}
         }
 
         Ok(SceneAction::Noop)

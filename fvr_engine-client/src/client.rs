@@ -123,6 +123,7 @@ impl Client {
         // Build the window.
         let window = video_subsystem
             .window(window_title.as_ref(), window_dimensions.0, window_dimensions.1)
+            .fullscreen_desktop()
             .position_centered()
             .allow_highdpi()
             .resizable()

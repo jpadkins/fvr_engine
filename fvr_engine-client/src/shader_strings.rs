@@ -214,7 +214,7 @@ void main()
     coords *= 1.0 - v_coords.yx;
 
     // The multiplicand literal determines the inner radius of the vignette.
-    float vignette = coords.x * coords.y * 10.0;
+    float vignette = coords.x * coords.y * 20.0;
 
     // The exponent determines the intensity of the vignette.
     vignette = pow(vignette, 0.15);

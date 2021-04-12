@@ -50,6 +50,8 @@ pub enum ModifierKey {
 pub enum InputBinding {
     SpecificKey(SdlKey),
     ModifierKey(ModifierKey),
+    ExcludeSpecificKey(SdlKey),
+    ExcludeModifierKey(ModifierKey),
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -96,7 +98,13 @@ impl InputManager {
 
         // TODO: load these from config.
         this.bind_action(InputAction::Accept, &[InputBinding::SpecificKey(SdlKey::Return)]);
-        this.bind_action(InputAction::Decline, &[InputBinding::SpecificKey(SdlKey::Tab)]);
+        this.bind_action(
+            InputAction::Decline,
+            &[
+                InputBinding::SpecificKey(SdlKey::Tab),
+                InputBinding::ExcludeModifierKey(ModifierKey::Alt),
+            ],
+        );
         this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(SdlKey::Escape)]);
         this.bind_action(InputAction::North, &[InputBinding::SpecificKey(SdlKey::K)]);
         this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(SdlKey::U)]);
@@ -117,6 +125,8 @@ impl InputManager {
         match binding {
             InputBinding::SpecificKey(k) => self.pressed_keys.contains(&k),
             InputBinding::ModifierKey(m) => self.modifier_pressed(m),
+            InputBinding::ExcludeSpecificKey(k) => !self.pressed_keys.contains(&k),
+            InputBinding::ExcludeModifierKey(m) => !self.modifier_pressed(m),
         }
     }
 
