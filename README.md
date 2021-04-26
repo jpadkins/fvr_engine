@@ -22,12 +22,12 @@ A data-driven text-based roleplaying game engine.
   - [x] user input & derivative actions handling
   - [x] input repeater
   - [x] scenes:
-    - [ ] initial
-    - [ ] main menu
+    - [x] initial
+    - [x] main menu
     - [ ] demo (explore)
     - [ ] credits
     - [ ] help
-    - [ ] fade in/out animations
+    - [x] fade in/out animations
     - [ ] transition animations
   - [ ] tile cache deserialized
   - [ ] cell cache deserialized
@@ -45,6 +45,9 @@ A data-driven text-based roleplaying game engine.
     - rotate
     - wobble back and forth
     - grow and shrink
+
+- implement static/dynamic color palettes
+- implement ability to switch between vsync and custom fps in client.
 
 ## CRATES
 

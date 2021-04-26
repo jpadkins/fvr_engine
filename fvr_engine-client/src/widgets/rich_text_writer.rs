@@ -32,9 +32,9 @@ pub struct RichTextFormatSettings {
 }
 
 //-------------------------------------------------------------------------------------------------
-// Empty struct exposing a static API for "writing" rich text into types that impl Map2D<Tile>.
+// RichTextWriter exposes a static API for "writing" rich text into types that impl Map2D<Tile>.
 //-------------------------------------------------------------------------------------------------
-pub struct RichTextWriter {}
+pub struct RichTextWriter;
 
 impl RichTextWriter {
     //---------------------------------------------------------------------------------------------

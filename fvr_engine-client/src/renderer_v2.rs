@@ -818,25 +818,28 @@ impl RendererV2 {
 
     //---------------------------------------------------------------------------------------------
     // Calculate the offset for a glyph (in pixels) given a tile layout.
+    // TODO: Which produces fewer scaling artifacts - floor() or round()?
     //---------------------------------------------------------------------------------------------
     fn calculate_glyph_offset(&self, metric: &GlyphMetric, layout: TileLayout) -> (f32, f32) {
         match layout {
             // Center the glyph.
             TileLayout::Center => (
-                (self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0,
-                (self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0,
+                ((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0).floor(),
+                ((self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0).floor(),
             ),
             // Center the glyph horizontally but align with the base of the quad vertically.
             TileLayout::Floor => (
-                (self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0,
+                ((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0).floor(),
                 (self.tile_dimensions.1 as i32 - metric.height as i32) as f32,
             ),
             // Adjust the glyph based on font metrics.
             TileLayout::Text => (metric.x_offset as f32, metric.y_offset as f32),
             // Adjust the glyph from the center position by an exact offset.
             TileLayout::Exact((x, y)) => (
-                ((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0) + x as f32,
-                ((self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0) + y as f32,
+                (((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0) + x as f32)
+                    .floor(),
+                (((self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0) + y as f32)
+                    .floor(),
             ),
         }
     }

@@ -8,6 +8,10 @@ impl Misc {
     pub fn reverse_index_2d(index: usize, width: u32) -> (u32, u32) {
         ((index % width as usize) as u32, (index / width as usize) as u32)
     }
+
+    pub fn centered_origin(dimension: u32, bounding_dimension: u32) -> u32 {
+        (bounding_dimension - dimension) / 2
+    }
 }
 
 #[test]

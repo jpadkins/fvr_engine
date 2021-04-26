@@ -33,16 +33,18 @@ const TITLE_TEXT: &str = r#"
 888         Y8P     888 88b,     888,d88 88b Y88b   "88 88"  888 88b Y88b 888,d88
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Y8P~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"#;
 const VERSION_TEXT: &str = "Alpha v0.0.1";
-const COPYRIGHT_TEXT: &str =
-    "Copyright (c) 2019-2021 Waco Paul (wacopaul@pm.me) All Rights Reserved.";
+const COPYRIGHT_TEXT: &str = "Copyright (c) 2021 Waco Paul (wacopaul@pm.me) All Rights Reserved.";
 
 //-------------------------------------------------------------------------------------------------
 // Represents the possible states of the main menu scene.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum State {
+    // The state during the brief initial fade in.
     FadeIn,
+    // The state when waiting for the user to pick an option.
     WaitForInput,
+    // The state during the brief final fade out to the next scene.
     FadeOut,
 }
 
@@ -50,9 +52,13 @@ enum State {
 // The main menu.
 //-------------------------------------------------------------------------------------------------
 pub struct MainMenu {
+    // The state of the main menu scene.
     state: State,
+    // Fade in transition helper.
     fade_in: FadeIn,
+    // Fade out transition helper.
     fade_out: FadeOut,
+    // Contains the final scene action to return after the user has made a selection.
     next_scene: Option<SceneAction>,
 }
 
@@ -172,6 +178,22 @@ impl Scene for MainMenu {
                 }
             }
             State::WaitForInput => {
+                if input.mouse_pressed().0 {
+                    if let Some(xy) = input.mouse_coord() {
+                        terminal.update_tile(
+                            xy,
+                            Some('@'),
+                            Some(TileLayout::Center),
+                            Some(TileStyle::Bold),
+                            None,
+                            Some(false),
+                            Some(TileColor::BLUE),
+                            Some(TileColor::RED),
+                            None,
+                        );
+                    }
+                }
+
                 if input.action_pressed(InputAction::Accept) {
                     terminal.randomize();
                 } else if input.action_pressed(InputAction::Decline) {
@@ -184,7 +206,7 @@ impl Scene for MainMenu {
                     let next_scene = self
                         .next_scene
                         .take()
-                        .ok_or(anyhow!("Failure: The next scene was empty."))?;
+                        .ok_or_else(|| anyhow!("Failure: The next scene was empty."))?;
                     return Ok(next_scene);
                 }
             }

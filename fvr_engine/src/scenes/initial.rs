@@ -46,11 +46,17 @@ const LOGO_TEXT: &str = r#"<l:t><st:b><fc:Y>
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum State {
+    // The initial blank state.
     InitialBlank,
+    // The state when the logo text is fading in.
     FadeIn,
+    // The state when the logo text pauses at full opacity.
     Pause,
+    // The state when the logo text is fading out.
     FadeOut,
+    // The final blank state.
     FinalBlank,
+    // Ready to swap to the main menu.
     Finished,
 }
 
@@ -58,9 +64,13 @@ enum State {
 // The initial scene will always be loaded first.
 //-------------------------------------------------------------------------------------------------
 pub struct Initial {
+    // The state of the initial scene.
     state: State,
+    // Timer for handling timing between state changes.
     timer: Timer,
+    // Fade in transition helper.
     fade_in: FadeIn,
+    // Fade out transition helper.
     fade_out: FadeOut,
 }
 
