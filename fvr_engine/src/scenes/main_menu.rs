@@ -23,7 +23,7 @@ use crate::scenes::transitions::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const OPACITY_STEP: f32 = 0.025;
+const FADE_DURATION: Duration = Duration::from_millis(250);
 const TITLE_TOP_OFFSET: u32 = 2;
 const TITLE_TEXT: &str = r#"
 888'Y88 Y8b Y88888P 888 88e      888'Y88 Y88b Y88   e88'Y88  888 Y88b Y88 888'Y88
@@ -55,9 +55,9 @@ pub struct MainMenu {
     // The state of the main menu scene.
     state: State,
     // Fade in transition helper.
-    fade_in: FadeIn,
+    fade_in: Fade,
     // Fade out transition helper.
-    fade_out: FadeOut,
+    fade_out: Fade,
     // Contains the final scene action to return after the user has made a selection.
     next_scene: Option<SceneAction>,
 }
@@ -66,8 +66,8 @@ impl MainMenu {
     pub fn new() -> Self {
         Self {
             state: State::FadeIn,
-            fade_in: FadeIn::new(OPACITY_STEP, 0.0, 1.0),
-            fade_out: FadeOut::new(OPACITY_STEP, 1.0, 0.0),
+            fade_in: Fade::new(&FADE_DURATION, 0.0, 1.0),
+            fade_out: Fade::new(&FADE_DURATION, 1.0, 0.0),
             next_scene: None,
         }
     }
@@ -163,17 +163,17 @@ impl Scene for MainMenu {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Called whenever the scene's internal state should be updated and rendered.
+    // Called whenever the scene's (non-visual) internal state should be updated.
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        dt: &Duration,
+        _dt: &Duration,
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
         match self.state {
             State::FadeIn => {
-                if self.fade_in.update(terminal) {
+                if self.fade_in.finished() {
                     self.state = State::WaitForInput;
                 }
             }
@@ -194,15 +194,12 @@ impl Scene for MainMenu {
                     }
                 }
 
-                if input.action_pressed(InputAction::Accept) {
+                if input.action_just_pressed(InputAction::Accept) {
                     terminal.randomize();
-                } else if input.action_pressed(InputAction::Decline) {
-                    self.state = State::FadeOut;
-                    self.next_scene = Some(SceneAction::Pop);
                 }
             }
             State::FadeOut => {
-                if self.fade_out.update(terminal) {
+                if self.fade_out.finished() {
                     let next_scene = self
                         .next_scene
                         .take()
@@ -213,5 +210,22 @@ impl Scene for MainMenu {
         }
 
         Ok(SceneAction::Noop)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Called whenever the scene's (visual) internal state should be updated and rendered.
+    //---------------------------------------------------------------------------------------------
+    fn render(&mut self, dt: &Duration, terminal: &mut Terminal) -> Result<()> {
+        match self.state {
+            State::FadeIn => {
+                let _ = self.fade_in.update(dt, terminal);
+            }
+            State::FadeOut => {
+                let _ = self.fade_out.update(dt, terminal);
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }

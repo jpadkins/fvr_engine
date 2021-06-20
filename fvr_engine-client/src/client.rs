@@ -32,13 +32,13 @@ use crate::terminal::*;
 // TODO: Load these from config?
 
 // Render at 60 fps.
-const FRAME_DURATION: Duration = Duration::from_millis(1000 / 60);
+const FRAME_INTERVAL: Duration = Duration::from_millis(1000 / 60);
 
 // Duration to sleep when frame duration has not yet passed.
-const SLEEP_DURATION: Duration = Duration::from_millis(2);
+const SLEEP_INTERVAL: Duration = Duration::from_millis(2);
 
 // Interval at which to print the FPS.
-const FPS_LOG_DURATION: Duration = Duration::from_secs(5);
+const FPS_LOG_INTERVAL: Duration = Duration::from_secs(5);
 
 //-------------------------------------------------------------------------------------------------
 // Client holds the window and rendering context and provides access to the terminal.
@@ -123,7 +123,7 @@ impl Client {
         // Build the window.
         let window = video_subsystem
             .window(window_title.as_ref(), window_dimensions.0, window_dimensions.1)
-            .fullscreen_desktop()
+            // .fullscreen_desktop()
             .position_centered()
             .allow_highdpi()
             .resizable()
@@ -172,8 +172,8 @@ impl Client {
             debug_enabled: false,
             last_frame: Instant::now(),
             delta_time: Duration::from_secs(0),
-            frame_timer: Timer::new(FRAME_DURATION),
-            fps_log_timer: Timer::new(FPS_LOG_DURATION),
+            frame_timer: Timer::new(FRAME_INTERVAL),
+            fps_log_timer: Timer::new(FPS_LOG_INTERVAL),
             fps_counter: 0,
             resized: true,
         })
@@ -251,7 +251,7 @@ impl Client {
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
         if self.fps_log_timer.update(&self.delta_time) {
-            const FPS_LOG_SECONDS: u32 = FPS_LOG_DURATION.as_secs() as u32;
+            const FPS_LOG_SECONDS: u32 = FPS_LOG_INTERVAL.as_secs() as u32;
             println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
 
             self.fps_counter = 0;
@@ -261,7 +261,7 @@ impl Client {
         //-----------------------------------------------------------------------------------------
         if !self.frame_timer.update(&self.delta_time) {
             // Sleep for a bit.
-            thread::sleep(SLEEP_DURATION);
+            thread::sleep(SLEEP_INTERVAL);
 
             return Ok(false);
         }

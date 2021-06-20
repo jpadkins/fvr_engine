@@ -142,6 +142,8 @@ pub struct RichTextWrapper {
     format_state: FormatState,
     // The wrapped rich text.
     wrapped_text: String,
+    // Whether to prepend a space to the next appended text.
+    prepend_space: bool,
     // Vec of newline indices in the rich text.
     newline_indices: Vec<usize>,
     // Current length of the last line.
@@ -271,6 +273,11 @@ impl RichTextWrapper {
         let words: Vec<_> = text.split_whitespace().collect();
         let words_len = words.len();
 
+        // If text was appended last, add a space.
+        if self.prepend_space {
+            self.handle_word(" ");
+        }
+
         // Handle appending each word and insert a single whitespace between (but not trailing).
         for (i, word) in words.into_iter().enumerate() {
             self.handle_word(word);
@@ -352,9 +359,17 @@ impl RichTextWrapper {
         // Iterate over and handle each of the parsed values.
         for value in parsed_values.into_iter() {
             match value {
-                RichTextValue::FormatHint { key, value } => self.handle_hint(key, value),
-                RichTextValue::Newline => self.handle_newline(),
-                RichTextValue::Text(text) => self.handle_text(text),
+                RichTextValue::FormatHint { key, value } => {
+                    self.handle_hint(key, value);
+                }
+                RichTextValue::Newline => {
+                    self.handle_newline();
+                    self.prepend_space = false;
+                }
+                RichTextValue::Text(text) => {
+                    self.handle_text(text);
+                    self.prepend_space = true;
+                }
             }
         }
 
@@ -436,6 +451,13 @@ impl RichTextWrapper {
         // Return if there is no text to draw.
         if self.total_lines < 1 || self.visible_end - self.visible_start < 1 {
             return Ok(());
+        }
+
+        // Clear the foreground glyph of the covered area.
+        for x in xy.0..(xy.0 + self.width) {
+            for y in xy.1..(xy.1 + self.height) {
+                map.get_xy_mut((x, y)).glyph = SPACE_CHARACTER;
+            }
         }
 
         // Create a slice of visible rich text.

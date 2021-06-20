@@ -64,7 +64,7 @@ pub trait Scene {
     fn unfocus(&mut self, terminal: &mut Terminal) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
-    // Called whenever the scene's internal state should be updated and rendered.
+    // Called whenever the scene's (non-visual) internal state should be updated.
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
@@ -72,6 +72,11 @@ pub trait Scene {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction>;
+
+    //---------------------------------------------------------------------------------------------
+    // Called whenever the scene's (visual) internal state should be updated and rendered.
+    //---------------------------------------------------------------------------------------------
+    fn render(&mut self, dt: &Duration, terminal: &mut Terminal) -> Result<()>;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -182,5 +187,12 @@ impl SceneStack {
 
         // Return false if no scenes exist on the stack.
         Ok(!self.scenes.is_empty())
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Renders the current scene.
+    //---------------------------------------------------------------------------------------------
+    pub fn render(&mut self, dt: &Duration, terminal: &mut Terminal) -> Result<()> {
+        self.scenes.last_mut().unwrap().render(dt, terminal)
     }
 }

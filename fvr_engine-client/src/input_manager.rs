@@ -65,6 +65,8 @@ pub struct InputManager {
     mouse_clicked: (bool, bool),
     // Current coord of the mouse within the faux terminal (or none if it is out of bounds).
     mouse_coord: Option<(u32, u32)>,
+    // Previous coord of the mouse within the faux terminal (or none if it is out of bounds).
+    last_mouse_coord: Option<(u32, u32)>,
     // Set of keys that are currently pressed.
     pressed_keys: HashSet<SdlKey>,
     // Set of keys that have become pressed this frame.
@@ -199,7 +201,11 @@ impl InputManager {
         self.mouse_pressed.0 = mouse_state.left();
         self.mouse_pressed.1 = mouse_state.right();
 
-        self.mouse_coord = mouse_coord;
+        // Previous mouse coord should be a record of the last different mouse coord.
+        if self.mouse_coord != mouse_coord {
+            self.last_mouse_coord = self.mouse_coord;
+            self.mouse_coord = mouse_coord;
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -234,6 +240,13 @@ impl InputManager {
     // Returns current mouse coord within the faux terminal (or none if out of bounds).
     //---------------------------------------------------------------------------------------------
     pub fn mouse_coord(&self) -> Option<(u32, u32)> {
+        self.mouse_coord
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns previous mouse coord within the faux terminal (or none if out of bounds).
+    //---------------------------------------------------------------------------------------------
+    pub fn last_mouse_coord(&self) -> Option<(u32, u32)> {
         self.mouse_coord
     }
 

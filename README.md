@@ -97,3 +97,7 @@ Lib containing text parsers, including:
 
 - continue adapting C# implementation
 - clean up code in fvr_engine-core (add comments, break apart messy modules, etc...)
+
+## SCRATCH
+
+clint vandenbosch

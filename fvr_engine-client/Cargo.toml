@@ -9,16 +9,16 @@ fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 fvr_engine-parser = { path = "../fvr_engine-parser", version = "0.1.0" }
 anyhow = "1.0.38"
 gl = "0.14.0"
-glam = "0.14.0"
+glam = "0.16.0"
 image = "0.23.14"
 imgui = "0.7.0"
 imgui-opengl-renderer = "0.11.0"
 imgui-sdl2 = "0.14.0"
-itertools = "0.10.0"
+itertools = "0.10.1"
 rand = "0.8.3"
 stopwatch = "0.0.7"
-strum = "0.20.0"
-strum_macros = "0.20.0"
+strum = "0.21.0"
+strum_macros = "0.21.1"
 toml = "0.5.8"
 
 [dependencies.sdl2]

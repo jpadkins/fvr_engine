@@ -1,4 +1,3 @@
-pub mod fade_in;
-pub mod fade_out;
+pub mod fade;
 
-pub use crate::scenes::transitions::{fade_in::FadeIn, fade_out::FadeOut};
+pub use crate::scenes::transitions::fade::Fade;

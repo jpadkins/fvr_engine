@@ -24,7 +24,7 @@ use crate::scenes::transitions::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const OPACITY_STEP: f32 = 0.025;
+const FADE_DURATION: Duration = Duration::from_millis(750);
 const INITIAL_BLANK_INTERVAL: Duration = Duration::from_millis(1500);
 const PAUSE_INTERVAL: Duration = Duration::from_millis(2000);
 const FINAL_BLANK_INTERVAL: Duration = Duration::from_millis(750);
@@ -69,9 +69,9 @@ pub struct Initial {
     // Timer for handling timing between state changes.
     timer: Timer,
     // Fade in transition helper.
-    fade_in: FadeIn,
+    fade_in: Fade,
     // Fade out transition helper.
-    fade_out: FadeOut,
+    fade_out: Fade,
 }
 
 impl Initial {
@@ -79,8 +79,8 @@ impl Initial {
         Self {
             state: State::InitialBlank,
             timer: Timer::new(INITIAL_BLANK_INTERVAL),
-            fade_in: FadeIn::new(OPACITY_STEP, 0.0, 1.0),
-            fade_out: FadeOut::new(OPACITY_STEP, 1.0, 0.0),
+            fade_in: Fade::new(&FADE_DURATION, 0.0, 1.0),
+            fade_out: Fade::new(&FADE_DURATION, 1.0, 0.0),
         }
     }
 }
@@ -142,13 +142,13 @@ impl Scene for Initial {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Called whenever the scene's internal state should be updated and rendered.
+    // Called whenever the scene's (non-visual) internal state should be updated.
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
         dt: &Duration,
         input: &InputManager,
-        terminal: &mut Terminal,
+        _terminal: &mut Terminal,
     ) -> Result<SceneAction> {
         if input.any_key_pressed() {
             return Ok(SceneAction::Swap(Box::new(MainMenu::new())));
@@ -161,7 +161,7 @@ impl Scene for Initial {
                 }
             }
             State::FadeIn => {
-                if self.fade_in.update(terminal) {
+                if self.fade_in.finished() {
                     self.timer.reset();
                     self.timer.interval = PAUSE_INTERVAL;
                     self.state = State::Pause;
@@ -173,7 +173,7 @@ impl Scene for Initial {
                 }
             }
             State::FadeOut => {
-                if self.fade_out.update(terminal) {
+                if self.fade_out.finished() {
                     self.timer.reset();
                     self.timer.interval = FINAL_BLANK_INTERVAL;
                     self.state = State::FinalBlank;
@@ -187,10 +187,27 @@ impl Scene for Initial {
             _ => {}
         }
 
-        if self.state == State::FinalBlank {
+        if self.state == State::Finished {
             Ok(SceneAction::Swap(Box::new(MainMenu::new())))
         } else {
             Ok(SceneAction::Noop)
         }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Called whenever the scene's (visual) internal state should be updated and rendered.
+    //---------------------------------------------------------------------------------------------
+    fn render(&mut self, dt: &Duration, terminal: &mut Terminal) -> Result<()> {
+        match self.state {
+            State::FadeIn => {
+                let _ = self.fade_in.update(dt, terminal);
+            }
+            State::FadeOut => {
+                let _ = self.fade_out.update(dt, terminal);
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }
