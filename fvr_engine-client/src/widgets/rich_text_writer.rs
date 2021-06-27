@@ -172,6 +172,40 @@ impl RichTextWriter {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Write plain text (no inline hints), wrapping at the map2d's width.
+    //---------------------------------------------------------------------------------------------
+    pub fn write_plain<M>(map: &mut M, xy: (u32, u32), text: &str)
+    where
+        M: Map2d<Tile>,
+    {
+        // Declare mutable coords and options used to store current format state.
+        let (mut x, mut y) = xy;
+
+        // Iterate and handle the glyphs.
+        for glyph in text.chars() {
+            // Handle newline characters.
+            if glyph == NEWLINE_CHAR {
+                x = xy.0;
+                y += 1;
+                continue;
+            }
+
+            // Move to the next line if necessary.
+            if x >= map.width() {
+                x = xy.0;
+                y += 1;
+            }
+
+            // Update the tile.
+            let tile = map.get_xy_mut((x, y));
+            tile.glyph = glyph;
+
+            // Increment the columns.
+            x += 1;
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Write plain text (no inline hints) with formatting options, wrapping at the map2d's width.
     //---------------------------------------------------------------------------------------------
     pub fn write_formatted_plain<M>(
@@ -277,7 +311,6 @@ impl RichTextWriter {
 
             // Update the tile.
             let tile = map.get_xy_mut((x, y));
-
             tile.glyph = glyph;
 
             if let Some(layout) = settings.layout {

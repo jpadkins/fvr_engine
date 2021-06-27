@@ -30,7 +30,7 @@ use scenes::Initial;
 //-------------------------------------------------------------------------------------------------
 // TODO: Load these from config.
 const WINDOW_TITLE: &str = "FVR_ENGINE";
-const WINDOW_DIMENSIONS: (u32, u32) = (800, 600);
+const WINDOW_DIMENSIONS: (u32, u32) = (1280, 720);
 const TERMINAL_DIMENSIONS: (u32, u32) = (85, 33);
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
@@ -57,9 +57,7 @@ fn main() -> Result<()> {
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
-                Event::KeyDown { keycode: Some(Keycode::Escape), .. } | Event::Quit { .. } => {
-                    break 'main
-                }
+                Event::Quit { .. } => break 'main,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     client.toggle_debug();
                 }

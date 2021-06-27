@@ -31,6 +31,9 @@ use crate::terminal::*;
 
 // TODO: Load these from config?
 
+// Minimum window size.
+const MINIMUM_WINDOW_SIZE: (u32, u32) = (1280, 720);
+
 // Render at 60 fps.
 const FRAME_INTERVAL: Duration = Duration::from_millis(1000 / 60);
 
@@ -121,7 +124,7 @@ impl Client {
             .context("Failed to obtain the SDL2 event pump.")?;
 
         // Build the window.
-        let window = video_subsystem
+        let mut window = video_subsystem
             .window(window_title.as_ref(), window_dimensions.0, window_dimensions.1)
             // .fullscreen_desktop()
             .position_centered()
@@ -131,6 +134,8 @@ impl Client {
             .build()
             .map_err(|e| anyhow!(e))
             .context("Failed to open the SDL2 window.")?;
+
+        window.set_minimum_size(MINIMUM_WINDOW_SIZE.0, MINIMUM_WINDOW_SIZE.1)?;
 
         // Initialize the OpenGL context.
         //-----------------------------------------------------------------------------------------

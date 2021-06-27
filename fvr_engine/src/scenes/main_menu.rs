@@ -18,6 +18,7 @@ use fvr_engine_core::prelude::*;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::scene_stack::*;
+use crate::scenes::scratch::*;
 use crate::scenes::transitions::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -97,6 +98,7 @@ impl Scene for MainMenu {
         self.state = State::FadeIn;
         self.fade_in.reset();
         self.fade_out.reset();
+        self.next_scene = None;
 
         // Reset the terminal.
         terminal.set_transparent();
@@ -178,7 +180,12 @@ impl Scene for MainMenu {
                 }
             }
             State::WaitForInput => {
-                if input.mouse_pressed().0 {
+                if input.action_just_pressed(InputAction::Quit)
+                    || input.key_just_pressed(SdlKey::Escape)
+                {
+                    return Ok(SceneAction::Pop);
+                } else if input.mouse_pressed().0 {
+                    // TODO: Remove - mouse debug.
                     if let Some(xy) = input.mouse_coord() {
                         terminal.update_tile(
                             xy,
@@ -192,10 +199,12 @@ impl Scene for MainMenu {
                             None,
                         );
                     }
-                }
-
-                if input.action_just_pressed(InputAction::Accept) {
+                } else if input.action_just_pressed(InputAction::Accept) {
+                    // TODO: Remove - rendering debug.
                     terminal.randomize();
+                } else if input.key_just_pressed(SdlKey::S) {
+                    self.next_scene = Some(SceneAction::Push(Box::new(Scratch {})));
+                    self.state = State::FadeOut;
                 }
             }
             State::FadeOut => {

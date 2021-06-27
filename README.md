@@ -95,9 +95,13 @@ Lib containing text parsers, including:
 
 ## TASKS
 
-- continue adapting C# implementation
-- clean up code in fvr_engine-core (add comments, break apart messy modules, etc...)
+- continue adapting C# implementation.
+- clean up code in fvr_engine-core (add comments).
+- improve input manager to not consume alt-tab as a key press (or other modifier keys).
+- refactor frame to use rect?
 
 ## SCRATCH
 
+calsut-moran
 clint vandenbosch
+solomander

@@ -96,7 +96,7 @@ where
     }
 
     fn data(&self) -> &[Self::Type] {
-        // TODO: This method should never be called.
+        // This method should never be called for translate map.
         debug_assert!(false);
 
         self.base_map.data()
@@ -127,7 +127,7 @@ where
     type Type = <M as Map2dViewMut>::Type;
 
     fn data_mut(&mut self) -> &mut [Self::Type] {
-        // TODO: This method should never be called.
+        // This method should never be called for translate map.
         debug_assert!(false);
 
         self.base_map.data_mut()
@@ -152,7 +152,7 @@ where
 }
 
 #[test]
-fn test_view_map() {
+fn test_translate_map() {
     fn trait_func<M, T>(obj: &M) -> T
     where
         T: Map2dType,
@@ -172,21 +172,21 @@ fn test_view_map() {
     *grid_map.get_xy_mut((1, 0)) = 10;
     *grid_map.get_xy_mut((5, 5)) = 10;
 
-    let view_map = TranslateMap::new(&mut grid_map, None);
-    assert_eq!(*view_map.get_xy((1, 0)), 10);
-    assert_eq!(*view_map.get_xy((5, 5)), 10);
+    let translate_map = TranslateMap::new(&mut grid_map, None);
+    assert_eq!(*translate_map.get_xy((1, 0)), 10);
+    assert_eq!(*translate_map.get_xy((5, 5)), 10);
 
     let translation = MapTranslation::SubSection(Rect::with_size(1, 0, 10, 10));
-    let view_map = TranslateMap::new(&mut grid_map, Some(translation));
-    assert_eq!(*view_map.get(0), 10);
-    assert_eq!(*view_map.get_xy((4, 5)), 10);
-    assert_eq!(*view_map.get_point(&Point::new(4, 5)), 10);
+    let translate_map = TranslateMap::new(&mut grid_map, Some(translation));
+    assert_eq!(*translate_map.get(0), 10);
+    assert_eq!(*translate_map.get_xy((4, 5)), 10);
+    assert_eq!(*translate_map.get_point(&Point::new(4, 5)), 10);
 
     let translation = MapTranslation::Lambda(Box::new(|(x, y)| (x + 1, y)));
-    let view_map = TranslateMap::new(&mut grid_map, Some(translation));
-    assert_eq!(*view_map.get(0), 10);
-    assert_eq!(*view_map.get_xy((4, 5)), 10);
-    assert_eq!(*view_map.get_point(&Point::new(4, 5)), 10);
-    assert_eq!(trait_func(&view_map), 10);
-    assert_eq!(dyn_trait_func(&view_map), 10);
+    let translate_map = TranslateMap::new(&mut grid_map, Some(translation));
+    assert_eq!(*translate_map.get(0), 10);
+    assert_eq!(*translate_map.get_xy((4, 5)), 10);
+    assert_eq!(*translate_map.get_point(&Point::new(4, 5)), 10);
+    assert_eq!(trait_func(&translate_map), 10);
+    assert_eq!(dyn_trait_func(&translate_map), 10);
 }

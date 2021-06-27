@@ -1,7 +1,17 @@
 //-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
+use anyhow::Result;
+
+//-------------------------------------------------------------------------------------------------
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_core::prelude::*;
+
+//-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::widgets::rich_text_writer::*;
 
 //-------------------------------------------------------------------------------------------------
 // Statics.
@@ -76,7 +86,7 @@ static FANCY_VERTICAL_THICK_TILE: Tile = Tile {
 // Line border tiles.
 static LINE_TOP_LEFT_TILE: Tile = Tile {
     glyph: '┌',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -89,7 +99,7 @@ static LINE_TOP_LEFT_TILE: Tile = Tile {
 
 static LINE_TOP_RIGHT_TILE: Tile = Tile {
     glyph: '┐',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -102,7 +112,7 @@ static LINE_TOP_RIGHT_TILE: Tile = Tile {
 
 static LINE_BOTTOM_LEFT_TILE: Tile = Tile {
     glyph: '└',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -115,7 +125,7 @@ static LINE_BOTTOM_LEFT_TILE: Tile = Tile {
 
 static LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
     glyph: '┘',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -128,7 +138,7 @@ static LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
 
 static LINE_HORIZONTAL_TILE: Tile = Tile {
     glyph: '─',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -141,7 +151,7 @@ static LINE_HORIZONTAL_TILE: Tile = Tile {
 
 static LINE_VERTICAL_TILE: Tile = Tile {
     glyph: '│',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -155,7 +165,7 @@ static LINE_VERTICAL_TILE: Tile = Tile {
 // Double line border tiles.
 static DOUBLE_LINE_TOP_LEFT_TILE: Tile = Tile {
     glyph: '╔',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -168,7 +178,7 @@ static DOUBLE_LINE_TOP_LEFT_TILE: Tile = Tile {
 
 static DOUBLE_LINE_TOP_RIGHT_TILE: Tile = Tile {
     glyph: '╗',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -181,7 +191,7 @@ static DOUBLE_LINE_TOP_RIGHT_TILE: Tile = Tile {
 
 static DOUBLE_LINE_BOTTOM_LEFT_TILE: Tile = Tile {
     glyph: '╚',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -194,7 +204,7 @@ static DOUBLE_LINE_BOTTOM_LEFT_TILE: Tile = Tile {
 
 static DOUBLE_LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
     glyph: '╝',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -207,7 +217,7 @@ static DOUBLE_LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
 
 static DOUBLE_LINE_HORIZONTAL_TILE: Tile = Tile {
     glyph: '═',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -220,7 +230,7 @@ static DOUBLE_LINE_HORIZONTAL_TILE: Tile = Tile {
 
 static DOUBLE_LINE_VERTICAL_TILE: Tile = Tile {
     glyph: '║',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
@@ -259,10 +269,24 @@ static SYSTEM_LINE_TILE: Tile = Tile {
     outline_opacity: 1.0,
 };
 
+// Format settings for frame text.
+static TEXT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+    glyph: None,
+    layout: Some(TileLayout::Text),
+    style: None,
+    size: None,
+    outlined: None,
+    background_color: None,
+    foreground_color: None,
+    outline_color: None,
+    foreground_opacity: None,
+    outline_opacity: None,
+};
+
 //-------------------------------------------------------------------------------------------------
 // Possible styles for the frame.
 //-------------------------------------------------------------------------------------------------
-enum FrameStyle {
+pub enum FrameStyle {
     // A fancy border that has the appearance of a chain with square corners.
     Fancy,
     // A broken, single line border.
@@ -278,7 +302,7 @@ enum FrameStyle {
 //-------------------------------------------------------------------------------------------------
 // Frame handles drawing decorated rects. Used by other widgets.
 //-------------------------------------------------------------------------------------------------
-struct Frame {
+pub struct Frame {
     pub origin: (u32, u32),
     pub inner_dimensions: (u32, u32),
     pub style: FrameStyle,
@@ -289,6 +313,9 @@ struct Frame {
 }
 
 impl Frame {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new frame.
+    //---------------------------------------------------------------------------------------------
     pub fn new(origin: (u32, u32), inner_dimensions: (u32, u32), style: FrameStyle) -> Self {
         Self {
             origin,
@@ -301,6 +328,19 @@ impl Frame {
         }
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Clears all of the frame's text.
+    //---------------------------------------------------------------------------------------------
+    pub fn clear_text(&mut self) {
+        self.top_left_text = None;
+        self.top_right_text = None;
+        self.bottom_left_text = None;
+        self.bottom_right_text = None;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Centers the frame within a Map2dView.
+    //---------------------------------------------------------------------------------------------
     pub fn center<M>(&mut self, map: &M)
     where
         M: Map2dView,
@@ -310,5 +350,266 @@ impl Frame {
             Misc::centered_origin(self.inner_dimensions.0 - 2, map.width()),
             Misc::centered_origin(self.inner_dimensions.1 - 2, map.height()),
         );
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Draws the frame onto a Map2d<Tile> without clearing the center.
+    //---------------------------------------------------------------------------------------------
+    pub fn draw<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the border.
+        match self.style {
+            FrameStyle::Fancy => self.draw_fancy_border(map)?,
+            FrameStyle::Line => self.draw_line_border(map)?,
+            FrameStyle::DoubleLine => self.draw_double_line_border(map)?,
+            FrameStyle::Simple => self.draw_simple_border(map)?,
+            FrameStyle::System => self.draw_system_border(map)?,
+        }
+
+        // Draw top-left text if populated.
+        if let Some(top_left_text) = self.top_left_text.as_ref() {
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + 1, self.origin.1),
+                top_left_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw top-right text if populated.
+        if let Some(top_right_text) = self.top_right_text.as_ref() {
+            let stripped_len = RichTextWriter::stripped_len(top_right_text)?;
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32, self.origin.1),
+                top_right_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw bottom-right text if populated.
+        if let Some(bottom_right_text) = self.bottom_right_text.as_ref() {
+            let stripped_len = RichTextWriter::stripped_len(bottom_right_text)?;
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (
+                    self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32,
+                    self.origin.1 + self.inner_dimensions.1 + 1,
+                ),
+                bottom_right_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw bottom-left text if populated.
+        if let Some(bottom_left_text) = self.bottom_left_text.as_ref() {
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + 1, self.origin.1 + self.inner_dimensions.1 + 1),
+                bottom_left_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        Ok(())
+    }
+
+    fn draw_fancy_border<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Top-left corner.
+        *map.get_xy_mut(self.origin) = FANCY_CORNER_TILE;
+
+        // Top-right corner.
+        *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, self.origin.1)) =
+            FANCY_CORNER_TILE;
+
+        // Bottom-right corner.
+        *map.get_xy_mut((
+            self.origin.0 + self.inner_dimensions.0 + 1,
+            self.origin.1 + self.inner_dimensions.1 + 1,
+        )) = FANCY_CORNER_TILE;
+
+        // Bottom-left corner.
+        *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
+            FANCY_CORNER_TILE;
+
+        // Horizontal border.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            if (x - (self.origin.0 + 1)) % 2 == 0 {
+                *map.get_xy_mut((x, self.origin.1)) = FANCY_HORIZONTAL_THIN_TILE;
+                *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
+                    FANCY_HORIZONTAL_THIN_TILE;
+            } else {
+                *map.get_xy_mut((x, self.origin.1)) = FANCY_HORIZONTAL_THICK_TILE;
+                *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
+                    FANCY_HORIZONTAL_THICK_TILE;
+            }
+        }
+
+        // Vertical border.
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+            if (y - (self.origin.1 + 1)) % 2 == 0 {
+                *map.get_xy_mut((self.origin.0, y)) = FANCY_VERTICAL_THIN_TILE;
+                *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
+                    FANCY_VERTICAL_THIN_TILE;
+            } else {
+                *map.get_xy_mut((self.origin.0, y)) = FANCY_VERTICAL_THICK_TILE;
+                *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
+                    FANCY_VERTICAL_THICK_TILE;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn draw_line_border<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Top-left corner.
+        *map.get_xy_mut(self.origin) = LINE_TOP_LEFT_TILE;
+
+        // Top-right corner.
+        *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, self.origin.1)) =
+            LINE_TOP_RIGHT_TILE;
+
+        // Bottom-right corner.
+        *map.get_xy_mut((
+            self.origin.0 + self.inner_dimensions.0 + 1,
+            self.origin.1 + self.inner_dimensions.1 + 1,
+        )) = LINE_BOTTOM_RIGHT_TILE;
+
+        // Bottom-left corner.
+        *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
+            LINE_BOTTOM_LEFT_TILE;
+
+        // Horizontal border.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            *map.get_xy_mut((x, self.origin.1)) = LINE_HORIZONTAL_TILE;
+            *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
+                LINE_HORIZONTAL_TILE;
+        }
+
+        // Vertical border.
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+            *map.get_xy_mut((self.origin.0, y)) = LINE_VERTICAL_TILE;
+            *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = LINE_VERTICAL_TILE;
+        }
+
+        Ok(())
+    }
+
+    fn draw_double_line_border<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Top-left corner.
+        *map.get_xy_mut(self.origin) = DOUBLE_LINE_TOP_LEFT_TILE;
+
+        // Top-right corner.
+        *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, self.origin.1)) =
+            DOUBLE_LINE_TOP_RIGHT_TILE;
+
+        // Bottom-right corner.
+        *map.get_xy_mut((
+            self.origin.0 + self.inner_dimensions.0 + 1,
+            self.origin.1 + self.inner_dimensions.1 + 1,
+        )) = DOUBLE_LINE_BOTTOM_RIGHT_TILE;
+
+        // Bottom-left corner.
+        *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
+            DOUBLE_LINE_BOTTOM_LEFT_TILE;
+
+        // Horizontal border.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            *map.get_xy_mut((x, self.origin.1)) = DOUBLE_LINE_HORIZONTAL_TILE;
+            *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
+                DOUBLE_LINE_HORIZONTAL_TILE;
+        }
+
+        // Vertical border.
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+            *map.get_xy_mut((self.origin.0, y)) = DOUBLE_LINE_VERTICAL_TILE;
+            *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
+                DOUBLE_LINE_VERTICAL_TILE;
+        }
+
+        Ok(())
+    }
+
+    fn draw_simple_border<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Top-left corner.
+        *map.get_xy_mut(self.origin) = SIMPLE_LINE_TILE;
+
+        // Top-right corner.
+        *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, self.origin.1)) =
+            SIMPLE_LINE_TILE;
+
+        // Bottom-right corner.
+        *map.get_xy_mut((
+            self.origin.0 + self.inner_dimensions.0 + 1,
+            self.origin.1 + self.inner_dimensions.1 + 1,
+        )) = SIMPLE_LINE_TILE;
+
+        // Bottom-left corner.
+        *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
+            SIMPLE_LINE_TILE;
+
+        // Horizontal border.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            *map.get_xy_mut((x, self.origin.1)) = SIMPLE_LINE_TILE;
+            *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) = SIMPLE_LINE_TILE;
+        }
+
+        // Vertical border.
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+            *map.get_xy_mut((self.origin.0, y)) = SIMPLE_LINE_TILE;
+            *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = SIMPLE_LINE_TILE;
+        }
+
+        Ok(())
+    }
+
+    fn draw_system_border<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Top-left corner.
+        *map.get_xy_mut(self.origin) = SYSTEM_LINE_TILE;
+
+        // Top-right corner.
+        *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, self.origin.1)) =
+            SYSTEM_LINE_TILE;
+
+        // Bottom-right corner.
+        *map.get_xy_mut((
+            self.origin.0 + self.inner_dimensions.0 + 1,
+            self.origin.1 + self.inner_dimensions.1 + 1,
+        )) = SYSTEM_LINE_TILE;
+
+        // Bottom-left corner.
+        *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
+            SYSTEM_LINE_TILE;
+
+        // Horizontal border.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            *map.get_xy_mut((x, self.origin.1)) = SYSTEM_LINE_TILE;
+            *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) = SYSTEM_LINE_TILE;
+        }
+
+        // Vertical border.
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+            *map.get_xy_mut((self.origin.0, y)) = SYSTEM_LINE_TILE;
+            *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = SYSTEM_LINE_TILE;
+        }
+
+        Ok(())
     }
 }
