@@ -19,7 +19,6 @@ const NEWLINE_CHAR: char = '\n';
 //-------------------------------------------------------------------------------------------------
 #[derive(Default)]
 pub struct RichTextFormatSettings {
-    pub glyph: Option<char>,
     pub layout: Option<TileLayout>,
     pub style: Option<TileStyle>,
     pub size: Option<TileSize>,

@@ -81,6 +81,10 @@ pub struct InputManager {
     released_actions: HashSet<InputAction>,
     // Map of input actions to their bound key combinations.
     action_bindings: HashMap<InputAction, Vec<InputBinding>>,
+    // Whether any key was pressed.
+    pressed_any_key: bool,
+    // Whether any action was pressed.
+    pressed_any_action: bool,
 }
 
 impl InputManager {
@@ -133,6 +137,21 @@ impl InputManager {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Helper function that returns whether a keycode is one of: Alt, Ctrl, Shift, Gui, App.
+    //---------------------------------------------------------------------------------------------
+    fn is_modifier(keycode: SdlKey) -> bool {
+        keycode == SdlKey::LAlt
+            || keycode == SdlKey::RAlt
+            || keycode == SdlKey::LCtrl
+            || keycode == SdlKey::RCtrl
+            || keycode == SdlKey::LShift
+            || keycode == SdlKey::RShift
+            || keycode == SdlKey::LGui
+            || keycode == SdlKey::RGui
+            || keycode == SdlKey::Application
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Updates the input manager from current keyboard state.
     // (should be called once per frame)
     //---------------------------------------------------------------------------------------------
@@ -153,6 +172,13 @@ impl InputManager {
                 // - insert into the just pressed key set if the key had previously been released.
                 if pressed {
                     self.pressed_keys.insert(keycode);
+
+                    // Ignore modifier keys and alt-tab when updating pressed_any_key.
+                    if !Self::is_modifier(keycode)
+                        || (keycode == SdlKey::Tab && !self.modifier_pressed(&ModifierKey::Alt))
+                    {
+                        self.pressed_any_key = true;
+                    }
 
                     if self.released_keys.contains(&keycode) {
                         self.just_pressed_keys.insert(keycode);
@@ -178,6 +204,7 @@ impl InputManager {
                 //   released.
                 if bindings.iter().all(|b| self.binding_pressed(b)) {
                     self.pressed_actions.insert(input_action);
+                    self.pressed_any_action = true;
 
                     if self.released_actions.contains(&input_action) {
                         self.just_pressed_actions.insert(input_action);
@@ -216,10 +243,12 @@ impl InputManager {
         // Clear the key state.
         self.pressed_keys.clear();
         self.just_pressed_keys.clear();
+        self.pressed_any_key = false;
 
         // Clear the action state.
         self.pressed_actions.clear();
         self.just_pressed_actions.clear();
+        self.pressed_any_action = false;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -302,14 +331,14 @@ impl InputManager {
     // Returns whether any key is currently pressed.
     //---------------------------------------------------------------------------------------------
     pub fn any_key_pressed(&self) -> bool {
-        !self.pressed_keys.is_empty()
+        self.pressed_any_key
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns whether any action is currently pressed.
     //---------------------------------------------------------------------------------------------
     pub fn any_action_pressed(&self) -> bool {
-        !self.pressed_actions.is_empty()
+        self.pressed_any_action
     }
 
     //---------------------------------------------------------------------------------------------
@@ -318,7 +347,7 @@ impl InputManager {
     pub fn bind_action(&mut self, action: InputAction, bindings: &[InputBinding]) {
         // Do not bind empty key set.
         if bindings.is_empty() {
-            return;
+            debug_assert!(false);
         }
 
         // Insert the new action binding.

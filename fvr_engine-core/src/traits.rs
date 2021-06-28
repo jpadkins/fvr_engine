@@ -42,6 +42,7 @@ where
     T: Map2dType,
 {
 }
+
 impl<M, T> Map2d<T> for M
 where
     M: Map2dView<Type = T> + Map2dViewMut<Type = T>,

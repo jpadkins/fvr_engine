@@ -64,6 +64,9 @@ pub struct MainMenu {
 }
 
 impl MainMenu {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new main menu scene.
+    //---------------------------------------------------------------------------------------------
     pub fn new() -> Self {
         Self {
             state: State::FadeIn,
@@ -203,7 +206,7 @@ impl Scene for MainMenu {
                     // TODO: Remove - rendering debug.
                     terminal.randomize();
                 } else if input.key_just_pressed(SdlKey::S) {
-                    self.next_scene = Some(SceneAction::Push(Box::new(Scratch {})));
+                    self.next_scene = Some(SceneAction::Push(Box::new(Scratch::new())));
                     self.state = State::FadeOut;
                 }
             }

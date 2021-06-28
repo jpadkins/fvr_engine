@@ -24,7 +24,18 @@ const SCRATCH_TEXT: &str = "<l:t><fc:Y>This is the scratch scene. Should you be 
 //-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
 //-------------------------------------------------------------------------------------------------
-pub struct Scratch;
+pub struct Scratch {
+    button: Button,
+}
+
+impl Scratch {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new scratch scene.
+    //---------------------------------------------------------------------------------------------
+    pub fn new() -> Self {
+        Self { button: Button::new((1, 3), String::from("BUTTON")) }
+    }
+}
 
 impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
@@ -61,12 +72,10 @@ impl Scene for Scratch {
             SCRATCH_TEXT,
         )?;
 
-        let mut frame = Frame::new((0, 2), (21, 21), FrameStyle::Line);
-        frame.top_left_text = Some("Items".into());
-        frame.top_right_text = Some("Stats".into());
-        frame.bottom_right_text = Some("Spells".into());
-        frame.bottom_left_text = Some("Skills".into());
-        frame.draw(terminal)?;
+        let frame = Frame::new((0, 2), (21, 21), FrameStyle::Fancy);
+        frame.draw_and_clear(terminal)?;
+
+        self.button.draw(terminal);
 
         Ok(())
     }
@@ -85,11 +94,16 @@ impl Scene for Scratch {
         &mut self,
         _dt: &Duration,
         input: &InputManager,
-        _terminal: &mut Terminal,
+        terminal: &mut Terminal,
     ) -> Result<SceneAction> {
         if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
             Ok(SceneAction::Pop)
         } else {
+            match self.button.update_and_draw(input, terminal)? {
+                ButtonAction::Triggered => println!("TRIGGERED!"),
+                _ => {}
+            }
+
             Ok(SceneAction::Noop)
         }
     }

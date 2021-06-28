@@ -271,7 +271,6 @@ static SYSTEM_LINE_TILE: Tile = Tile {
 
 // Format settings for frame text.
 static TEXT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
-    glyph: None,
     layout: Some(TileLayout::Text),
     style: None,
     size: None,
@@ -288,6 +287,7 @@ static TEXT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
 //-------------------------------------------------------------------------------------------------
 pub enum FrameStyle {
     // A fancy border that has the appearance of a chain with square corners.
+    // Works best with odd length edges.
     Fancy,
     // A broken, single line border.
     Line,
@@ -303,12 +303,19 @@ pub enum FrameStyle {
 // Frame handles drawing decorated rects. Used by other widgets.
 //-------------------------------------------------------------------------------------------------
 pub struct Frame {
+    // Origin of the frame when drawing.
     pub origin: (u32, u32),
+    // Dimensions of the area inside the frame.
     pub inner_dimensions: (u32, u32),
+    // Style of the frame.
     pub style: FrameStyle,
+    // Optional top-left text.
     pub top_left_text: Option<String>,
+    // Optional top-left text.
     pub top_right_text: Option<String>,
+    // Optional bottom-left text.
     pub bottom_left_text: Option<String>,
+    // Optional bottom-right text.
     pub bottom_right_text: Option<String>,
 }
 
@@ -353,69 +360,8 @@ impl Frame {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Draws the frame onto a Map2d<Tile> without clearing the center.
+    // Draws a fancy border frame.
     //---------------------------------------------------------------------------------------------
-    pub fn draw<M>(&self, map: &mut M) -> Result<()>
-    where
-        M: Map2d<Tile>,
-    {
-        // Draw the border.
-        match self.style {
-            FrameStyle::Fancy => self.draw_fancy_border(map)?,
-            FrameStyle::Line => self.draw_line_border(map)?,
-            FrameStyle::DoubleLine => self.draw_double_line_border(map)?,
-            FrameStyle::Simple => self.draw_simple_border(map)?,
-            FrameStyle::System => self.draw_system_border(map)?,
-        }
-
-        // Draw top-left text if populated.
-        if let Some(top_left_text) = self.top_left_text.as_ref() {
-            RichTextWriter::write_plain_with_settings(
-                map,
-                (self.origin.0 + 1, self.origin.1),
-                top_left_text,
-                &TEXT_FORMAT_SETTINGS,
-            );
-        }
-
-        // Draw top-right text if populated.
-        if let Some(top_right_text) = self.top_right_text.as_ref() {
-            let stripped_len = RichTextWriter::stripped_len(top_right_text)?;
-            RichTextWriter::write_plain_with_settings(
-                map,
-                (self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32, self.origin.1),
-                top_right_text,
-                &TEXT_FORMAT_SETTINGS,
-            );
-        }
-
-        // Draw bottom-right text if populated.
-        if let Some(bottom_right_text) = self.bottom_right_text.as_ref() {
-            let stripped_len = RichTextWriter::stripped_len(bottom_right_text)?;
-            RichTextWriter::write_plain_with_settings(
-                map,
-                (
-                    self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32,
-                    self.origin.1 + self.inner_dimensions.1 + 1,
-                ),
-                bottom_right_text,
-                &TEXT_FORMAT_SETTINGS,
-            );
-        }
-
-        // Draw bottom-left text if populated.
-        if let Some(bottom_left_text) = self.bottom_left_text.as_ref() {
-            RichTextWriter::write_plain_with_settings(
-                map,
-                (self.origin.0 + 1, self.origin.1 + self.inner_dimensions.1 + 1),
-                bottom_left_text,
-                &TEXT_FORMAT_SETTINGS,
-            );
-        }
-
-        Ok(())
-    }
-
     fn draw_fancy_border<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
@@ -440,32 +386,35 @@ impl Frame {
         // Horizontal border.
         for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
             if (x - (self.origin.0 + 1)) % 2 == 0 {
-                *map.get_xy_mut((x, self.origin.1)) = FANCY_HORIZONTAL_THIN_TILE;
-                *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
-                    FANCY_HORIZONTAL_THIN_TILE;
-            } else {
                 *map.get_xy_mut((x, self.origin.1)) = FANCY_HORIZONTAL_THICK_TILE;
                 *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
                     FANCY_HORIZONTAL_THICK_TILE;
+            } else {
+                *map.get_xy_mut((x, self.origin.1)) = FANCY_HORIZONTAL_THIN_TILE;
+                *map.get_xy_mut((x, self.origin.1 + self.inner_dimensions.1 + 1)) =
+                    FANCY_HORIZONTAL_THIN_TILE;
             }
         }
 
         // Vertical border.
         for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
             if (y - (self.origin.1 + 1)) % 2 == 0 {
-                *map.get_xy_mut((self.origin.0, y)) = FANCY_VERTICAL_THIN_TILE;
-                *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
-                    FANCY_VERTICAL_THIN_TILE;
-            } else {
                 *map.get_xy_mut((self.origin.0, y)) = FANCY_VERTICAL_THICK_TILE;
                 *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
                     FANCY_VERTICAL_THICK_TILE;
+            } else {
+                *map.get_xy_mut((self.origin.0, y)) = FANCY_VERTICAL_THIN_TILE;
+                *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
+                    FANCY_VERTICAL_THIN_TILE;
             }
         }
 
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Draws a line border frame.
+    //---------------------------------------------------------------------------------------------
     fn draw_line_border<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
@@ -503,6 +452,9 @@ impl Frame {
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Draws a double line border frame.
+    //---------------------------------------------------------------------------------------------
     fn draw_double_line_border<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
@@ -541,6 +493,9 @@ impl Frame {
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Draws a simple border frame.
+    //---------------------------------------------------------------------------------------------
     fn draw_simple_border<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
@@ -577,6 +532,9 @@ impl Frame {
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Draws a system border frame.
+    //---------------------------------------------------------------------------------------------
     fn draw_system_border<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
@@ -608,6 +566,90 @@ impl Frame {
         for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
             *map.get_xy_mut((self.origin.0, y)) = SYSTEM_LINE_TILE;
             *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = SYSTEM_LINE_TILE;
+        }
+
+        Ok(())
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Draws the frame onto a Map2d<Tile> without clearing the center.
+    //---------------------------------------------------------------------------------------------
+    pub fn draw<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the border.
+        match self.style {
+            FrameStyle::Fancy => self.draw_fancy_border(map)?,
+            FrameStyle::Line => self.draw_line_border(map)?,
+            FrameStyle::DoubleLine => self.draw_double_line_border(map)?,
+            FrameStyle::Simple => self.draw_simple_border(map)?,
+            FrameStyle::System => self.draw_system_border(map)?,
+        }
+
+        // Draw top-left text if populated.
+        if let Some(top_left_text) = self.top_left_text.as_ref() {
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + 1, self.origin.1),
+                top_left_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw top-right text if populated.
+        if let Some(top_right_text) = self.top_right_text.as_ref() {
+            let stripped_len = RichTextWriter::stripped_len(top_right_text)?;
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32, self.origin.1),
+                top_right_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw bottom-left text if populated.
+        if let Some(bottom_left_text) = self.bottom_left_text.as_ref() {
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (self.origin.0 + 1, self.origin.1 + self.inner_dimensions.1 + 1),
+                bottom_left_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        // Draw bottom-right text if populated.
+        if let Some(bottom_right_text) = self.bottom_right_text.as_ref() {
+            let stripped_len = RichTextWriter::stripped_len(bottom_right_text)?;
+            RichTextWriter::write_plain_with_settings(
+                map,
+                (
+                    self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32,
+                    self.origin.1 + self.inner_dimensions.1 + 1,
+                ),
+                bottom_right_text,
+                &TEXT_FORMAT_SETTINGS,
+            );
+        }
+
+        Ok(())
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Draws the frame onto a Map2d<Tile> and sets the glyphs of the inner tiles to space.
+    //---------------------------------------------------------------------------------------------
+    pub fn draw_and_clear<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the frame.
+        self.draw(map)?;
+
+        // Clear the glyphs of the center tiles.
+        for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
+            for y in (self.origin.1 + 1)..(self.origin.1 + self.inner_dimensions.1 + 1) {
+                map.get_xy_mut((x, y)).glyph = ' ';
+            }
         }
 
         Ok(())
