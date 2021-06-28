@@ -220,18 +220,29 @@ impl Scene for MainMenu {
                 } else {
                     if let Some(i) = self.button_list.update_and_draw(input, terminal) {
                         match i {
-                            // [S]cratch Scene.
+                            // New.
+                            0 => {}
+                            // Resume.
+                            1 => {}
+                            // Options.
+                            2 => {}
+                            // Help.
+                            3 => {}
+                            // Credits.
+                            4 => {}
+                            // Debug.
+                            5 => {}
+                            // Scratch.
                             6 => {
                                 self.next_scene =
                                     Some(SceneAction::Push(Box::new(Scratch::new())));
                                 self.state = State::FadeOut;
                             }
-                            // [Q]uit.
+                            // Quit.
                             7 => {
                                 return Ok(SceneAction::Pop);
                             }
-                            // _ => bail!("Invalid menu option."),
-                            _ => {}
+                            _ => bail!("Invalid menu option."),
                         }
                     }
                 }
