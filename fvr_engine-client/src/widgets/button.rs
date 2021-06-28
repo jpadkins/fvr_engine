@@ -1,9 +1,4 @@
 //-------------------------------------------------------------------------------------------------
-// Extern crate includes.
-//-------------------------------------------------------------------------------------------------
-use anyhow::Result;
-
-//-------------------------------------------------------------------------------------------------
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_core::prelude::*;
@@ -38,7 +33,7 @@ static FOCUSED_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
     size: None,
     outlined: None,
     background_color: None,
-    foreground_color: Some(PaletteColor::White.const_into()),
+    foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
     foreground_opacity: None,
     outline_opacity: None,
@@ -51,7 +46,7 @@ static PRESSED_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
     size: None,
     outlined: None,
     background_color: None,
-    foreground_color: Some(PaletteColor::White.const_into()),
+    foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
     foreground_opacity: None,
     outline_opacity: None,
@@ -111,9 +106,16 @@ impl Button {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Resets the button to the default state.
+    //---------------------------------------------------------------------------------------------
+    pub fn reset(&mut self) {
+        self.state = State::Default;
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Updates the button, potentially redrawing if the state changes.
     //---------------------------------------------------------------------------------------------
-    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> Result<ButtonAction>
+    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonAction
     where
         M: Map2d<Tile>,
     {
@@ -124,7 +126,7 @@ impl Button {
                     if self.contains(&mouse_coord) {
                         self.state = State::Focused;
                         self.draw(map);
-                        return Ok(ButtonAction::Consumed);
+                        return ButtonAction::Consumed;
                     }
                 }
             }
@@ -134,13 +136,13 @@ impl Button {
                     if !self.contains(&mouse_coord) {
                         self.state = State::Default;
                         self.draw(map);
-                        return Ok(ButtonAction::Noop);
+                        return ButtonAction::Noop;
                     } else if input.mouse_pressed().0 {
                         self.state = State::Pressed;
                         self.draw(map);
-                        return Ok(ButtonAction::Consumed);
+                        return ButtonAction::Consumed;
                     } else {
-                        return Ok(ButtonAction::Consumed);
+                        return ButtonAction::Consumed;
                     }
                 }
             }
@@ -150,19 +152,19 @@ impl Button {
                     if !self.contains(&mouse_coord) {
                         self.state = State::Default;
                         self.draw(map);
-                        return Ok(ButtonAction::Noop);
+                        return ButtonAction::Noop;
                     } else if !input.mouse_pressed().0 {
                         self.state = State::Focused;
                         self.draw(map);
-                        return Ok(ButtonAction::Triggered);
+                        return ButtonAction::Triggered;
                     } else {
-                        return Ok(ButtonAction::Consumed);
+                        return ButtonAction::Consumed;
                     }
                 }
             }
         }
 
-        Ok(ButtonAction::Noop)
+        ButtonAction::Noop
     }
 
     //---------------------------------------------------------------------------------------------

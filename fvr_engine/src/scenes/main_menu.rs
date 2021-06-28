@@ -6,7 +6,7 @@ use std::time::Duration;
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -33,6 +33,7 @@ const TITLE_TEXT: &str = r#"
 888 "      Y8b Y    888 b,       888 ",d 8b Y88b   Y888 888P 888 8b Y88b  888 ",d
 888         Y8P     888 88b,     888,d88 88b Y88b   "88 88"  888 88b Y88b 888,d88
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Y8P~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"#;
+const MENU_BUTTONS_OFFSET: u32 = 3;
 const VERSION_TEXT: &str = "Alpha v0.0.1";
 const COPYRIGHT_TEXT: &str = "Copyright (c) 2021 Waco Paul (wacopaul@pm.me) All Rights Reserved.";
 
@@ -61,6 +62,8 @@ pub struct MainMenu {
     fade_out: Fade,
     // Contains the final scene action to return after the user has made a selection.
     next_scene: Option<SceneAction>,
+    // ButtonList containing the main menu options.
+    button_list: ButtonList,
 }
 
 impl MainMenu {
@@ -68,11 +71,24 @@ impl MainMenu {
     // Creates a new main menu scene.
     //---------------------------------------------------------------------------------------------
     pub fn new() -> Self {
+        // TODO: Should this be (lazy) static?
+        let menu_buttons = vec![
+            Button::new((0, 0), String::from("[N] New")),
+            Button::new((0, 0), String::from("[R] Resume")),
+            Button::new((0, 0), String::from("[O] Options")),
+            Button::new((0, 0), String::from("[H] Help")),
+            Button::new((0, 0), String::from("[C] Credits")),
+            Button::new((0, 0), String::from("[D] Debug")),
+            Button::new((0, 0), String::from("[S] Scratch")),
+            Button::new((0, 0), String::from("[Esc] Quit")),
+        ];
+
         Self {
             state: State::FadeIn,
             fade_in: Fade::new(&FADE_DURATION, 0.0, 1.0),
             fade_out: Fade::new(&FADE_DURATION, 1.0, 0.0),
             next_scene: None,
+            button_list: ButtonList::from_buttons_vec((0, 0), menu_buttons, true),
         }
     }
 }
@@ -102,6 +118,7 @@ impl Scene for MainMenu {
         self.fade_in.reset();
         self.fade_out.reset();
         self.next_scene = None;
+        self.button_list.reset();
 
         // Reset the terminal.
         terminal.set_transparent();
@@ -136,6 +153,14 @@ impl Scene for MainMenu {
 
         format_settings.foreground_color = Some(TileColor::TRANSPARENT);
         format_settings.outline_opacity = Some(0.5);
+
+        // Position and draw the menu buttons.
+        let buttons_origin = (
+            (terminal.width() - self.button_list.width()) / 2,
+            ((terminal.height() - self.button_list.height()) / 2) + MENU_BUTTONS_OFFSET,
+        );
+        self.button_list.set_origin(buttons_origin);
+        self.button_list.draw(terminal);
 
         // Draw the version text.
         let version_xy =
@@ -187,27 +212,28 @@ impl Scene for MainMenu {
                     || input.key_just_pressed(SdlKey::Escape)
                 {
                     return Ok(SceneAction::Pop);
-                } else if input.mouse_pressed().0 {
-                    // TODO: Remove - mouse debug.
-                    if let Some(xy) = input.mouse_coord() {
-                        terminal.update_tile(
-                            xy,
-                            Some('@'),
-                            Some(TileLayout::Center),
-                            Some(TileStyle::Bold),
-                            None,
-                            Some(false),
-                            Some(TileColor::BLUE),
-                            Some(TileColor::RED),
-                            None,
-                        );
-                    }
                 } else if input.action_just_pressed(InputAction::Accept) {
-                    // TODO: Remove - rendering debug.
                     terminal.randomize();
                 } else if input.key_just_pressed(SdlKey::S) {
                     self.next_scene = Some(SceneAction::Push(Box::new(Scratch::new())));
                     self.state = State::FadeOut;
+                } else {
+                    if let Some(i) = self.button_list.update_and_draw(input, terminal) {
+                        match i {
+                            // [S]cratch Scene.
+                            6 => {
+                                self.next_scene =
+                                    Some(SceneAction::Push(Box::new(Scratch::new())));
+                                self.state = State::FadeOut;
+                            }
+                            // [Q]uit.
+                            7 => {
+                                return Ok(SceneAction::Pop);
+                            }
+                            // _ => bail!("Invalid menu option."),
+                            _ => {}
+                        }
+                    }
                 }
             }
             State::FadeOut => {

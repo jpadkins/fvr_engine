@@ -20,12 +20,13 @@ use fvr_engine_core::prelude::*;
 use crate::scene_stack::*;
 
 const SCRATCH_TEXT: &str = "<l:t><fc:Y>This is the scratch scene. Should you be here?";
+const BACK_BUTTON_TEXT: &str = "◄ [Esc] Main Menu";
 
 //-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
 //-------------------------------------------------------------------------------------------------
 pub struct Scratch {
-    button: Button,
+    back_button: Button,
 }
 
 impl Scratch {
@@ -33,7 +34,7 @@ impl Scratch {
     // Creates a new scratch scene.
     //---------------------------------------------------------------------------------------------
     pub fn new() -> Self {
-        Self { button: Button::new((1, 3), String::from("BUTTON")) }
+        Self { back_button: Button::new((0, 0), String::from(BACK_BUTTON_TEXT)) }
     }
 }
 
@@ -75,7 +76,7 @@ impl Scene for Scratch {
         let frame = Frame::new((0, 2), (21, 21), FrameStyle::Fancy);
         frame.draw_and_clear(terminal)?;
 
-        self.button.draw(terminal);
+        self.back_button.draw(terminal);
 
         Ok(())
     }
@@ -96,14 +97,12 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
+        if input.action_just_pressed(InputAction::Quit)
+            || input.key_just_pressed(SdlKey::Escape)
+            || self.back_button.update_and_draw(input, terminal) == ButtonAction::Triggered
+        {
             Ok(SceneAction::Pop)
         } else {
-            match self.button.update_and_draw(input, terminal)? {
-                ButtonAction::Triggered => println!("TRIGGERED!"),
-                _ => {}
-            }
-
             Ok(SceneAction::Noop)
         }
     }
