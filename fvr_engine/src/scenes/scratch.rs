@@ -20,7 +20,7 @@ use fvr_engine_core::prelude::*;
 use crate::scene_stack::*;
 
 const SCRATCH_TEXT: &str = "<l:t><fc:Y>This is the scratch scene. Should you be here?";
-const BACK_BUTTON_TEXT: &str = "◄ [Esc] Main Menu";
+const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 
 //-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
@@ -42,22 +42,22 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
-        self.focus(terminal)?;
+    fn load(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()> {
+        self.focus(input, terminal)?;
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unload(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
         terminal.set_opaque();
         terminal.set_all_tiles_default();
         for tile in terminal.iter_mut() {
@@ -84,7 +84,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unfocus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 

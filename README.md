@@ -99,8 +99,7 @@ Lib containing text parsers, including:
 - clean up code in fvr_engine-core (add comments).
 - refactor frame to use rect?
 
-## SCRATCH
+## CONVENTIONS
 
-calsut-moran
-clint vandenbosch
-solomander
+- Frames work best with _odd_ dimensions.
+- Managing cursor should _always_ be done at the root scene level.

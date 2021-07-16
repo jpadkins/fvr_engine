@@ -73,14 +73,14 @@ impl MainMenu {
     pub fn new() -> Self {
         // TODO: Should this be (lazy) static?
         let menu_buttons = vec![
-            Button::new((0, 0), String::from("[N] New")),
-            Button::new((0, 0), String::from("[R] Resume")),
-            Button::new((0, 0), String::from("[O] Options")),
-            Button::new((0, 0), String::from("[H] Help")),
-            Button::new((0, 0), String::from("[C] Credits")),
-            Button::new((0, 0), String::from("[D] Debug")),
-            Button::new((0, 0), String::from("[S] Scratch")),
-            Button::new((0, 0), String::from("[Esc] Quit")),
+            Button::new((0, 0), String::from("[n] New")),
+            Button::new((0, 0), String::from("[r] Resume")),
+            Button::new((0, 0), String::from("[o] Options")),
+            Button::new((0, 0), String::from("[h] Help")),
+            Button::new((0, 0), String::from("[c] Credits")),
+            Button::new((0, 0), String::from("[d] Debug")),
+            Button::new((0, 0), String::from("[s] Scratch")),
+            Button::new((0, 0), String::from("[esc] Quit")),
         ];
 
         Self {
@@ -88,7 +88,7 @@ impl MainMenu {
             fade_in: Fade::new(&FADE_DURATION, 0.0, 1.0),
             fade_out: Fade::new(&FADE_DURATION, 1.0, 0.0),
             next_scene: None,
-            button_list: ButtonList::from_buttons_vec((0, 0), menu_buttons, true),
+            button_list: ButtonList::from_buttons_vec((0, 0), menu_buttons, false),
         }
     }
 }
@@ -97,22 +97,22 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
-        self.focus(terminal)?;
+    fn load(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()> {
+        self.focus(input, terminal)?;
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unload(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
         // Reset state.
         self.state = State::FadeIn;
         self.fade_in.reset();
@@ -188,7 +188,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unfocus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
@@ -218,7 +218,10 @@ impl Scene for MainMenu {
                     self.next_scene = Some(SceneAction::Push(Box::new(Scratch::new())));
                     self.state = State::FadeOut;
                 } else {
-                    if let Some(i) = self.button_list.update_and_draw(input, terminal) {
+                    let ButtonListAction { consumed, triggered } =
+                        self.button_list.update_and_draw(input, terminal);
+                    // If a button has been triggered, prepare the next scene.
+                    if let Some(i) = triggered {
                         match i {
                             // New.
                             0 => {}
@@ -244,6 +247,13 @@ impl Scene for MainMenu {
                             }
                             _ => bail!("Invalid menu option."),
                         }
+                    }
+
+                    // Update the cursor state.
+                    if consumed {
+                        input.set_cursor(Cursor::Hand);
+                    } else {
+                        input.set_cursor(Cursor::Arrow);
                     }
                 }
             }

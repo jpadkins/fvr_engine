@@ -137,7 +137,7 @@ impl Button {
                         self.state = State::Default;
                         self.draw(map);
                         return ButtonAction::Noop;
-                    } else if input.mouse_pressed().0 {
+                    } else if input.mouse_clicked().0 {
                         self.state = State::Pressed;
                         self.draw(map);
                         return ButtonAction::Consumed;

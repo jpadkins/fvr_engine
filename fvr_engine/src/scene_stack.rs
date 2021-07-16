@@ -46,22 +46,22 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, terminal: &mut Terminal) -> Result<()>;
+    fn load(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, terminal: &mut Terminal) -> Result<()>;
+    fn unload(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, terminal: &mut Terminal) -> Result<()>;
+    fn focus(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, terminal: &mut Terminal) -> Result<()>;
+    fn unfocus(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called whenever the scene's (non-visual) internal state should be updated.
@@ -99,13 +99,21 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     // Pushes a new scene onto the stack.
     //---------------------------------------------------------------------------------------------
-    pub fn push(&mut self, scene: Box<dyn Scene>, terminal: &mut Terminal) -> Result<()> {
+    pub fn push(
+        &mut self,
+        scene: Box<dyn Scene>,
+        input: &InputManager,
+        terminal: &mut Terminal,
+    ) -> Result<()> {
         #[cfg(debug_assertions)]
         println!("[SceneStack] Push - current stack len: {}.", self.scenes.len());
 
+        // Reset the cursor
+        input.set_cursor(Cursor::Arrow);
+
         // Unfocus the current scene if present.
         match self.scenes.last_mut() {
-            Some(s) => s.unfocus(terminal),
+            Some(s) => s.unfocus(input, terminal),
             _ => Ok(()),
         }?;
 
@@ -113,7 +121,7 @@ impl SceneStack {
         self.scenes.push(scene);
 
         // Call load on the new scene.
-        self.scenes.last_mut().unwrap().load(terminal)?;
+        self.scenes.last_mut().unwrap().load(input, terminal)?;
 
         Ok(())
     }
@@ -121,19 +129,22 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     // Pops the current scene off the stack.
     //---------------------------------------------------------------------------------------------
-    pub fn pop(&mut self, terminal: &mut Terminal) -> Result<()> {
+    pub fn pop(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()> {
         #[cfg(debug_assertions)]
         println!("[SceneStack] Pop  - current stack len: {}.", self.scenes.len());
 
+        // Reset the cursor
+        input.set_cursor(Cursor::Arrow);
+
         // Call unload on the current scene.
-        self.scenes.last_mut().unwrap().unload(terminal)?;
+        self.scenes.last_mut().unwrap().unload(input, terminal)?;
 
         // Pop the current scene.
         let _ = self.scenes.pop();
 
         // If a previous scene exists, call focus on it.
         match self.scenes.last_mut() {
-            Some(s) => s.focus(terminal),
+            Some(s) => s.focus(input, terminal),
             _ => Ok(()),
         }?;
 
@@ -143,12 +154,20 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     // Swaps the current scene with a new scene.
     //---------------------------------------------------------------------------------------------
-    pub fn swap(&mut self, scene: Box<dyn Scene>, terminal: &mut Terminal) -> Result<()> {
+    pub fn swap(
+        &mut self,
+        scene: Box<dyn Scene>,
+        input: &InputManager,
+        terminal: &mut Terminal,
+    ) -> Result<()> {
         #[cfg(debug_assertions)]
         println!("[SceneStack] Swap - current stack len: {}.", self.scenes.len());
 
+        // Reset the cursor
+        input.set_cursor(Cursor::Arrow);
+
         // Call unload on the current scene.
-        self.scenes.last_mut().unwrap().unload(terminal)?;
+        self.scenes.last_mut().unwrap().unload(input, terminal)?;
 
         // Pop the current scene.
         let _ = self.scenes.pop();
@@ -157,7 +176,7 @@ impl SceneStack {
         self.scenes.push(scene);
 
         // Call load on the new scene.
-        self.scenes.last_mut().unwrap().load(terminal)?;
+        self.scenes.last_mut().unwrap().load(input, terminal)?;
 
         Ok(())
     }
@@ -180,9 +199,9 @@ impl SceneStack {
         // Update the current scene and handle the returned scene action.
         match self.scenes.last_mut().unwrap().update(dt, input, terminal)? {
             SceneAction::Noop => {}
-            SceneAction::Push(scene) => self.push(scene, terminal)?,
-            SceneAction::Pop => self.pop(terminal)?,
-            SceneAction::Swap(scene) => self.swap(scene, terminal)?,
+            SceneAction::Push(scene) => self.push(scene, input, terminal)?,
+            SceneAction::Pop => self.pop(input, terminal)?,
+            SceneAction::Swap(scene) => self.swap(scene, input, terminal)?,
         }
 
         // Return false if no scenes exist on the stack.

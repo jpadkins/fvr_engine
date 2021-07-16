@@ -6,9 +6,10 @@ use std::collections::{HashMap, HashSet};
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
+use anyhow::{anyhow, Result};
 use sdl2::keyboard::KeyboardState;
 pub use sdl2::keyboard::Keycode as SdlKey;
-use sdl2::mouse::MouseState;
+use sdl2::mouse::{Cursor as SdlCursor, MouseState, SystemCursor};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -55,9 +56,23 @@ pub enum InputBinding {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Cursor enumerates the types of mouse cursors available.
+//-------------------------------------------------------------------------------------------------
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Cursor {
+    Arrow,
+    Crosshair,
+    Hand,
+    IBeam,
+    No,
+    Wait,
+}
+
+//-------------------------------------------------------------------------------------------------
 // InputManager exposes an API for managing user input state.
 //-------------------------------------------------------------------------------------------------
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct InputManager {
     // Current pressed state of left and right mouse buttons.
     mouse_pressed: (bool, bool),
@@ -85,6 +100,8 @@ pub struct InputManager {
     pressed_any_key: bool,
     // Whether any action was pressed.
     pressed_any_action: bool,
+    // Vec of cursors.
+    cursors: Vec<SdlCursor>,
 }
 
 impl InputManager {
@@ -92,15 +109,24 @@ impl InputManager {
     // Creates a new input manager.
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new() -> Result<Self> {
+        let cursors = vec![
+            SdlCursor::from_system(SystemCursor::Arrow).map_err(|e| anyhow!(e))?,
+            SdlCursor::from_system(SystemCursor::Crosshair).map_err(|e| anyhow!(e))?,
+            SdlCursor::from_system(SystemCursor::Hand).map_err(|e| anyhow!(e))?,
+            SdlCursor::from_system(SystemCursor::IBeam).map_err(|e| anyhow!(e))?,
+            SdlCursor::from_system(SystemCursor::No).map_err(|e| anyhow!(e))?,
+            SdlCursor::from_system(SystemCursor::Wait).map_err(|e| anyhow!(e))?,
+        ];
+
+        Ok(Self { cursors, ..Default::default() })
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns an input manager with default action bindings.
     //---------------------------------------------------------------------------------------------
-    pub fn with_default_bindings() -> Self {
-        let mut this = Self::new();
+    pub fn with_default_bindings() -> Result<Self> {
+        let mut this = Self::new()?;
 
         // TODO: load these from config.
         this.bind_action(InputAction::Accept, &[InputBinding::SpecificKey(SdlKey::Return)]);
@@ -121,7 +147,7 @@ impl InputManager {
         this.bind_action(InputAction::West, &[InputBinding::SpecificKey(SdlKey::H)]);
         this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(SdlKey::Y)]);
 
-        this
+        Ok(this)
     }
 
     //---------------------------------------------------------------------------------------------
@@ -221,8 +247,9 @@ impl InputManager {
         //-----------------------------------------------------------------------------------------
 
         // Set clicked to true if the mouse button was not pressed last frame.
-        self.mouse_clicked.0 = !self.mouse_pressed.0 && mouse_state.left();
-        self.mouse_clicked.1 = !self.mouse_pressed.1 && mouse_state.right();
+        self.mouse_clicked.0 = self.mouse_clicked.0 || !self.mouse_pressed.0 && mouse_state.left();
+        self.mouse_clicked.1 =
+            self.mouse_clicked.1 || !self.mouse_pressed.1 && mouse_state.right();
 
         // Set remaining state.
         self.mouse_pressed.0 = mouse_state.left();
@@ -249,6 +276,10 @@ impl InputManager {
         self.pressed_actions.clear();
         self.just_pressed_actions.clear();
         self.pressed_any_action = false;
+
+        // Clear the mouse state.
+        self.mouse_clicked.0 = false;
+        self.mouse_clicked.1 = false;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -353,4 +384,16 @@ impl InputManager {
         // Insert the new action binding.
         self.action_bindings.insert(action, bindings.to_vec());
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Set the current cursor.
+    //---------------------------------------------------------------------------------------------
+    pub fn set_cursor(&self, cursor: Cursor) {
+        self.cursors[cursor as usize].set();
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Equivalent to calling set_cursor with CursorStyle::Arrow.
+    //---------------------------------------------------------------------------------------------
+    pub fn reset_cursor(&self) {}
 }

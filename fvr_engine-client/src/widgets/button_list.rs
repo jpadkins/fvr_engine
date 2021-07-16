@@ -10,11 +10,22 @@ use crate::input_manager::*;
 use crate::widgets::button::*;
 
 //-------------------------------------------------------------------------------------------------
+// Represents the response when updating a button list.
+//-------------------------------------------------------------------------------------------------
+pub struct ButtonListAction {
+    pub consumed: bool,
+    pub triggered: Option<u32>,
+}
+
+//-------------------------------------------------------------------------------------------------
 // Button List manages a vertical list of buttons.
 //-------------------------------------------------------------------------------------------------
 pub struct ButtonList {
+    // Origin of the button list.
     origin: (u32, u32),
+    // Vec of buttons in the list.
     buttons: Vec<Button>,
+    // Whether to add a space between the buttons.
     spacing: bool,
 }
 
@@ -121,21 +132,26 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Updates each of the contained buttons, returning the index of any that are triggered.
     //---------------------------------------------------------------------------------------------
-    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> Option<u32>
+    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonListAction
     where
         M: Map2d<Tile>,
     {
+        let mut consumed = false;
         let mut triggered = None;
 
         // Check each button, breaking early on triggered or consumed.
         for (i, button) in self.buttons.iter_mut().enumerate() {
             let action = button.update_and_draw(input, map);
+
             if action == ButtonAction::Triggered {
+                consumed = true;
                 triggered = Some(i as u32);
+            } else if action == ButtonAction::Consumed {
+                consumed = true;
             }
         }
 
-        triggered
+        ButtonListAction { consumed, triggered }
     }
 
     //---------------------------------------------------------------------------------------------

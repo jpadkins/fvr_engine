@@ -45,14 +45,14 @@ fn main() -> Result<()> {
         FONT_NAME,
     )?;
     let mut terminal = client.create_terminal();
-    let mut input = InputManager::with_default_bindings();
+    let mut input = InputManager::with_default_bindings()?;
 
     let mut render_dt;
     let mut update_dt = Duration::from_secs(0);
     let mut update_timer = Timer::new(UPDATE_INTERVAL);
 
     let mut scene_stack = SceneStack::new();
-    scene_stack.push(Box::new(Initial::new()), &mut terminal)?;
+    scene_stack.push(Box::new(Initial::new()), &input, &mut terminal)?;
 
     'main: loop {
         while let Some(event) = client.poll_event() {

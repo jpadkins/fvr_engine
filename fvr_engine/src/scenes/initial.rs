@@ -92,7 +92,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, terminal: &mut Terminal) -> Result<()> {
+    fn load(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
         // Reset the terminal.
         terminal.set_transparent();
         terminal.set_all_tiles_default();
@@ -126,21 +126,21 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unload(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _terminal: &mut Terminal) -> Result<()> {
+    fn unfocus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
         Ok(())
     }
 
