@@ -98,6 +98,7 @@ Lib containing text parsers, including:
 - continue adapting C# implementation.
 - clean up code in fvr_engine-core (add comments).
 - refactor frame to use rect?
+- get rid of update_and_draw - just update and draw everything visible every frame
 
 ## CONVENTIONS
 

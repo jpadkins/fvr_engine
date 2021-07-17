@@ -50,7 +50,7 @@ impl RichTextWriter {
             match value {
                 RichTextValue::FormatHint { .. } => {}
                 RichTextValue::Newline => len += 1,
-                RichTextValue::Text(t) => len += t.len(),
+                RichTextValue::Text(t) => len += t.chars().count(),
             }
         }
 

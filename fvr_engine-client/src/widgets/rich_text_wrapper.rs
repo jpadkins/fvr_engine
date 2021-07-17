@@ -252,7 +252,7 @@ impl RichTextWrapper {
         self.wrapped_text.push(NEWLINE_CHARACTER);
 
         // Update the vec of newline descriptors.
-        self.newline_indices.push(self.wrapped_text.len());
+        self.newline_indices.push(self.wrapped_text.chars().count());
 
         // Append the current format tag string.
         self.wrapped_text.push_str(&self.format_state.tag_string());
@@ -275,15 +275,15 @@ impl RichTextWrapper {
 
         // If text was appended last, add a space.
         if self.prepend_space {
-            self.handle_word(" ");
+            self.handle_word(" ", true);
         }
 
         // Handle appending each word and insert a single whitespace between (but not trailing).
         for (i, word) in words.into_iter().enumerate() {
-            self.handle_word(word);
+            self.handle_word(word, false);
 
             if i < words_len - 1 {
-                self.handle_word(" ");
+                self.handle_word(" ", true);
             }
         }
     }
@@ -300,17 +300,22 @@ impl RichTextWrapper {
     // 5. Set that spaces can be added (already true unless this was the first word) and the that
     //    the last value was not a tag.
     //---------------------------------------------------------------------------------------------
-    fn handle_word(&mut self, word: &str) {
+    fn handle_word(&mut self, word: &str, is_space: bool) {
         debug_assert!(word.is_empty() == false, "Parsed an empty word.");
 
         // If there is not enough room to append the word on this line, break to the next line.
-        if self.last_line_length + word.len() >= self.width as usize {
+        if self.last_line_length + word.chars().count() > self.width as usize {
+            // Do not append spaces that would cause a line break.
+            if is_space {
+                return;
+            }
+
             self.handle_newline();
         }
 
         // Append the word and update the last line length.
         self.wrapped_text.push_str(word);
-        self.last_line_length += word.len();
+        self.last_line_length += word.chars().count();
     }
 
     //---------------------------------------------------------------------------------------------
@@ -337,7 +342,7 @@ impl RichTextWrapper {
         if self.total_lines > self.height {
             if self.current_line as u32 + self.height >= self.total_lines {
                 // The entire remainder of the wrapped text is visible.
-                self.visible_end = self.wrapped_text.len();
+                self.visible_end = self.wrapped_text.chars().count();
             } else {
                 // The remainder of the wrapped text must be cut off after height.
                 self.visible_end =
@@ -345,7 +350,7 @@ impl RichTextWrapper {
             }
         } else {
             // The entire remainder of the wrapped text is visible.
-            self.visible_end = self.wrapped_text.len();
+            self.visible_end = self.wrapped_text.chars().count();
         }
     }
 

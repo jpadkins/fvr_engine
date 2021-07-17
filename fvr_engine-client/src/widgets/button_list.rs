@@ -13,7 +13,9 @@ use crate::widgets::button::*;
 // Represents the response when updating a button list.
 //-------------------------------------------------------------------------------------------------
 pub struct ButtonListAction {
+    // Whether the mouse was consumed.
     pub consumed: bool,
+    // Optional index of triggered button.
     pub triggered: Option<u32>,
 }
 
@@ -55,7 +57,7 @@ impl ButtonList {
         let mut width = 0;
 
         // Find the maximum text length.
-        for len in self.buttons.iter().map(|b| b.text.len() as u32) {
+        for len in self.buttons.iter().map(|b| b.text.chars().count() as u32) {
             if len > width {
                 width = len;
             }
@@ -146,7 +148,7 @@ impl ButtonList {
             if action == ButtonAction::Triggered {
                 consumed = true;
                 triggered = Some(i as u32);
-            } else if action == ButtonAction::Consumed {
+            } else if action == ButtonAction::Focused {
                 consumed = true;
             }
         }

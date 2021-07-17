@@ -73,14 +73,14 @@ impl MainMenu {
     pub fn new() -> Self {
         // TODO: Should this be (lazy) static?
         let menu_buttons = vec![
-            Button::new((0, 0), String::from("[n] New")),
-            Button::new((0, 0), String::from("[r] Resume")),
-            Button::new((0, 0), String::from("[o] Options")),
-            Button::new((0, 0), String::from("[h] Help")),
-            Button::new((0, 0), String::from("[c] Credits")),
-            Button::new((0, 0), String::from("[d] Debug")),
-            Button::new((0, 0), String::from("[s] Scratch")),
-            Button::new((0, 0), String::from("[esc] Quit")),
+            Button::new((0, 0), String::from("[n] New"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[r] Resume"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[o] Options"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[h] Help"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[c] Credits"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[d] Debug"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[s] Scratch"), ButtonLayout::Text),
+            Button::new((0, 0), String::from("[esc] Quit"), ButtonLayout::Text),
         ];
 
         Self {

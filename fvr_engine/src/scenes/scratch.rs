@@ -7,6 +7,7 @@ use std::time::Duration;
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
+use rand::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -27,6 +28,9 @@ const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 //-------------------------------------------------------------------------------------------------
 pub struct Scratch {
     back_button: Button,
+    frame: Frame,
+    scrollbar: Scrollbar,
+    wrapper: RichTextWrapper,
 }
 
 impl Scratch {
@@ -34,7 +38,12 @@ impl Scratch {
     // Creates a new scratch scene.
     //---------------------------------------------------------------------------------------------
     pub fn new() -> Self {
-        Self { back_button: Button::new((0, 0), String::from(BACK_BUTTON_TEXT)) }
+        Self {
+            back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
+            frame: Frame::new((0, 2), (41, 21), FrameStyle::Fancy),
+            scrollbar: Scrollbar::new((42, 2), 23, 0),
+            wrapper: RichTextWrapper::new(41, 21),
+        }
     }
 }
 
@@ -73,8 +82,11 @@ impl Scene for Scratch {
             SCRATCH_TEXT,
         )?;
 
-        let frame = Frame::new((0, 2), (21, 21), FrameStyle::Fancy);
-        frame.draw_and_clear(terminal)?;
+        self.frame.draw_and_clear(terminal)?;
+
+        self.wrapper.draw(terminal, (1, 3))?;
+
+        self.scrollbar.draw(terminal);
 
         self.back_button.draw(terminal);
 
@@ -97,14 +109,59 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
+        let scrollbar_action = self.scrollbar.update_and_draw(input, terminal);
+        let back_button_action = self.back_button.update_and_draw(input, terminal);
+
         if input.action_just_pressed(InputAction::Quit)
             || input.key_just_pressed(SdlKey::Escape)
-            || self.back_button.update_and_draw(input, terminal) == ButtonAction::Triggered
+            || back_button_action == ButtonAction::Triggered
         {
-            Ok(SceneAction::Pop)
-        } else {
-            Ok(SceneAction::Noop)
+            return Ok(SceneAction::Pop);
         }
+
+        if input.action_just_pressed(InputAction::Accept) {
+            let mut rng = rand::thread_rng();
+            let hint = match rng.gen::<u32>() % 5 {
+                0 => "<fc:R>",
+                1 => "<fc:G>",
+                2 => "<fc:B>",
+                3 => "<fc:W>",
+                4 => "<fc:M>",
+                _ => "",
+            };
+            const text: &str =
+                "<l:t>Hello! This is some example text. Just a long string that should wrap.";
+            self.wrapper.append(&format!("{}{}", hint, text))?;
+            self.wrapper.draw(terminal, (1, 3))?;
+            self.scrollbar.set_content_height(self.wrapper.total_lines());
+            println!("total lines: {}", self.wrapper.total_lines());
+        } else if input.action_just_pressed(InputAction::North) {
+            self.wrapper.scroll_up(1);
+            self.wrapper.draw(terminal, (1, 3))?;
+            self.scrollbar.set_current_line(self.wrapper.lines_up());
+        } else if input.action_just_pressed(InputAction::South) {
+            self.wrapper.scroll_down(1);
+            self.wrapper.draw(terminal, (1, 3))?;
+            self.scrollbar.set_current_line(self.wrapper.lines_up());
+        } else if let ScrollbarAction::ScrollUp(lines) = scrollbar_action {
+            self.wrapper.scroll_up(lines);
+            self.wrapper.draw(terminal, (1, 3))?;
+            self.scrollbar.set_current_line(self.wrapper.lines_up());
+            input.set_cursor(Cursor::Hand);
+        } else if let ScrollbarAction::ScrollDown(lines) = scrollbar_action {
+            self.wrapper.scroll_down(lines);
+            self.wrapper.draw(terminal, (1, 3))?;
+            self.scrollbar.set_current_line(self.wrapper.lines_up());
+            input.set_cursor(Cursor::Hand);
+        } else if scrollbar_action == ScrollbarAction::Focused {
+            input.set_cursor(Cursor::Hand);
+        } else if back_button_action == ButtonAction::Focused {
+            input.set_cursor(Cursor::Hand);
+        } else {
+            input.set_cursor(Cursor::Arrow);
+        }
+
+        Ok(SceneAction::Noop)
     }
 
     //---------------------------------------------------------------------------------------------

@@ -14,7 +14,18 @@ use crate::widgets::rich_text_writer::*;
 //-------------------------------------------------------------------------------------------------
 
 // Format settings for default state button.
-static DEFAULT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+static CENTER_DEFAULT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+    layout: Some(TileLayout::Center),
+    style: Some(TileStyle::Regular),
+    size: None,
+    outlined: None,
+    background_color: None,
+    foreground_color: Some(PaletteColor::BrightGrey.const_into()),
+    outline_color: None,
+    foreground_opacity: None,
+    outline_opacity: None,
+};
+static TEXT_DEFAULT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     layout: Some(TileLayout::Text),
     style: Some(TileStyle::Regular),
     size: None,
@@ -27,7 +38,18 @@ static DEFAULT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
 };
 
 // Format settings for focused state button.
-static FOCUSED_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+static CENTER_FOCUSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+    layout: Some(TileLayout::Center),
+    style: Some(TileStyle::Regular),
+    size: None,
+    outlined: None,
+    background_color: None,
+    foreground_color: Some(PaletteColor::Gold.const_into()),
+    outline_color: None,
+    foreground_opacity: None,
+    outline_opacity: None,
+};
+static TEXT_FOCUSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     layout: Some(TileLayout::Text),
     style: Some(TileStyle::Regular),
     size: None,
@@ -40,7 +62,18 @@ static FOCUSED_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
 };
 
 // Format settings for Pressed state button.
-static PRESSED_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+static CENTER_PRESSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
+    layout: Some(TileLayout::Center),
+    style: Some(TileStyle::Bold),
+    size: None,
+    outlined: None,
+    background_color: None,
+    foreground_color: Some(PaletteColor::Gold.const_into()),
+    outline_color: None,
+    foreground_opacity: None,
+    outline_opacity: None,
+};
+static TEXT_PRESSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     layout: Some(TileLayout::Text),
     style: Some(TileStyle::Bold),
     size: None,
@@ -67,6 +100,17 @@ enum State {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Represents the possible layouts of a button's text.
+//-------------------------------------------------------------------------------------------------
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ButtonLayout {
+    // Center the text.
+    Center,
+    // Use font kerning offsets for the text.
+    Text,
+}
+
+//-------------------------------------------------------------------------------------------------
 // Represents the response codes when updating a button.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,7 +118,7 @@ pub enum ButtonAction {
     // The button was not interacted with.
     Noop,
     // The button consumed user input, but was not triggered.
-    Consumed,
+    Focused,
     // The button was triggered.
     Triggered,
 }
@@ -83,8 +127,13 @@ pub enum ButtonAction {
 // Button describes a clickable button.
 //-------------------------------------------------------------------------------------------------
 pub struct Button {
+    // Origin of the button.
     pub origin: (u32, u32),
+    // Text of the button (plain only).
     pub text: String,
+    // Layout of the button.
+    pub layout: ButtonLayout,
+    // State of the button.
     state: State,
 }
 
@@ -92,8 +141,8 @@ impl Button {
     //---------------------------------------------------------------------------------------------
     // Creates a new button.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), text: String) -> Self {
-        Self { origin, text, state: State::Default }
+    pub fn new(origin: (u32, u32), text: String, layout: ButtonLayout) -> Self {
+        Self { origin, text, layout, state: State::Default }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -102,7 +151,7 @@ impl Button {
     fn contains(&self, coord: &(u32, u32)) -> bool {
         coord.1 == self.origin.1
             && coord.0 >= self.origin.0
-            && coord.0 <= self.origin.0 + self.text.len() as u32
+            && coord.0 < self.origin.0 + self.text.chars().count() as u32
     }
 
     //---------------------------------------------------------------------------------------------
@@ -126,7 +175,7 @@ impl Button {
                     if self.contains(&mouse_coord) {
                         self.state = State::Focused;
                         self.draw(map);
-                        return ButtonAction::Consumed;
+                        return ButtonAction::Focused;
                     }
                 }
             }
@@ -140,9 +189,9 @@ impl Button {
                     } else if input.mouse_clicked().0 {
                         self.state = State::Pressed;
                         self.draw(map);
-                        return ButtonAction::Consumed;
+                        return ButtonAction::Focused;
                     } else {
-                        return ButtonAction::Consumed;
+                        return ButtonAction::Focused;
                     }
                 }
             }
@@ -158,7 +207,7 @@ impl Button {
                         self.draw(map);
                         return ButtonAction::Triggered;
                     } else {
-                        return ButtonAction::Consumed;
+                        return ButtonAction::Focused;
                     }
                 }
             }
@@ -176,28 +225,28 @@ impl Button {
     {
         match self.state {
             State::Default => {
-                RichTextWriter::write_plain_with_settings(
-                    map,
-                    self.origin,
-                    &self.text,
-                    &DEFAULT_FORMAT_SETTINGS,
-                );
+                let settings = match self.layout {
+                    ButtonLayout::Center => &CENTER_DEFAULT_SETTINGS,
+                    ButtonLayout::Text => &TEXT_DEFAULT_SETTINGS,
+                };
+
+                RichTextWriter::write_plain_with_settings(map, self.origin, &self.text, settings);
             }
             State::Focused => {
-                RichTextWriter::write_plain_with_settings(
-                    map,
-                    self.origin,
-                    &self.text,
-                    &FOCUSED_FORMAT_SETTINGS,
-                );
+                let settings = match self.layout {
+                    ButtonLayout::Center => &CENTER_FOCUSED_SETTINGS,
+                    ButtonLayout::Text => &TEXT_FOCUSED_SETTINGS,
+                };
+
+                RichTextWriter::write_plain_with_settings(map, self.origin, &self.text, settings);
             }
             State::Pressed => {
-                RichTextWriter::write_plain_with_settings(
-                    map,
-                    self.origin,
-                    &self.text,
-                    &PRESSED_FORMAT_SETTINGS,
-                );
+                let settings = match self.layout {
+                    ButtonLayout::Center => &CENTER_PRESSED_SETTINGS,
+                    ButtonLayout::Text => &TEXT_PRESSED_SETTINGS,
+                };
+
+                RichTextWriter::write_plain_with_settings(map, self.origin, &self.text, settings);
             }
         }
     }
