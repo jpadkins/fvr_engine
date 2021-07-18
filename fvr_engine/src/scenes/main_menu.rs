@@ -160,7 +160,7 @@ impl Scene for MainMenu {
             ((terminal.height() - self.button_list.height()) / 2) + MENU_BUTTONS_OFFSET,
         );
         self.button_list.set_origin(buttons_origin);
-        self.button_list.draw(terminal);
+        self.button_list.redraw(terminal);
 
         // Draw the version text.
         let version_xy =
@@ -218,10 +218,10 @@ impl Scene for MainMenu {
                     self.next_scene = Some(SceneAction::Push(Box::new(Scratch::new())));
                     self.state = State::FadeOut;
                 } else {
-                    let ButtonListAction { consumed, triggered } =
-                        self.button_list.update_and_draw(input, terminal);
+                    let button_list_action = self.button_list.update(input, terminal);
+
                     // If a button has been triggered, prepare the next scene.
-                    if let Some(i) = triggered {
+                    if let ButtonListAction::Triggered(i) = button_list_action {
                         match i {
                             // New.
                             0 => {}
@@ -247,10 +247,9 @@ impl Scene for MainMenu {
                             }
                             _ => bail!("Invalid menu option."),
                         }
-                    }
 
-                    // Update the cursor state.
-                    if consumed {
+                        input.set_cursor(Cursor::Hand);
+                    } else if button_list_action == ButtonListAction::Interactable {
                         input.set_cursor(Cursor::Hand);
                     } else {
                         input.set_cursor(Cursor::Arrow);

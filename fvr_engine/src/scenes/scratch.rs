@@ -41,7 +41,7 @@ impl Scratch {
         Self {
             back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
             frame: Frame::new((0, 2), (41, 21), FrameStyle::Fancy),
-            scrollbar: Scrollbar::new((42, 2), 23, 0),
+            scrollbar: Scrollbar::new((42, 3), 21, 0),
             wrapper: RichTextWrapper::new(41, 21),
         }
     }
@@ -83,12 +83,9 @@ impl Scene for Scratch {
         )?;
 
         self.frame.draw_and_clear(terminal)?;
-
         self.wrapper.draw(terminal, (1, 3))?;
-
-        self.scrollbar.draw(terminal);
-
-        self.back_button.draw(terminal);
+        self.scrollbar.redraw(terminal);
+        self.back_button.redraw(terminal);
 
         Ok(())
     }
@@ -109,8 +106,8 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        let scrollbar_action = self.scrollbar.update_and_draw(input, terminal);
-        let back_button_action = self.back_button.update_and_draw(input, terminal);
+        let scrollbar_action = self.scrollbar.update(input, terminal);
+        let back_button_action = self.back_button.update(input, terminal);
 
         if input.action_just_pressed(InputAction::Quit)
             || input.key_just_pressed(SdlKey::Escape)
@@ -153,9 +150,9 @@ impl Scene for Scratch {
             self.wrapper.draw(terminal, (1, 3))?;
             self.scrollbar.set_current_line(self.wrapper.lines_up());
             input.set_cursor(Cursor::Hand);
-        } else if scrollbar_action == ScrollbarAction::Focused {
+        } else if scrollbar_action == ScrollbarAction::Interactable {
             input.set_cursor(Cursor::Hand);
-        } else if back_button_action == ButtonAction::Focused {
+        } else if back_button_action == ButtonAction::Interactable {
             input.set_cursor(Cursor::Hand);
         } else {
             input.set_cursor(Cursor::Arrow);

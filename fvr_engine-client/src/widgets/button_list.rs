@@ -10,13 +10,16 @@ use crate::input_manager::*;
 use crate::widgets::button::*;
 
 //-------------------------------------------------------------------------------------------------
-// Represents the response when updating a button list.
+// Enumerates the response codes when updating a button list.
 //-------------------------------------------------------------------------------------------------
-pub struct ButtonListAction {
-    // Whether the mouse was consumed.
-    pub consumed: bool,
-    // Optional index of triggered button.
-    pub triggered: Option<u32>,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ButtonListAction {
+    // The button list was not interacted with.
+    Noop,
+    // The button list consumed user input but was not triggered.
+    Interactable,
+    // Index of the button in the button list that was triggered.
+    Triggered(u32),
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -134,37 +137,46 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Updates each of the contained buttons, returning the index of any that are triggered.
     //---------------------------------------------------------------------------------------------
-    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonListAction
+    pub fn update<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonListAction
     where
         M: Map2d<Tile>,
     {
         let mut consumed = false;
-        let mut triggered = None;
+        let mut action = ButtonListAction::Noop;
 
         // Check each button, breaking early on triggered or consumed.
         for (i, button) in self.buttons.iter_mut().enumerate() {
-            let action = button.update_and_draw(input, map);
+            let button_action = button.update(input, map);
 
-            if action == ButtonAction::Triggered {
-                consumed = true;
-                triggered = Some(i as u32);
-            } else if action == ButtonAction::Focused {
-                consumed = true;
+            if consumed {
+                continue;
+            }
+
+            match button_action {
+                ButtonAction::Triggered => {
+                    action = ButtonListAction::Triggered(i as u32);
+                    consumed = true;
+                }
+                ButtonAction::Interactable => {
+                    action = ButtonListAction::Interactable;
+                    consumed = true;
+                }
+                _ => {}
             }
         }
 
-        ButtonListAction { consumed, triggered }
+        action
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws each of the contained buttons. Should only be called after moving the button list.
     //---------------------------------------------------------------------------------------------
-    pub fn draw<M>(&self, map: &mut M)
+    pub fn redraw<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
         for button in self.buttons.iter() {
-            button.draw(map);
+            button.redraw(map);
         }
     }
 }

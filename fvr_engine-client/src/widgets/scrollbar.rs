@@ -15,9 +15,14 @@ use crate::input_manager::*;
 use crate::widgets::button::*;
 
 //-------------------------------------------------------------------------------------------------
+// Constants
+//-------------------------------------------------------------------------------------------------
+const TOP_CHAR: char = '▲';
+const BOTTOM_CHAR: char = '▼';
+
+//-------------------------------------------------------------------------------------------------
 // Statics.
 //-------------------------------------------------------------------------------------------------
-
 static TRACK_TILE: Tile = Tile {
     glyph: '|',
     layout: TileLayout::Center,
@@ -30,7 +35,6 @@ static TRACK_TILE: Tile = Tile {
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
-
 static GRIP_TILE: Tile = Tile {
     glyph: ' ',
     layout: TileLayout::Center,
@@ -43,6 +47,30 @@ static GRIP_TILE: Tile = Tile {
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
+static LIMIT_TOP_TILE: Tile = Tile {
+    glyph: TOP_CHAR,
+    layout: TileLayout::Center,
+    style: TileStyle::Bold,
+    size: TileSize::Normal,
+    outlined: false,
+    background_color: TileColor::TRANSPARENT,
+    foreground_color: PaletteColor::DarkGrey.const_into(),
+    outline_color: TileColor::TRANSPARENT,
+    foreground_opacity: 1.0,
+    outline_opacity: 1.0,
+};
+static LIMIT_BOTTOM_TILE: Tile = Tile {
+    glyph: BOTTOM_CHAR,
+    layout: TileLayout::Center,
+    style: TileStyle::Bold,
+    size: TileSize::Normal,
+    outlined: false,
+    background_color: TileColor::TRANSPARENT,
+    foreground_color: PaletteColor::DarkGrey.const_into(),
+    outline_color: TileColor::TRANSPARENT,
+    foreground_opacity: 1.0,
+    outline_opacity: 1.0,
+};
 
 //-------------------------------------------------------------------------------------------------
 // Enumerates the response codes when updating a scrollbar.
@@ -51,8 +79,10 @@ static GRIP_TILE: Tile = Tile {
 pub enum ScrollbarAction {
     // The scrollbar was not interacted with.
     Noop,
-    // The scrollbar has focus.
+    // The scrollbar has focus (consumed user input).
     Focused,
+    // The mouse is over an interactable area of the scrollbar.
+    Interactable,
     // The content should scroll up by some number of lines.
     ScrollUp(u32),
     // The content should scroll down by some number of lines.
@@ -66,7 +96,7 @@ pub struct Scrollbar {
     // Origin of the scrollbar.
     origin: (u32, u32),
     // Height of the scrollbar.
-    track_height: u32,
+    height: u32,
     // Height of the content that the scrollbar represents.
     content_height: u32,
     // Index of the current line at the top of the visible area.
@@ -79,6 +109,8 @@ pub struct Scrollbar {
     top_button: Button,
     // Button at the bottom of the track.
     bottom_button: Button,
+    // Whether the scrollbar needs to be redrawn.
+    dirty: bool,
 }
 
 impl Scrollbar {
@@ -88,25 +120,24 @@ impl Scrollbar {
     fn refresh(&mut self) {
         // Set the top/bottom button origins.
         self.top_button.origin = self.origin;
-        self.bottom_button.origin = (self.origin.0, self.origin.1 + (self.track_height + 2) - 1);
+        self.bottom_button.origin = (self.origin.0, self.origin.1 + self.height - 1);
 
         // Find how many lines the grip represents, taking into account the top/bottom buttons.
-        self.track_ratio = self.content_height / self.track_height;
+        self.track_ratio = self.content_height / self.height;
 
-        // If the content height is shorter than the track height, don't draw the grip or buttons.
+        // If the content height is shorter than the height, don't draw the grip or buttons.
         if self.track_ratio == 0 {
             return;
         }
 
-        // Set the grip size to a % of the track height equal to the ratio of content/track height.
-        self.grip_size = (self.track_height as f32
-            * (self.track_height as f32 / self.content_height as f32))
-            as u32;
+        // Set the grip size to a % of the track height equal to the ratio of content/height.
+        self.grip_size =
+            ((self.height - 2) as f32 * (self.height as f32 / self.content_height as f32)) as u32;
 
         if self.grip_size == 0 {
             // The grip should always have a length of at least 1.
             self.grip_size = 1;
-        } else if self.content_height % self.track_height != 0 {
+        } else if self.content_height % self.height != 0 {
             // Extend the length to account for the remainder.
             self.grip_size += 1;
         }
@@ -118,16 +149,20 @@ impl Scrollbar {
     pub fn new(origin: (u32, u32), height: u32, content_height: u32) -> Self {
         debug_assert!(height > 2);
 
+        let top_button = Button::new(Default::default(), TOP_CHAR.into(), ButtonLayout::Center);
+        let bottom_button =
+            Button::new(Default::default(), BOTTOM_CHAR.into(), ButtonLayout::Center);
+
         let mut scrollbar = Scrollbar {
             origin,
-            // Subtract 2 to account for the top/bottom buttons.
-            track_height: height - 2,
+            height,
             content_height,
             current_line: 0,
             track_ratio: 0,
             grip_size: 0,
-            top_button: Button::new(Default::default(), "▲".into(), ButtonLayout::Center),
-            bottom_button: Button::new(Default::default(), "▼".into(), ButtonLayout::Center),
+            top_button,
+            bottom_button,
+            dirty: true,
         };
 
         scrollbar.refresh();
@@ -139,6 +174,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     pub fn set_origin(&mut self, origin: (u32, u32)) {
         self.origin = origin;
+        self.dirty = true;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -147,8 +183,9 @@ impl Scrollbar {
     pub fn set_height(&mut self, height: u32) {
         debug_assert!(height > 2);
 
-        self.track_height = height - 2;
+        self.height = height;
         self.refresh();
+        self.dirty = true;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -157,15 +194,17 @@ impl Scrollbar {
     pub fn set_content_height(&mut self, content_height: u32) {
         self.content_height = content_height;
         self.refresh();
+        self.dirty = true;
     }
 
     //---------------------------------------------------------------------------------------------
     // Update the current line of the scrollbar.
     //---------------------------------------------------------------------------------------------
     pub fn set_current_line(&mut self, current_lint: u32) {
-        debug_assert!(current_lint < self.content_height - self.track_height);
+        debug_assert!(current_lint < self.content_height - self.height);
 
         self.current_line = current_lint;
+        self.dirty = true;
     }
 
     //---------------------------------------------------------------------------------------------
@@ -176,7 +215,7 @@ impl Scrollbar {
         M: Map2d<Tile>,
     {
         // Draw the track.
-        for y in (self.origin.1 + 1)..(self.origin.1 + (self.track_height + 2) - 1) {
+        for y in (self.origin.1 + 1)..(self.origin.1 + self.height - 1) {
             *map.get_xy_mut((self.origin.0, y)) = TRACK_TILE;
         }
 
@@ -187,19 +226,20 @@ impl Scrollbar {
 
         // Calculate the grip offset.
         let mut grip_offset;
+        let track_height = self.height - 2;
 
-        if self.current_line + self.track_height == self.content_height {
+        if self.current_line + self.height == self.content_height {
             // Ensure grip reaches the end of the track if the end of the content is visible.
-            grip_offset = self.track_height - self.grip_size;
+            grip_offset = track_height - self.grip_size;
         } else {
             // Set grip offset to a % of the track height equal to the current line/content ratio.
-            grip_offset = (self.current_line as f32
-                * (self.track_height as f32 / self.content_height as f32))
+            grip_offset = (track_height as f32
+                * (self.current_line as f32 / self.content_height as f32))
                 as u32;
 
             // Ensure grip does not cover bottom button in instances where the content height is
-            // equal to a multiple of the track height.
-            if self.grip_size + grip_offset > self.origin.1 + 1 + self.track_height {
+            // equal to a multiple of the height.
+            if self.grip_size + grip_offset > self.origin.1 + 1 + track_height {
                 grip_offset -= 1;
             }
         }
@@ -213,53 +253,103 @@ impl Scrollbar {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Helper function to determine whether the scrollbar contains a coord.
+    //---------------------------------------------------------------------------------------------
+    fn contains(&self, coord: &(u32, u32)) -> bool {
+        coord.0 == self.origin.0
+            && coord.1 >= self.origin.1
+            && coord.1 < self.origin.1 + self.height
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Helper function for updating the top/bottom buttons.
+    //---------------------------------------------------------------------------------------------
+    fn update_buttons<M>(
+        &mut self,
+        input: &InputManager,
+        map: &mut M,
+    ) -> (ButtonAction, ButtonAction)
+    where
+        M: Map2d<Tile>,
+    {
+        // Update the top button if applicable.
+        let show_top_button = self.current_line > 0;
+        let top_action = if show_top_button {
+            let action = self.top_button.update(input, map);
+            // Force a redraw in case the limit tile was drawn previously.
+            self.top_button.redraw(map);
+            action
+        } else {
+            // If the top limit has been reached, draw a static arrow instead of a button.
+            *map.get_xy_mut(self.origin) = LIMIT_TOP_TILE;
+            ButtonAction::Noop
+        };
+
+        // Update the bottom button if applicable,
+        let show_bottom_button = self.content_height - self.current_line > self.height;
+        let bottom_action = if show_bottom_button {
+            let action = self.bottom_button.update(input, map);
+            // Force a redraw in case the limit tile was drawn previously.
+            self.bottom_button.redraw(map);
+            action
+        } else {
+            // If the bottom limit has been reached, draw a static arrow instead of a button.
+            *map.get_xy_mut((self.origin.0, self.origin.1 + self.height - 1)) = LIMIT_BOTTOM_TILE;
+            ButtonAction::Noop
+        };
+
+        (top_action, bottom_action)
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Updates the scrollbar, potentially redrawing if the state changes.
     //---------------------------------------------------------------------------------------------
-    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> ScrollbarAction
+    pub fn update<M>(&mut self, input: &InputManager, map: &mut M) -> ScrollbarAction
     where
         M: Map2d<Tile>,
     {
         let mut action = ScrollbarAction::Noop;
 
         // Update the buttons and the action.
-        let show_top_button = self.current_line > 0;
-        let show_bottom_button = self.content_height - self.current_line > self.track_height;
+        let (top_action, bottom_action) = self.update_buttons(input, map);
 
-        let top_action = if show_top_button {
-            self.top_button.update_and_draw(input, map)
-        } else {
-            ButtonAction::Noop
-        };
-        let bottom_action = if show_bottom_button {
-            self.bottom_button.update_and_draw(input, map)
-        } else {
-            ButtonAction::Noop
-        };
-
+        // Determine the response.
         if top_action == ButtonAction::Triggered {
             // If the top button was triggered, scroll up the bar.
             let lines = cmp::min(self.track_ratio, self.current_line);
             action = ScrollbarAction::ScrollUp(lines);
             self.current_line -= lines;
-        } else if top_action == ButtonAction::Focused {
+            self.dirty = true;
+        } else if top_action == ButtonAction::Interactable {
             // Else if the top button was consumed, update action and break early.
-            action = ScrollbarAction::Focused;
+            action = ScrollbarAction::Interactable;
         } else if bottom_action == ButtonAction::Triggered {
             // Else if the bottom button was triggered, scroll down the bar, ensuring the content
             // is not overscrolled.
             let lines = cmp::min(
                 self.track_ratio,
-                (self.content_height - self.track_height) - self.current_line,
+                (self.content_height - self.height) - self.current_line,
             );
             action = ScrollbarAction::ScrollDown(lines);
             self.current_line += lines;
-        } else if bottom_action == ButtonAction::Focused {
+            self.dirty = true;
+        } else if bottom_action == ButtonAction::Interactable {
             // Else if the bottom button was consumed, update action.
-            action = ScrollbarAction::Focused;
+            action = ScrollbarAction::Interactable;
+        } else {
+            // Else check if the scrollbar contains the mouse coord and update action.
+            if let Some(coord) = input.mouse_coord() {
+                if self.contains(&coord) {
+                    action = ScrollbarAction::Focused;
+                }
+            }
         }
 
-        // Draw the scrollbar.
-        self.draw_track_and_grip(map);
+        // Draw the scrollbar if dirty.
+        if self.dirty {
+            self.draw_track_and_grip(map);
+            self.dirty = false;
+        }
 
         action
     }
@@ -267,12 +357,12 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Draws the scrollbar. Only necessary initially and when moving the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn draw<M>(&self, map: &mut M)
+    pub fn redraw<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
-        self.top_button.draw(map);
-        self.bottom_button.draw(map);
+        self.top_button.redraw(map);
+        self.bottom_button.redraw(map);
         self.draw_track_and_grip(map);
     }
 }

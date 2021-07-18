@@ -118,7 +118,7 @@ pub enum ButtonAction {
     // The button was not interacted with.
     Noop,
     // The button consumed user input, but was not triggered.
-    Focused,
+    Interactable,
     // The button was triggered.
     Triggered,
 }
@@ -164,7 +164,7 @@ impl Button {
     //---------------------------------------------------------------------------------------------
     // Updates the button, potentially redrawing if the state changes.
     //---------------------------------------------------------------------------------------------
-    pub fn update_and_draw<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonAction
+    pub fn update<M>(&mut self, input: &InputManager, map: &mut M) -> ButtonAction
     where
         M: Map2d<Tile>,
     {
@@ -174,8 +174,8 @@ impl Button {
                 if let Some(mouse_coord) = input.mouse_coord() {
                     if self.contains(&mouse_coord) {
                         self.state = State::Focused;
-                        self.draw(map);
-                        return ButtonAction::Focused;
+                        self.redraw(map);
+                        return ButtonAction::Interactable;
                     }
                 }
             }
@@ -184,14 +184,14 @@ impl Button {
                 if let Some(mouse_coord) = input.mouse_coord() {
                     if !self.contains(&mouse_coord) {
                         self.state = State::Default;
-                        self.draw(map);
+                        self.redraw(map);
                         return ButtonAction::Noop;
                     } else if input.mouse_clicked().0 {
                         self.state = State::Pressed;
-                        self.draw(map);
-                        return ButtonAction::Focused;
+                        self.redraw(map);
+                        return ButtonAction::Interactable;
                     } else {
-                        return ButtonAction::Focused;
+                        return ButtonAction::Interactable;
                     }
                 }
             }
@@ -200,14 +200,14 @@ impl Button {
                 if let Some(mouse_coord) = input.mouse_coord() {
                     if !self.contains(&mouse_coord) {
                         self.state = State::Default;
-                        self.draw(map);
+                        self.redraw(map);
                         return ButtonAction::Noop;
                     } else if !input.mouse_pressed().0 {
                         self.state = State::Focused;
-                        self.draw(map);
+                        self.redraw(map);
                         return ButtonAction::Triggered;
                     } else {
-                        return ButtonAction::Focused;
+                        return ButtonAction::Interactable;
                     }
                 }
             }
@@ -219,7 +219,7 @@ impl Button {
     //---------------------------------------------------------------------------------------------
     // Draws the button. Only necessary initially and when moving the button.
     //---------------------------------------------------------------------------------------------
-    pub fn draw<M>(&self, map: &mut M)
+    pub fn redraw<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
