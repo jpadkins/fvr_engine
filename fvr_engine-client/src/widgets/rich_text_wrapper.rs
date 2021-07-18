@@ -128,10 +128,10 @@ impl FormatState {
 //-------------------------------------------------------------------------------------------------
 #[derive(Default)]
 pub struct RichTextWrapper {
-    // Width of the visible area.
-    width: u32,
-    // Height of the visible area.
-    height: u32,
+    // Origin of the rich text wrapper.
+    origin: (u32, u32),
+    // Dimensions of the visible area.
+    dimensions: (u32, u32),
     // Current # of lines in the rich text.
     total_lines: u32,
     // Current # of lines above the visible area.
@@ -160,60 +160,81 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Creates a new rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(origin: (u32, u32), dimensions: (u32, u32)) -> Self {
         // Push a newline index for the beginning of the wrapped text.
         let newline_indices = vec![0];
 
-        Self { width, height, newline_indices, ..Default::default() }
+        Self { origin, dimensions, newline_indices, ..Default::default() }
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return the width of the rich text wrapper.
+    // Returns the origin of the rich text wrapper.
+    //---------------------------------------------------------------------------------------------
+    pub fn origin(&self) -> (u32, u32) {
+        self.origin
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the width of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn width(&self) -> u32 {
-        self.width
+        self.dimensions.0
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return the height of the rich text wrapper.
+    // Returns the height of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn height(&self) -> u32 {
-        self.height
+        self.dimensions.1
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return the total lines of the rich text wrapper's text.
+    // Returns the dimensions of the rich text wrapper.
+    //---------------------------------------------------------------------------------------------
+    pub fn dimensions(&self) -> (u32, u32) {
+        self.dimensions
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the total lines of the rich text wrapper's text.
     //---------------------------------------------------------------------------------------------
     pub fn total_lines(&self) -> u32 {
         self.total_lines
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return the # of lines above the currently visible area.
+    // Returns the # of lines above the currently visible area.
     //---------------------------------------------------------------------------------------------
     pub fn lines_up(&self) -> u32 {
         self.lines_up
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return the # of lines below the currently visible area.
+    // Returns the # of lines below the currently visible area.
     //---------------------------------------------------------------------------------------------
     pub fn lines_down(&self) -> u32 {
         self.lines_down
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return whether there are any lines above the currently visible area.
+    // Returns whether there are any lines above the currently visible area.
     //---------------------------------------------------------------------------------------------
     pub fn has_lines_up(&self) -> bool {
         self.lines_up > 0
     }
 
     //---------------------------------------------------------------------------------------------
-    // Return whether there are any lines below the currently visible area.
+    // Returns whether there are any lines below the currently visible area.
     //---------------------------------------------------------------------------------------------
     pub fn has_lines_down(&self) -> bool {
         self.lines_down > 0
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns whether the content is longer than the visible area.
+    //---------------------------------------------------------------------------------------------
+    pub fn has_overflow(&self) -> bool {
+        self.total_lines > self.height()
     }
 
     //---------------------------------------------------------------------------------------------
@@ -304,7 +325,7 @@ impl RichTextWrapper {
         debug_assert!(word.is_empty() == false, "Parsed an empty word.");
 
         // If there is not enough room to append the word on this line, break to the next line.
-        if self.last_line_length + word.chars().count() > self.width as usize {
+        if self.last_line_length + word.chars().count() > self.width() as usize {
             // Do not append spaces that would cause a line break.
             if is_space {
                 return;
@@ -330,23 +351,24 @@ impl RichTextWrapper {
         self.lines_up = self.current_line as u32;
 
         // Lines down is the difference between total lines and the last visible line.
-        self.lines_down =
-            cmp::max(self.total_lines as i32 - (self.current_line as i32 + self.height as i32), 0)
-                as u32;
+        self.lines_down = cmp::max(
+            self.total_lines as i32 - (self.current_line as i32 + self.height() as i32),
+            0,
+        ) as u32;
 
         // Visible start is the newline index of the current line.
         self.visible_start = self.newline_indices[self.current_line];
 
         // Depending on whether there is room to fill the entire height of the text wrapper, set
         // the visible end index.
-        if self.total_lines > self.height {
-            if self.current_line as u32 + self.height >= self.total_lines {
+        if self.total_lines > self.height() {
+            if self.current_line as u32 + self.height() >= self.total_lines {
                 // The entire remainder of the wrapped text is visible.
                 self.visible_end = self.wrapped_text.chars().count();
             } else {
                 // The remainder of the wrapped text must be cut off after height.
                 self.visible_end =
-                    self.newline_indices[self.current_line + self.height as usize] - 1;
+                    self.newline_indices[self.current_line + self.height() as usize] - 1;
             }
         } else {
             // The entire remainder of the wrapped text is visible.
@@ -400,11 +422,11 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     pub fn scroll_down(&mut self, lines: u32) {
         // Only scroll down if there is text that might not be visible
-        if self.total_lines > self.height {
+        if self.has_overflow() {
             // Increment the current line index, stopping at the bottom of the visible area.
             self.current_line = cmp::min(
                 self.current_line + lines as usize,
-                (self.total_lines - self.height) as usize,
+                (self.total_lines - self.height()) as usize,
             );
 
             // Always update visible area metrics.
@@ -427,8 +449,8 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     pub fn scroll_to_bottom(&mut self) {
         // Only scroll if there is text that might not be visible.
-        if self.total_lines > self.height {
-            self.current_line = (self.total_lines - self.height) as usize;
+        if self.has_overflow() {
+            self.current_line = (self.total_lines - self.height()) as usize;
 
             // Always update visible area metrics.
             self.refresh_visible_area_metrics();
@@ -447,9 +469,9 @@ impl RichTextWrapper {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Draws the rich text wrapper at an origin point.
+    // Draws the rich text wrapper at the origin point.
     //---------------------------------------------------------------------------------------------
-    pub fn draw<M>(&self, map: &mut M, xy: (u32, u32)) -> Result<()>
+    pub fn draw<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
     {
@@ -459,8 +481,8 @@ impl RichTextWrapper {
         }
 
         // Clear the foreground glyph of the covered area.
-        for x in xy.0..(xy.0 + self.width) {
-            for y in xy.1..(xy.1 + self.height) {
+        for x in self.origin.0..(self.origin.0 + self.width()) {
+            for y in self.origin.1..(self.origin.1 + self.height()) {
                 map.get_xy_mut((x, y)).glyph = SPACE_CHARACTER;
             }
         }
@@ -469,8 +491,25 @@ impl RichTextWrapper {
         let visible_slice = &self.wrapped_text[self.visible_start..self.visible_end];
 
         // Draw the wrapped rich text.
-        RichTextWriter::write(map, xy, visible_slice)?;
+        RichTextWriter::write(map, self.origin, visible_slice)?;
 
         Ok(())
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Clears the background and draws the rich text wrapper at the origin point.
+    //---------------------------------------------------------------------------------------------
+    pub fn draw_clear<M>(&self, map: &mut M) -> Result<()>
+    where
+        M: Map2d<Tile>,
+    {
+        // Clear the foreground glyph of the covered area.
+        for x in self.origin.0..(self.origin.0 + self.width()) {
+            for y in self.origin.1..(self.origin.1 + self.height()) {
+                map.get_xy_mut((x, y)).glyph = SPACE_CHARACTER;
+            }
+        }
+
+        self.draw(map)
     }
 }

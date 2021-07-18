@@ -283,6 +283,20 @@ static TEXT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
 };
 
 //-------------------------------------------------------------------------------------------------
+// Positions for text along the frame.
+//-------------------------------------------------------------------------------------------------
+pub enum FrameTextPosition {
+    // Top of the frame, left-aligned.
+    TopLeft,
+    // Top of the frame, right-aligned.
+    TopRight,
+    // Bottom of the frame, left-aligned.
+    BottomLeft,
+    // Bottom of the frame, right-aligned.
+    BottomRight,
+}
+
+//-------------------------------------------------------------------------------------------------
 // Possible styles for the frame.
 //-------------------------------------------------------------------------------------------------
 pub enum FrameStyle {
@@ -291,8 +305,12 @@ pub enum FrameStyle {
     Fancy,
     // A broken, single line border.
     Line,
+    // A broken, single line border with blocks for corners.
+    LineBlockCorner,
     // A broken, double line border.
     DoubleLine,
+    // A broken, double line border with blocks for corners.
+    DoubleLineBlockCorner,
     // A simple border that is comprised of number symbols (#).
     Simple,
     // A thick, solid border.
@@ -336,6 +354,34 @@ impl Frame {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Returns the origin of the frame.
+    //---------------------------------------------------------------------------------------------
+    pub fn origin(&self) -> (u32, u32) {
+        self.origin
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the width of the frame.
+    //---------------------------------------------------------------------------------------------
+    pub fn width(&self) -> u32 {
+        self.inner_dimensions.0 + 1
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the height of the frame.
+    //---------------------------------------------------------------------------------------------
+    pub fn height(&self) -> u32 {
+        self.inner_dimensions.1 + 1
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the inner dimensions of the frame.
+    //---------------------------------------------------------------------------------------------
+    pub fn inner_dimensions(&self) -> (u32, u32) {
+        self.inner_dimensions
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Clears all of the frame's text.
     //---------------------------------------------------------------------------------------------
     pub fn clear_text(&mut self) {
@@ -360,9 +406,9 @@ impl Frame {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Draws a fancy border frame.
+    // Helper function for drawing the fancy border corners.
     //---------------------------------------------------------------------------------------------
-    fn draw_fancy_border<M>(&self, map: &mut M) -> Result<()>
+    fn draw_fancy_corners<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
@@ -382,6 +428,17 @@ impl Frame {
         // Bottom-left corner.
         *map.get_xy_mut((self.origin.0, self.origin.1 + self.inner_dimensions.1 + 1)) =
             FANCY_CORNER_TILE;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Draws a fancy border frame.
+    //---------------------------------------------------------------------------------------------
+    fn draw_fancy_border<M>(&self, map: &mut M)
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the corners.
+        self.draw_fancy_corners(map);
 
         // Horizontal border.
         for x in (self.origin.0 + 1)..(self.origin.0 + self.inner_dimensions.0 + 1) {
@@ -408,14 +465,12 @@ impl Frame {
                     FANCY_VERTICAL_THIN_TILE;
             }
         }
-
-        Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws a line border frame.
     //---------------------------------------------------------------------------------------------
-    fn draw_line_border<M>(&self, map: &mut M) -> Result<()>
+    fn draw_line_border<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
@@ -448,14 +503,26 @@ impl Frame {
             *map.get_xy_mut((self.origin.0, y)) = LINE_VERTICAL_TILE;
             *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = LINE_VERTICAL_TILE;
         }
+    }
 
-        Ok(())
+    //---------------------------------------------------------------------------------------------
+    // Draws a line (block corner) border frame.
+    //---------------------------------------------------------------------------------------------
+    fn draw_line_block_corner_border<M>(&self, map: &mut M)
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the line border.
+        self.draw_line_border(map);
+
+        // Set blocks on the corners.
+        self.draw_fancy_corners(map);
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws a double line border frame.
     //---------------------------------------------------------------------------------------------
-    fn draw_double_line_border<M>(&self, map: &mut M) -> Result<()>
+    fn draw_double_line_border<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
@@ -489,14 +556,26 @@ impl Frame {
             *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) =
                 DOUBLE_LINE_VERTICAL_TILE;
         }
+    }
 
-        Ok(())
+    //---------------------------------------------------------------------------------------------
+    // Draws a double line (block corner) border frame.
+    //---------------------------------------------------------------------------------------------
+    fn draw_double_line_block_corner_border<M>(&self, map: &mut M)
+    where
+        M: Map2d<Tile>,
+    {
+        // Draw the double line border.
+        self.draw_double_line_border(map);
+
+        // Set blocks on the corners.
+        self.draw_fancy_corners(map);
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws a simple border frame.
     //---------------------------------------------------------------------------------------------
-    fn draw_simple_border<M>(&self, map: &mut M) -> Result<()>
+    fn draw_simple_border<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
@@ -528,14 +607,12 @@ impl Frame {
             *map.get_xy_mut((self.origin.0, y)) = SIMPLE_LINE_TILE;
             *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = SIMPLE_LINE_TILE;
         }
-
-        Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Draws a system border frame.
     //---------------------------------------------------------------------------------------------
-    fn draw_system_border<M>(&self, map: &mut M) -> Result<()>
+    fn draw_system_border<M>(&self, map: &mut M)
     where
         M: Map2d<Tile>,
     {
@@ -567,8 +644,6 @@ impl Frame {
             *map.get_xy_mut((self.origin.0, y)) = SYSTEM_LINE_TILE;
             *map.get_xy_mut((self.origin.0 + self.inner_dimensions.0 + 1, y)) = SYSTEM_LINE_TILE;
         }
-
-        Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
@@ -580,11 +655,13 @@ impl Frame {
     {
         // Draw the border.
         match self.style {
-            FrameStyle::Fancy => self.draw_fancy_border(map)?,
-            FrameStyle::Line => self.draw_line_border(map)?,
-            FrameStyle::DoubleLine => self.draw_double_line_border(map)?,
-            FrameStyle::Simple => self.draw_simple_border(map)?,
-            FrameStyle::System => self.draw_system_border(map)?,
+            FrameStyle::Fancy => self.draw_fancy_border(map),
+            FrameStyle::Line => self.draw_line_border(map),
+            FrameStyle::LineBlockCorner => self.draw_line_block_corner_border(map),
+            FrameStyle::DoubleLine => self.draw_double_line_border(map),
+            FrameStyle::DoubleLineBlockCorner => self.draw_double_line_block_corner_border(map),
+            FrameStyle::Simple => self.draw_simple_border(map),
+            FrameStyle::System => self.draw_system_border(map),
         }
 
         // Draw top-left text if populated.
@@ -638,7 +715,7 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Draws the frame onto a Map2d<Tile> and sets the glyphs of the inner tiles to space.
     //---------------------------------------------------------------------------------------------
-    pub fn draw_and_clear<M>(&self, map: &mut M) -> Result<()>
+    pub fn draw_clear<M>(&self, map: &mut M) -> Result<()>
     where
         M: Map2d<Tile>,
     {

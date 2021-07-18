@@ -5,6 +5,7 @@ mod list_menu;
 mod modal;
 mod rich_text_wrapper;
 mod rich_text_writer;
+mod scroll_log;
 mod scrollbar;
 mod tree_list_menu;
 
@@ -16,6 +17,7 @@ pub mod prelude {
     pub use crate::widgets::modal::*;
     pub use crate::widgets::rich_text_wrapper::*;
     pub use crate::widgets::rich_text_writer::*;
+    pub use crate::widgets::scroll_log::*;
     pub use crate::widgets::scrollbar::*;
     pub use crate::widgets::tree_list_menu::*;
 }

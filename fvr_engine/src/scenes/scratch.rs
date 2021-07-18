@@ -28,9 +28,7 @@ const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 //-------------------------------------------------------------------------------------------------
 pub struct Scratch {
     back_button: Button,
-    frame: Frame,
-    scrollbar: Scrollbar,
-    wrapper: RichTextWrapper,
+    scroll_log: ScrollLog,
 }
 
 impl Scratch {
@@ -40,9 +38,7 @@ impl Scratch {
     pub fn new() -> Self {
         Self {
             back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
-            frame: Frame::new((0, 2), (41, 21), FrameStyle::Fancy),
-            scrollbar: Scrollbar::new((42, 3), 21, 0),
-            wrapper: RichTextWrapper::new(41, 21),
+            scroll_log: ScrollLog::new((0, 2), (41, 21), FrameStyle::LineBlockCorner),
         }
     }
 }
@@ -82,9 +78,7 @@ impl Scene for Scratch {
             SCRATCH_TEXT,
         )?;
 
-        self.frame.draw_and_clear(terminal)?;
-        self.wrapper.draw(terminal, (1, 3))?;
-        self.scrollbar.redraw(terminal);
+        self.scroll_log.redraw(terminal)?;
         self.back_button.redraw(terminal);
 
         Ok(())
@@ -106,7 +100,7 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        let scrollbar_action = self.scrollbar.update(input, terminal);
+        let scroll_log_action = self.scroll_log.update(input, terminal)?;
         let back_button_action = self.back_button.update(input, terminal);
 
         if input.action_just_pressed(InputAction::Quit)
@@ -128,29 +122,13 @@ impl Scene for Scratch {
             };
             const text: &str =
                 "<l:t>Hello! This is some example text. Just a long string that should wrap.";
-            self.wrapper.append(&format!("{}{}", hint, text))?;
-            self.wrapper.draw(terminal, (1, 3))?;
-            self.scrollbar.set_content_height(self.wrapper.total_lines());
-            println!("total lines: {}", self.wrapper.total_lines());
+            self.scroll_log.append(&format!("{}{}", hint, text))?;
+            self.scroll_log.scroll_to_bottom();
         } else if input.action_just_pressed(InputAction::North) {
-            self.wrapper.scroll_up(1);
-            self.wrapper.draw(terminal, (1, 3))?;
-            self.scrollbar.set_current_line(self.wrapper.lines_up());
+            self.scroll_log.scroll_up(1);
         } else if input.action_just_pressed(InputAction::South) {
-            self.wrapper.scroll_down(1);
-            self.wrapper.draw(terminal, (1, 3))?;
-            self.scrollbar.set_current_line(self.wrapper.lines_up());
-        } else if let ScrollbarAction::ScrollUp(lines) = scrollbar_action {
-            self.wrapper.scroll_up(lines);
-            self.wrapper.draw(terminal, (1, 3))?;
-            self.scrollbar.set_current_line(self.wrapper.lines_up());
-            input.set_cursor(Cursor::Hand);
-        } else if let ScrollbarAction::ScrollDown(lines) = scrollbar_action {
-            self.wrapper.scroll_down(lines);
-            self.wrapper.draw(terminal, (1, 3))?;
-            self.scrollbar.set_current_line(self.wrapper.lines_up());
-            input.set_cursor(Cursor::Hand);
-        } else if scrollbar_action == ScrollbarAction::Interactable {
+            self.scroll_log.scroll_down(1);
+        } else if scroll_log_action == ScrollLogAction::Interactable {
             input.set_cursor(Cursor::Hand);
         } else if back_button_action == ButtonAction::Interactable {
             input.set_cursor(Cursor::Hand);
