@@ -53,7 +53,7 @@ impl PaletteColor {
     //---------------------------------------------------------------------------------------------
     // Get the format hint string corresponding to a palette color.
     //---------------------------------------------------------------------------------------------
-    pub const fn to_format_hint(&self) -> &'static str {
+    pub const fn format_hint(&self) -> &'static str {
         match self {
             PaletteColor::DarkRed => "r",
             PaletteColor::BrightRed => "R",
@@ -143,9 +143,8 @@ impl PaletteColor {
     }
 }
 
-impl Into<TileColor> for PaletteColor {
-    fn into(self) -> TileColor {
-        // TODO: Handle current color palette.
-        self.const_into()
+impl From<PaletteColor> for TileColor {
+    fn from(palette_color: PaletteColor) -> Self {
+        palette_color.const_into()
     }
 }

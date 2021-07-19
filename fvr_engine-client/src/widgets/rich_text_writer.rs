@@ -207,6 +207,7 @@ impl RichTextWriter {
     //---------------------------------------------------------------------------------------------
     // Write plain text (no inline hints) with formatting options, wrapping at the map2d's width.
     //---------------------------------------------------------------------------------------------
+    #[allow(clippy::too_many_arguments)]
     pub fn write_formatted_plain<M>(
         map: &mut M,
         xy: (u32, u32),

@@ -85,7 +85,7 @@ impl TileStyle {
     //---------------------------------------------------------------------------------------------
     // Get the format hint string corresponding to a tile style.
     //---------------------------------------------------------------------------------------------
-    pub const fn to_format_hint(&self) -> &'static str {
+    pub const fn format_hint(&self) -> &'static str {
         match self {
             TileStyle::Regular => "r",
             TileStyle::Bold => "b",
@@ -145,7 +145,7 @@ impl TileSize {
     //---------------------------------------------------------------------------------------------
     // Get the format hint string corresponding to a tile size.
     //---------------------------------------------------------------------------------------------
-    pub const fn to_format_hint(&self) -> &'static str {
+    pub const fn format_hint(&self) -> &'static str {
         match self {
             TileSize::Small => "s",
             TileSize::Normal => "n",
@@ -204,7 +204,7 @@ impl TileLayout {
     //---------------------------------------------------------------------------------------------
     // Get the format hint string corresponding to a tile layout.
     //---------------------------------------------------------------------------------------------
-    pub const fn to_format_hint(&self) -> &'static str {
+    pub const fn format_hint(&self) -> &'static str {
         match self {
             TileLayout::Center => "c",
             TileLayout::Floor => "f",

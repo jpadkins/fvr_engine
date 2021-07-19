@@ -69,6 +69,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Updates the value of the tile at an xy coord with optional arguments.
     //---------------------------------------------------------------------------------------------
+    #[allow(clippy::too_many_arguments)]
     pub fn update_tile(
         &mut self,
         xy: (u32, u32),
@@ -112,6 +113,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Updates the value of all tiles in the terminal with optional arguments.
     //---------------------------------------------------------------------------------------------
+    #[allow(clippy::too_many_arguments)]
     pub fn update_all_tiles(
         &mut self,
         glyph: Option<char>,

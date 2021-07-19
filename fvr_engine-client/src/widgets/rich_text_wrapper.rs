@@ -288,7 +288,7 @@ impl RichTextWrapper {
     // 2. Handle appending each word. Except for the last word, also append a whitespace.
     //---------------------------------------------------------------------------------------------
     fn handle_text(&mut self, text: String) {
-        debug_assert!(text.is_empty() == false, "Parsed an empty text value.");
+        debug_assert!(!text.is_empty(), "Parsed an empty text value.");
 
         // Collect words into a vec because we need the length.
         let words: Vec<_> = text.split_whitespace().collect();
@@ -333,7 +333,7 @@ impl RichTextWrapper {
     //    the last value was not a tag.
     //---------------------------------------------------------------------------------------------
     fn handle_word(&mut self, word: &str, is_space: bool) {
-        debug_assert!(word.is_empty() == false, "Parsed an empty word.");
+        debug_assert!(!word.is_empty(), "Parsed an empty word.");
 
         // If there is not enough room to append the word on this line, break to the next line.
         if self.last_line_length + word.chars().count() > self.width() as usize {

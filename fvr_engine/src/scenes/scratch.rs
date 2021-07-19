@@ -154,9 +154,9 @@ impl Scene for Scratch {
             self.scroll_log.scroll_up(1);
         } else if input.action_just_pressed(InputAction::South) {
             self.scroll_log.scroll_down(1);
-        } else if scroll_log_action == ScrollLogAction::Interactable {
-            input.set_cursor(Cursor::Hand);
-        } else if back_button_action == ButtonAction::Interactable {
+        } else if scroll_log_action == ScrollLogAction::Interactable
+            || back_button_action == ButtonAction::Interactable
+        {
             input.set_cursor(Cursor::Hand);
         } else {
             input.set_cursor(Cursor::Arrow);

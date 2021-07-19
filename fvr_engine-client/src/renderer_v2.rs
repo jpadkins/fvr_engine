@@ -273,9 +273,9 @@ impl RendererV2 {
         let blank_vertex_data = vec![u8::default(); max_vertex_len];
 
         // Bind the buffers and upload the empty data.
-        for i in 0..2 {
+        for buffer in vertex_buffers {
             unsafe {
-                gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffers[i]);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffer);
             }
             gl_error_unwrap!("Failed to bind vertex buffer.");
 
@@ -532,6 +532,7 @@ impl RendererV2 {
         }
 
         // Bind and upload the outlined textures.
+        #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
             let path_string =
                 &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.png"]
