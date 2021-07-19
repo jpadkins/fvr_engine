@@ -1,9 +1,4 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
-//-------------------------------------------------------------------------------------------------
-use std::slice::{Iter, IterMut};
-
-//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use itertools::Itertools;
@@ -13,13 +8,15 @@ use rand::Rng;
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
-use fvr_engine_core::prelude::*;
+use fvr_engine_core::{map2d_iter_mut, prelude::*};
 
 //-------------------------------------------------------------------------------------------------
 // Terminal contains the state of the faux terminal and exposes an API for updating it.
 //-------------------------------------------------------------------------------------------------
 pub struct Terminal {
+    // Grid map of the terminal's tiles.
     tiles: GridMap<Tile>,
+    // Opacity of the terminal.
     opacity: f32,
 }
 
@@ -64,9 +61,9 @@ impl Terminal {
     // Sets all tiles to default.
     //---------------------------------------------------------------------------------------------
     pub fn set_all_tiles_default(&mut self) {
-        for tile in self.tiles.data_mut().iter_mut() {
+        map2d_iter_mut!(self.tiles, tile, {
             *tile = Default::default();
-        }
+        });
     }
 
     //---------------------------------------------------------------------------------------------
@@ -128,7 +125,7 @@ impl Terminal {
         foreground_opacity: Option<f32>,
         outline_opacity: Option<f32>,
     ) {
-        for tile in self.tiles.data_mut().iter_mut() {
+        map2d_iter_mut!(self.tiles, tile, {
             if let Some(glyph) = glyph {
                 tile.glyph = glyph;
             }
@@ -159,7 +156,7 @@ impl Terminal {
             if let Some(outline_opacity) = outline_opacity {
                 tile.outline_opacity = outline_opacity;
             }
-        }
+        });
     }
 
     //---------------------------------------------------------------------------------------------
@@ -177,14 +174,14 @@ impl Terminal {
     pub fn randomize(&mut self) {
         let mut rng = rand::thread_rng();
 
-        for tile in self.tiles.data_mut() {
+        map2d_iter_mut!(self.tiles, tile, {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
             tile.style = rng.gen();
             tile.outlined = rng.gen();
             tile.background_color = TileColor::TRANSPARENT;
             tile.foreground_color = rng.gen();
             tile.outline_color = rng.gen();
-        }
+        });
     }
 }
 
@@ -194,32 +191,32 @@ impl Terminal {
 impl Map2dView for Terminal {
     type Type = Tile;
 
+    //---------------------------------------------------------------------------------------------
+    // Return the width of the Map2dView.
+    //---------------------------------------------------------------------------------------------
     fn width(&self) -> u32 {
         self.tiles.width()
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Return the height of the Map2dView.
+    //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
         self.tiles.height()
     }
 
-    fn data(&self) -> &[Self::Type] {
-        self.tiles.data()
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Get ref to contents of the Map2dView at an index.
+    //---------------------------------------------------------------------------------------------
     fn get(&self, index: usize) -> &Self::Type {
         self.tiles.get(index)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Get ref to contents of the Map2dView at a coord.
+    //---------------------------------------------------------------------------------------------
     fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
         self.tiles.get_xy(xy)
-    }
-
-    fn get_point(&self, point: &Point) -> &Self::Type {
-        self.tiles.get_point(point)
-    }
-
-    fn iter(&self) -> Iter<'_, Self::Type> {
-        self.tiles.data().iter()
     }
 }
 
@@ -229,23 +226,17 @@ impl Map2dView for Terminal {
 impl Map2dViewMut for Terminal {
     type Type = Tile;
 
-    fn data_mut(&mut self) -> &mut [Self::Type] {
-        self.tiles.data_mut()
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at an index.
+    //---------------------------------------------------------------------------------------------
     fn get_mut(&mut self, index: usize) -> &mut Self::Type {
         self.tiles.get_mut(index)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at a coord.
+    //---------------------------------------------------------------------------------------------
     fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
         self.tiles.get_xy_mut(xy)
-    }
-
-    fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
-        self.tiles.get_point_mut(point)
-    }
-
-    fn iter_mut(&mut self) -> IterMut<'_, Self::Type> {
-        self.tiles.data_mut().iter_mut()
     }
 }

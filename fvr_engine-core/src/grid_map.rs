@@ -1,93 +1,98 @@
-use std::slice::{Iter, IterMut};
-
-use bracket_geometry::prelude::Point;
-
+//-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
 use crate::misc::*;
 use crate::traits::*;
 
+//-------------------------------------------------------------------------------------------------
+// GridMap describes a 2D grid represented internally by a 1D array.
+//-------------------------------------------------------------------------------------------------
 pub struct GridMap<T>
 where
     T: Map2dType,
 {
+    // Width of the grid map.
     width: u32,
+    // Height of the grid map.
     height: u32,
+    // Underlying data of the grid map.
     data: Vec<T>,
 }
 
-// Wraps and provides access to a 2D grid of T.
 impl<T> GridMap<T>
 where
     T: Map2dType,
 {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new GridMap.
+    //---------------------------------------------------------------------------------------------
     pub fn new(width: u32, height: u32) -> Self {
         let data = vec![Default::default(); (width * height) as usize];
         Self { width, height, data }
     }
 }
 
+//-------------------------------------------------------------------------------------------------
+// Impl Map2dView for GridMap.
+//-------------------------------------------------------------------------------------------------
 impl<T> Map2dView for GridMap<T>
 where
     T: Map2dType,
 {
     type Type = T;
 
+    //---------------------------------------------------------------------------------------------
+    // Return the width of the Map2dView.
+    //---------------------------------------------------------------------------------------------
     fn width(&self) -> u32 {
         self.width
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Return the height of the Map2dView.
+    //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
         self.height
     }
 
-    fn data(&self) -> &[Self::Type] {
-        &self.data
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Get ref to contents of the Map2dView at an index.
+    //---------------------------------------------------------------------------------------------
     fn get(&self, index: usize) -> &Self::Type {
         &self.data[index]
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Get ref to contents of the Map2dView at a coord.
+    //---------------------------------------------------------------------------------------------
     fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
         let index = Misc::index_2d(xy, self.width);
         &self.data[index]
     }
-
-    fn get_point(&self, point: &Point) -> &Self::Type {
-        let index = Misc::index_2d((point.x as u32, point.y as u32), self.width);
-        &self.data[index]
-    }
-
-    fn iter(&self) -> Iter<'_, Self::Type> {
-        self.data.iter()
-    }
 }
 
+//-------------------------------------------------------------------------------------------------
+// Impl Map2dViewMut for GridMap.
+//-------------------------------------------------------------------------------------------------
 impl<T> Map2dViewMut for GridMap<T>
 where
     T: Map2dType,
 {
     type Type = T;
 
-    fn data_mut(&mut self) -> &mut [Self::Type] {
-        &mut self.data
-    }
-
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at an index.
+    //---------------------------------------------------------------------------------------------
     fn get_mut(&mut self, index: usize) -> &mut Self::Type {
         &mut self.data[index]
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at a coord.
+    //---------------------------------------------------------------------------------------------
     fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
         let index = Misc::index_2d(xy, self.width);
         &mut self.data[index]
-    }
-
-    fn get_point_mut(&mut self, point: &Point) -> &mut Self::Type {
-        let index = Misc::index_2d((point.x as u32, point.y as u32), self.width);
-        &mut self.data[index]
-    }
-
-    fn iter_mut(&mut self) -> IterMut<'_, Self::Type> {
-        self.data.iter_mut()
     }
 }
 
@@ -102,7 +107,6 @@ fn test_grid_map() {
     // Test get*().
     assert_eq!(*grid_map.get(Misc::index_2d((x, y), width)), u32::default());
     assert_eq!(*grid_map.get_xy((x, y)), u32::default());
-    assert_eq!(*grid_map.get_point(&Point { x: x as i32, y: y as i32 }), u32::default());
 
     // Test get_*_mut();
     *grid_map.get_mut(Misc::index_2d((x, y), width)) = 1;
@@ -110,21 +114,4 @@ fn test_grid_map() {
 
     *grid_map.get_xy_mut((x, y)) = 2;
     assert_eq!(*grid_map.get_xy((x, y)), 2);
-
-    *grid_map.get_point_mut(&Point { x: x as i32, y: y as i32 }) = 3;
-    assert_eq!(*grid_map.get_point(&Point { x: x as i32, y: y as i32 }), 3);
-
-    // Test iter().
-    let mut expected = vec![Default::default(); 4 * 6];
-    expected[Misc::index_2d((x, y), grid_map.width())] = 3;
-    assert_eq!(grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(), expected);
-
-    // Test iter_mut().
-    expected[1] = 1;
-    for (i, v) in grid_map.data_mut().iter_mut().enumerate() {
-        if i == 1 {
-            *v = 1;
-        }
-    }
-    assert_eq!(grid_map.data().iter().map(|&v| v).collect::<Vec<u32>>(), expected);
 }

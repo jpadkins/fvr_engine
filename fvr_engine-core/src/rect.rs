@@ -8,9 +8,13 @@ use std::cmp::{max, min};
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rect {
+    // X origin of the rect.
     pub x: i32,
+    // Y origin of the rect.
     pub y: i32,
+    // Width of the rect.
     pub width: i32,
+    // Height of the rect.
     pub height: i32,
 }
 

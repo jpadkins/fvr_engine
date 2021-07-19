@@ -13,14 +13,13 @@ use rand::prelude::*;
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_client::prelude::*;
-use fvr_engine_core::prelude::*;
+use fvr_engine_core::{map2d_iter_mut, prelude::*};
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::scene_stack::*;
 
-const SCRATCH_TEXT: &str = "<l:t><fc:Y>This is the scratch scene. Should you be here?";
 const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 
 //-------------------------------------------------------------------------------------------------
@@ -38,7 +37,7 @@ impl Scratch {
     pub fn new() -> Self {
         Self {
             back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
-            scroll_log: ScrollLog::new((85 - 31, 33 - 11), (31, 11), FrameStyle::LineBlockCorner),
+            scroll_log: ScrollLog::new((85 - 30, 33 - 11), (30, 11), FrameStyle::LineBlockCorner),
         }
     }
 }
@@ -65,23 +64,50 @@ impl Scene for Scratch {
     fn focus(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
         terminal.set_opaque();
         terminal.set_all_tiles_default();
-        for tile in terminal.iter_mut() {
-            tile.glyph = '.';
+
+        map2d_iter_mut!(terminal, tile, {
+            tile.glyph = ' ';
             tile.foreground_color = TileColor::WHITE;
-        }
+        });
 
-        let scratch_text_len = RichTextWriter::stripped_len(SCRATCH_TEXT)?;
-
-        RichTextWriter::write(
-            terminal,
-            ((terminal.width() - scratch_text_len as u32) / 2, 1),
-            SCRATCH_TEXT,
-        )?;
+        let mut stats_frame =
+            Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
+        stats_frame.top_left_text = Some("<character name>".into());
+        stats_frame.draw(terminal)?;
 
         self.scroll_log.append("<l:t><fc:$>Welcome to FVR_ENGINE")?;
 
         self.scroll_log.redraw(terminal)?;
         self.back_button.redraw(terminal);
+
+        let mut rng = rand::thread_rng();
+        for x in 0..(85 - 30) {
+            for y in 1..33 {
+                match rng.gen::<u32>() % 10 {
+                    0 => {
+                        terminal.get_xy_mut((x, y)).glyph = '♣';
+                        terminal.get_xy_mut((x, y)).foreground_color =
+                            PaletteColor::BrightGreen.into();
+                    }
+                    1 | 2 => {
+                        terminal.get_xy_mut((x, y)).glyph = '.';
+                        terminal.get_xy_mut((x, y)).foreground_color =
+                            PaletteColor::DarkGreen.into();
+                    }
+                    3 | 4 => {
+                        terminal.get_xy_mut((x, y)).glyph = '.';
+                        terminal.get_xy_mut((x, y)).foreground_color =
+                            PaletteColor::DarkGreen.into();
+                    }
+                    _ => {}
+                };
+            }
+        }
+
+        terminal.get_xy_mut((28, 17)).glyph = '@';
+        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::TRANSPARENT;
+        terminal.get_xy_mut((28, 17)).outlined = true;
+        terminal.get_xy_mut((28, 17)).outline_color = TileColor::WHITE;
 
         Ok(())
     }

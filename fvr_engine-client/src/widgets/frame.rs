@@ -668,7 +668,7 @@ impl Frame {
         if let Some(top_left_text) = self.top_left_text.as_ref() {
             RichTextWriter::write_plain_with_settings(
                 map,
-                (self.origin.0 + 1, self.origin.1),
+                (self.origin.0 + 2, self.origin.1),
                 top_left_text,
                 &TEXT_FORMAT_SETTINGS,
             );
@@ -679,7 +679,7 @@ impl Frame {
             let stripped_len = RichTextWriter::stripped_len(top_right_text)?;
             RichTextWriter::write_plain_with_settings(
                 map,
-                (self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32, self.origin.1),
+                (self.origin.0 + self.inner_dimensions.0 - stripped_len as u32, self.origin.1),
                 top_right_text,
                 &TEXT_FORMAT_SETTINGS,
             );
@@ -689,7 +689,7 @@ impl Frame {
         if let Some(bottom_left_text) = self.bottom_left_text.as_ref() {
             RichTextWriter::write_plain_with_settings(
                 map,
-                (self.origin.0 + 1, self.origin.1 + self.inner_dimensions.1 + 1),
+                (self.origin.0 + 2, self.origin.1 + self.inner_dimensions.1 + 1),
                 bottom_left_text,
                 &TEXT_FORMAT_SETTINGS,
             );
@@ -701,7 +701,7 @@ impl Frame {
             RichTextWriter::write_plain_with_settings(
                 map,
                 (
-                    self.origin.0 + self.inner_dimensions.0 + 1 - stripped_len as u32,
+                    self.origin.0 + self.inner_dimensions.0 - stripped_len as u32,
                     self.origin.1 + self.inner_dimensions.1 + 1,
                 ),
                 bottom_right_text,
