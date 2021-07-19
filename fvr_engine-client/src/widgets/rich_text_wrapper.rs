@@ -294,9 +294,13 @@ impl RichTextWrapper {
         let words: Vec<_> = text.split_whitespace().collect();
         let words_len = words.len();
 
-        // If text was appended last, add a space.
+        // If text begins with whitespace, or a word was appended last, add a space.
         if self.prepend_space {
             self.handle_word(" ", true);
+        } else if let Some(first_char) = text.chars().next() {
+            if first_char == SPACE_CHARACTER {
+                self.handle_word(" ", true);
+            }
         }
 
         // Handle appending each word and insert a single whitespace between (but not trailing).
@@ -304,6 +308,13 @@ impl RichTextWrapper {
             self.handle_word(word, false);
 
             if i < words_len - 1 {
+                self.handle_word(" ", true);
+            }
+        }
+
+        // If the text ends with whitespace, add a space.
+        if let Some(last_char) = text.chars().last() {
+            if last_char == SPACE_CHARACTER {
                 self.handle_word(" ", true);
             }
         }
@@ -388,6 +399,7 @@ impl RichTextWrapper {
             match value {
                 RichTextValue::FormatHint { key, value } => {
                     self.handle_hint(key, value);
+                    self.prepend_space = false;
                 }
                 RichTextValue::Newline => {
                     self.handle_newline();

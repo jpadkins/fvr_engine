@@ -98,7 +98,6 @@ Lib containing text parsers, including:
 - continue adapting C# implementation.
 - clean up code in fvr_engine-core (add comments).
 - refactor frame to use rect?
-- standardize widget response codes
 
 ## CONVENTIONS
 

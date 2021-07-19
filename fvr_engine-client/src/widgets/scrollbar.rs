@@ -134,12 +134,9 @@ impl Scrollbar {
         self.grip_size =
             ((self.height - 2) as f32 * (self.height as f32 / self.content_height as f32)) as u32;
 
+        // The grip should always have a length of at least 1.
         if self.grip_size == 0 {
-            // The grip should always have a length of at least 1.
             self.grip_size = 1;
-        } else if self.content_height % self.height != 0 {
-            // Extend the length to account for the remainder.
-            self.grip_size += 1;
         }
     }
 

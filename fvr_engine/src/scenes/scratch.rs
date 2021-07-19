@@ -38,7 +38,7 @@ impl Scratch {
     pub fn new() -> Self {
         Self {
             back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
-            scroll_log: ScrollLog::new((0, 2), (41, 21), FrameStyle::LineBlockCorner),
+            scroll_log: ScrollLog::new((85 - 31, 33 - 11), (31, 11), FrameStyle::LineBlockCorner),
         }
     }
 }
@@ -78,6 +78,8 @@ impl Scene for Scratch {
             SCRATCH_TEXT,
         )?;
 
+        self.scroll_log.append("<l:t><fc:$>Welcome to FVR_ENGINE")?;
+
         self.scroll_log.redraw(terminal)?;
         self.back_button.redraw(terminal);
 
@@ -112,17 +114,15 @@ impl Scene for Scratch {
 
         if input.action_just_pressed(InputAction::Accept) {
             let mut rng = rand::thread_rng();
-            let hint = match rng.gen::<u32>() % 5 {
-                0 => "<fc:R>",
-                1 => "<fc:G>",
-                2 => "<fc:B>",
-                3 => "<fc:W>",
-                4 => "<fc:M>",
+            let text = match rng.gen::<u32>() % 5 {
+                0 => "\n<l:t><fc:y>> a rat <fc:R>bites<fc:y> YOU for <fc:M>17<fc:y>!",
+                1 => "\n<l:t><fc:y>> YOU <fc:B>slash<fc:y> at rat for <fc:M>31<fc:y>!",
+                2 => "\n<l:t><fc:y>> You hear clicking in the distance...",
+                3 => "\n<l:t><fc:y>> North.",
+                4 => "\n<l:t><fc:y>> <fc:G>Poison<fc:y> damages YOU for <fc:M>5<fc:y>!",
                 _ => "",
             };
-            const text: &str =
-                "<l:t>Hello! This is some example text. Just a long string that should wrap.";
-            self.scroll_log.append(&format!("{}{}", hint, text))?;
+            self.scroll_log.append(text)?;
             self.scroll_log.scroll_to_bottom();
         } else if input.action_just_pressed(InputAction::North) {
             self.scroll_log.scroll_up(1);
