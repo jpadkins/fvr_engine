@@ -1,4 +1,5 @@
 mod cp437;
+mod direction;
 mod grid_map;
 mod misc;
 mod palette_color;
@@ -11,6 +12,7 @@ mod traits;
 
 pub mod prelude {
     pub use crate::cp437::*;
+    pub use crate::direction::*;
     pub use crate::grid_map::*;
     pub use crate::misc::*;
     pub use crate::palette_color::*;
