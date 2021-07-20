@@ -28,6 +28,7 @@ const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 pub struct Scratch {
     back_button: Button,
     scroll_log: ScrollLog,
+    fov: Fov,
 }
 
 impl Scratch {
@@ -43,6 +44,7 @@ impl Scratch {
                 FrameStyle::LineBlockCorner,
                 9,
             ),
+            fov: Fov::new((55, 33)),
         }
     }
 }
@@ -75,6 +77,23 @@ impl Scene for Scratch {
             tile.foreground_color = TileColor::WHITE;
         });
 
+        let mut rng = rand::thread_rng();
+
+        for x in 0..55 {
+            for y in 1..33 {
+                if rng.gen::<u32>() % 7 == 0 {
+                    *self.fov.opacity_map_mut().get_xy_mut((x, y)) = false;
+                    terminal.get_xy_mut((x, y)).glyph = 'T';
+                    terminal.get_xy_mut((x, y)).foreground_color =
+                        PaletteColor::BrightGreen.into();
+                } else {
+                    *self.fov.opacity_map_mut().get_xy_mut((x, y)) = true;
+                    terminal.get_xy_mut((x, y)).glyph = '.';
+                    terminal.get_xy_mut((x, y)).foreground_color = PaletteColor::DarkGreen.into();
+                }
+            }
+        }
+
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
         stats_frame.top_left_text = Some("<character name>".into());
@@ -84,35 +103,6 @@ impl Scene for Scratch {
 
         self.scroll_log.redraw(terminal)?;
         self.back_button.redraw(terminal);
-
-        let mut rng = rand::thread_rng();
-        for x in 0..(85 - 30) {
-            for y in 1..33 {
-                match rng.gen::<u32>() % 10 {
-                    0 => {
-                        terminal.get_xy_mut((x, y)).glyph = '♣';
-                        terminal.get_xy_mut((x, y)).foreground_color =
-                            PaletteColor::BrightGreen.into();
-                    }
-                    1 | 2 => {
-                        terminal.get_xy_mut((x, y)).glyph = '.';
-                        terminal.get_xy_mut((x, y)).foreground_color =
-                            PaletteColor::DarkGreen.into();
-                    }
-                    3 | 4 => {
-                        terminal.get_xy_mut((x, y)).glyph = '.';
-                        terminal.get_xy_mut((x, y)).foreground_color =
-                            PaletteColor::DarkGreen.into();
-                    }
-                    _ => {}
-                };
-            }
-        }
-
-        terminal.get_xy_mut((28, 17)).glyph = '@';
-        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::TRANSPARENT;
-        terminal.get_xy_mut((28, 17)).outlined = true;
-        terminal.get_xy_mut((28, 17)).outline_color = TileColor::WHITE;
 
         Ok(())
     }
@@ -135,6 +125,21 @@ impl Scene for Scratch {
     ) -> Result<SceneAction> {
         let scroll_log_action = self.scroll_log.update(input, terminal)?;
         let back_button_action = self.back_button.update(input, terminal);
+
+        if input.mouse_moved() {
+            if let Some(xy) = input.mouse_coord() {
+                if xy.0 < 55 {
+                    self.fov.calculate(xy, 20.0, Distance::Euclidean);
+
+                    for x in 0..55 {
+                        for y in 1..33 {
+                            terminal.get_xy_mut((x, y)).foreground_opacity =
+                                *self.fov.get_xy((x, y)) as f32;
+                        }
+                    }
+                }
+            }
+        }
 
         if input.action_just_pressed(InputAction::Quit)
             || input.key_just_pressed(SdlKey::Escape)
