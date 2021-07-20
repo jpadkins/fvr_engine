@@ -24,6 +24,54 @@ impl Misc {
     pub fn centered_origin(dimension: u32, bounding_dimension: u32) -> u32 {
         (bounding_dimension - dimension) / 2
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Approximation of atan2 that scales result to range [0.0..1.0].
+    // Adapted from SquidLib.
+    //---------------------------------------------------------------------------------------------
+    pub fn scaled_atan2(x: f64, y: f64) -> f64 {
+        // TODO: Why did Squidlib return 0.0 in this case?
+        // if x == 0.0 || y == 0.0 {
+        //     return 0.0;
+        // }
+
+        let ax = x.abs();
+        let ay = y.abs();
+
+        let r = if ax < ay {
+            let a = ax / ay;
+            let s = a * a;
+            0.25 - (((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a)
+                * 0.15915494309189535
+        } else {
+            let a = ay / ax;
+            let s = a * a;
+            (((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a)
+                * 0.15915494309189535
+        };
+
+        if x < 0.0 {
+            if y < 0.0 {
+                0.5 + r
+            } else {
+                0.5 - r
+            }
+        } else if y < 0.0 {
+            1.0 - r
+        } else {
+            r
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the angle between two points in degrees in the range [0.0..360.0].
+    //---------------------------------------------------------------------------------------------
+    pub fn angle_between((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> f64 {
+        let (dx, dy) = (x2 - x1, y2 - y1);
+        let angle = (dy as f64).atan2(dx as f64);
+        let degrees = angle * (180.0 / std::f64::consts::PI);
+        (degrees + 360.0) % 360.0
+    }
 }
 
 //-------------------------------------------------------------------------------------------------

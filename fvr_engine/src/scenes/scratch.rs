@@ -29,6 +29,7 @@ pub struct Scratch {
     back_button: Button,
     scroll_log: ScrollLog,
     fov: Fov,
+    span: i32,
 }
 
 impl Scratch {
@@ -45,6 +46,7 @@ impl Scratch {
                 9,
             ),
             fov: Fov::new((55, 33)),
+            span: 45,
         }
     }
 }
@@ -94,6 +96,9 @@ impl Scene for Scratch {
             }
         }
 
+        terminal.get_xy_mut((28, 17)).glyph = '@';
+        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
+
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
         stats_frame.top_left_text = Some("<character name>".into());
@@ -126,10 +131,25 @@ impl Scene for Scratch {
         let scroll_log_action = self.scroll_log.update(input, terminal)?;
         let back_button_action = self.back_button.update(input, terminal);
 
-        if input.mouse_moved() {
+        if input.action_just_pressed(InputAction::Decline) {
+            self.span = match self.span {
+                45 => 90,
+                90 => 180,
+                180 => 45,
+                _ => 45,
+            };
+        }
+
+        if input.mouse_moved() || input.action_just_pressed(InputAction::Decline) {
             if let Some(xy) = input.mouse_coord() {
                 if xy.0 < 55 {
-                    self.fov.calculate(xy, 20.0, Distance::Euclidean);
+                    self.fov.calculate_limited(
+                        (28, 17),
+                        20.0,
+                        Distance::Euclidean,
+                        Misc::angle_between((28, 17), (xy.0 as i32, xy.1 as i32)),
+                        self.span as f64,
+                    );
 
                     for x in 0..55 {
                         for y in 1..33 {
