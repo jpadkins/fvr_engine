@@ -1,5 +1,7 @@
+mod adjacency;
 mod cp437;
 mod direction;
+mod distance;
 mod grid_map;
 mod misc;
 mod palette_color;
@@ -11,8 +13,10 @@ mod timer;
 mod traits;
 
 pub mod prelude {
+    pub use crate::adjacency::*;
     pub use crate::cp437::*;
     pub use crate::direction::*;
+    pub use crate::distance::*;
     pub use crate::grid_map::*;
     pub use crate::misc::*;
     pub use crate::palette_color::*;

@@ -102,6 +102,13 @@ impl Direction {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Returns the direction from an index starting with North (0) and moving clockwise.
+    //---------------------------------------------------------------------------------------------
+    pub fn from_index(i: usize) -> Direction {
+        DIRECTIONS[i % DIRECTIONS.len()]
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Returns the clockwise rotation of a direction.
     //---------------------------------------------------------------------------------------------
     pub fn clockwise(&self, i: i32) -> Direction {
