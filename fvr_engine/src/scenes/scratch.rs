@@ -37,7 +37,12 @@ impl Scratch {
     pub fn new() -> Self {
         Self {
             back_button: Button::new((0, 0), BACK_BUTTON_TEXT.into(), ButtonLayout::Text),
-            scroll_log: ScrollLog::new((85 - 30, 33 - 11), (30, 11), FrameStyle::LineBlockCorner),
+            scroll_log: ScrollLog::new(
+                (85 - 30, 33 - 11),
+                (30, 11),
+                FrameStyle::LineBlockCorner,
+                9,
+            ),
         }
     }
 }

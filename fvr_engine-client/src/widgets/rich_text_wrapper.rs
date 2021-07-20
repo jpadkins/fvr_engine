@@ -132,6 +132,8 @@ pub struct RichTextWrapper {
     origin: (u32, u32),
     // Dimensions of the visible area.
     dimensions: (u32, u32),
+    // Maximum number of wrapped lines.
+    max_lines: u32,
     // Current # of lines in the rich text.
     total_lines: u32,
     // Current # of lines above the visible area.
@@ -160,11 +162,11 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Creates a new rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), dimensions: (u32, u32)) -> Self {
+    pub fn new(origin: (u32, u32), dimensions: (u32, u32), max_lines: u32) -> Self {
         // Push a newline index for the beginning of the wrapped text.
         let newline_indices = vec![0];
 
-        Self { origin, dimensions, newline_indices, ..Default::default() }
+        Self { origin, dimensions, max_lines, newline_indices, ..Default::default() }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -193,6 +195,13 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     pub fn dimensions(&self) -> (u32, u32) {
         self.dimensions
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the max lines of the rich text wrapper.
+    //---------------------------------------------------------------------------------------------
+    pub fn max_lines(&self) -> u32 {
+        self.max_lines
     }
 
     //---------------------------------------------------------------------------------------------
@@ -388,6 +397,41 @@ impl RichTextWrapper {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Helper function for truncating wrapped text.
+    //---------------------------------------------------------------------------------------------
+    fn truncate_text(&mut self) {
+        if self.newline_indices.len() > self.max_lines as usize {
+            // Find the new starting newline index.
+            let index = self.newline_indices.len() - self.max_lines as usize;
+            let start = self.newline_indices[index];
+
+            // Truncate the newline indices;
+            unsafe {
+                let src = self.newline_indices.as_ptr().add(index);
+                let dst = self.newline_indices.as_mut_ptr();
+                std::ptr::copy(src, dst, self.max_lines as usize);
+            }
+
+            self.newline_indices.truncate(self.max_lines as usize);
+
+            for n in self.newline_indices.iter_mut() {
+                *n -= start;
+            }
+
+            // Truncate the wrapped text.
+            let size = self.wrapped_text.len() - start;
+
+            unsafe {
+                let src = self.wrapped_text.as_ptr().add(start);
+                let dst = self.wrapped_text.as_mut_ptr();
+                std::ptr::copy(src, dst, size);
+            }
+
+            self.wrapped_text.truncate(size);
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Append rich text to the rich text wrapper.
     //---------------------------------------------------------------------------------------------
     pub fn append(&mut self, text: &str) -> Result<()> {
@@ -411,6 +455,9 @@ impl RichTextWrapper {
                 }
             }
         }
+
+        // Ensure the wrapped text is not longer than the max lines.
+        self.truncate_text();
 
         // Always update visible area metrics.
         self.refresh_visible_area_metrics();

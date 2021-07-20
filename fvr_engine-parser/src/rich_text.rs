@@ -126,19 +126,6 @@ fn text_parser(input: &str) -> IResult<&str, RichTextValue> {
     Ok((remainder, RichTextValue::Text(result.into())))
 }
 
-#[test]
-fn test_text_parser() {
-    assert_eq!(text_parser("abcdefg"), Ok(("", RichTextValue::Text("abcdefg".into()))));
-    assert_eq!(text_parser("abc<defg"), Ok(("<defg", RichTextValue::Text("abc".into()))));
-    assert_eq!(text_parser("abc\ndefg"), Ok(("\ndefg", RichTextValue::Text("abc".into()))));
-
-    let error = nom::Err::Error(nom::error::Error {
-        input: "<abcdefg",
-        code: nom::error::ErrorKind::TakeTill1,
-    });
-    assert_eq!(text_parser("<abcdefg"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser for a single newline character.
 //-------------------------------------------------------------------------------------------------
@@ -148,15 +135,6 @@ fn newline_parser(input: &str) -> IResult<&str, RichTextValue> {
     Ok((remainder, RichTextValue::Newline))
 }
 
-#[test]
-fn test_newline_parser() {
-    assert_eq!(newline_parser("\nabc"), Ok(("abc", RichTextValue::Newline)));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "abc\n", code: nom::error::ErrorKind::Tag });
-    assert_eq!(newline_parser("abc\n"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser for double (escaped) left chevron, which translates to a single left chevron.
 //-------------------------------------------------------------------------------------------------
@@ -164,15 +142,6 @@ fn escaped_chevron_parser(input: &str) -> IResult<&str, RichTextValue> {
     let (remainder, _) = tag(DOUBLE_LEFT_CHEVRON_TAG)(input)?;
 
     Ok((remainder, RichTextValue::Text(LEFT_CHEVRON_TAG.into())))
-}
-
-#[test]
-fn test_escaped_chevron_parser() {
-    assert_eq!(escaped_chevron_parser("<<abcd"), Ok(("abcd", RichTextValue::Text("<".into()))));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "<abcd", code: nom::error::ErrorKind::Tag });
-    assert_eq!(escaped_chevron_parser("<abcd"), Err(error));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -205,17 +174,6 @@ fn layout_value_parser(input: &str) -> IResult<&str, &str> {
     )
 }
 
-#[test]
-fn test_layout_value_parser() {
-    assert_eq!(layout_value_parser("c"), Ok(("", "c")));
-    assert_eq!(layout_value_parser("f"), Ok(("", "f")));
-    assert_eq!(layout_value_parser("t"), Ok(("", "t")));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
-    assert_eq!(layout_value_parser("z"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser that matches a layout format hint.
 //-------------------------------------------------------------------------------------------------
@@ -234,31 +192,6 @@ fn layout_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
     ))
 }
 
-#[test]
-fn test_layout_hint_parser() {
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "c".into() };
-    assert_eq!(layout_hint_parser("<l:c>"), Ok(("", format_hint)));
-
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "f".into() };
-    assert_eq!(layout_hint_parser("<l:f>Hello"), Ok(("Hello", format_hint)));
-
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() };
-    assert_eq!(layout_hint_parser("<l:t>>\t"), Ok((">\t", format_hint)));
-
-    let error = nom::Err::Error(nom::error::Error {
-        input: "Hello<l:c>",
-        code: nom::error::ErrorKind::Tag,
-    });
-    assert_eq!(layout_hint_parser("Hello<l:c>"), Err(error));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "<l:c>", code: nom::error::ErrorKind::Tag });
-    assert_eq!(layout_hint_parser("<<l:c>"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser that matches the value of a style format hint.
 //-------------------------------------------------------------------------------------------------
@@ -270,18 +203,6 @@ fn style_value_parser(input: &str) -> IResult<&str, &str> {
         tag(BOLD_STYLE_VALUE_TAG),
         tag(ITALIC_STYLE_VALUE_TAG),
     ))(input)
-}
-
-#[test]
-fn test_style_value_parser() {
-    assert_eq!(style_value_parser("r"), Ok(("", "r")));
-    assert_eq!(style_value_parser("b"), Ok(("", "b")));
-    assert_eq!(style_value_parser("i"), Ok(("", "i")));
-    assert_eq!(style_value_parser("bi"), Ok(("", "bi")));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
-    assert_eq!(style_value_parser("z"), Err(error));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -302,35 +223,6 @@ fn style_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
     ))
 }
 
-#[test]
-fn test_style_hint_parser() {
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "r".into() };
-    assert_eq!(style_hint_parser("<st:r>"), Ok(("", format_hint)));
-
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "b".into() };
-    assert_eq!(style_hint_parser("<st:b>"), Ok(("", format_hint)));
-
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "i".into() };
-    assert_eq!(style_hint_parser("<st:i>"), Ok(("", format_hint)));
-
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "bi".into() };
-    assert_eq!(style_hint_parser("<st:bi>"), Ok(("", format_hint)));
-
-    let error = nom::Err::Error(nom::error::Error {
-        input: "Hello<st:r>",
-        code: nom::error::ErrorKind::Tag,
-    });
-    assert_eq!(style_hint_parser("Hello<st:r>"), Err(error));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "<st:b>", code: nom::error::ErrorKind::Tag });
-    assert_eq!(style_hint_parser("<<st:b>"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser that matches the value of a size format hint.
 //-------------------------------------------------------------------------------------------------
@@ -342,18 +234,6 @@ fn size_value_parser(input: &str) -> IResult<&str, &str> {
         tag(BIG_SIZE_VALUE_TAG),
         tag(GIANT_SIZE_VALUE_TAG),
     ))(input)
-}
-
-#[test]
-fn test_size_value_parser() {
-    assert_eq!(size_value_parser("s"), Ok(("", "s")));
-    assert_eq!(size_value_parser("n"), Ok(("", "n")));
-    assert_eq!(size_value_parser("b"), Ok(("", "b")));
-    assert_eq!(size_value_parser("g"), Ok(("", "g")));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
-    assert_eq!(size_value_parser("z"), Err(error));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -374,46 +254,11 @@ fn size_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
     ))
 }
 
-#[test]
-fn test_size_hint_parser() {
-    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "s".into() };
-    assert_eq!(size_hint_parser("<si:s>"), Ok(("", format_hint)));
-
-    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "n".into() };
-    assert_eq!(size_hint_parser("<si:n>"), Ok(("", format_hint)));
-
-    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "b".into() };
-    assert_eq!(size_hint_parser("<si:b>"), Ok(("", format_hint)));
-
-    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "g".into() };
-    assert_eq!(size_hint_parser("<si:g>"), Ok(("", format_hint)));
-
-    let error = nom::Err::Error(nom::error::Error {
-        input: "Hello<si:n>",
-        code: nom::error::ErrorKind::Tag,
-    });
-    assert_eq!(size_hint_parser("Hello<si:n>"), Err(error));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "<si:s>", code: nom::error::ErrorKind::Tag });
-    assert_eq!(size_hint_parser("<<si:s>"), Err(error));
-}
-
 //-------------------------------------------------------------------------------------------------
 // Parser for the value of an outlined format hint.
 //-------------------------------------------------------------------------------------------------
 fn outlined_value_parser(input: &str) -> IResult<&str, &str> {
     alt((tag(TRUE_VALUE_TAG), tag(FALSE_VALUE_TAG)))(input)
-}
-
-#[test]
-fn test_outlined_value_parser() {
-    assert_eq!(outlined_value_parser("t"), Ok(("", "t")));
-    assert_eq!(outlined_value_parser("f"), Ok(("", "f")));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
-    assert_eq!(outlined_value_parser("z"), Err(error));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -432,17 +277,6 @@ fn outlined_hint_parser(input: &str) -> IResult<&str, RichTextValue> {
         remainder,
         RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: result.3.into() },
     ))
-}
-
-#[test]
-fn test_outlined_hint_parser() {
-    let format_hint =
-        RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "t".into() };
-    assert_eq!(outlined_hint_parser("<o:t>>\t"), Ok((">\t", format_hint)));
-
-    let error =
-        nom::Err::Error(nom::error::Error { input: "l:c>", code: nom::error::ErrorKind::Tag });
-    assert_eq!(outlined_hint_parser("<l:c>"), Err(error));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -555,6 +389,176 @@ pub fn parse_rich_text<S: AsRef<str>>(input: S) -> Result<Vec<RichTextValue>> {
         );
 
     Ok(result.map_err(|e| anyhow::format_err!(e.to_string()))?.1)
+}
+
+//-------------------------------------------------------------------------------------------------
+// Tests.
+//-------------------------------------------------------------------------------------------------
+
+#[test]
+fn test_text_parser() {
+    assert_eq!(text_parser("abcdefg"), Ok(("", RichTextValue::Text("abcdefg".into()))));
+    assert_eq!(text_parser("abc<defg"), Ok(("<defg", RichTextValue::Text("abc".into()))));
+    assert_eq!(text_parser("abc\ndefg"), Ok(("\ndefg", RichTextValue::Text("abc".into()))));
+
+    let error = nom::Err::Error(nom::error::Error {
+        input: "<abcdefg",
+        code: nom::error::ErrorKind::TakeTill1,
+    });
+    assert_eq!(text_parser("<abcdefg"), Err(error));
+}
+
+#[test]
+fn test_newline_parser() {
+    assert_eq!(newline_parser("\nabc"), Ok(("abc", RichTextValue::Newline)));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "abc\n", code: nom::error::ErrorKind::Tag });
+    assert_eq!(newline_parser("abc\n"), Err(error));
+}
+
+#[test]
+fn test_escaped_chevron_parser() {
+    assert_eq!(escaped_chevron_parser("<<abcd"), Ok(("abcd", RichTextValue::Text("<".into()))));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<abcd", code: nom::error::ErrorKind::Tag });
+    assert_eq!(escaped_chevron_parser("<abcd"), Err(error));
+}
+
+#[test]
+fn test_layout_value_parser() {
+    assert_eq!(layout_value_parser("c"), Ok(("", "c")));
+    assert_eq!(layout_value_parser("f"), Ok(("", "f")));
+    assert_eq!(layout_value_parser("t"), Ok(("", "t")));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    assert_eq!(layout_value_parser("z"), Err(error));
+}
+
+#[test]
+fn test_layout_hint_parser() {
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "c".into() };
+    assert_eq!(layout_hint_parser("<l:c>"), Ok(("", format_hint)));
+
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "f".into() };
+    assert_eq!(layout_hint_parser("<l:f>Hello"), Ok(("Hello", format_hint)));
+
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Layout, value: "t".into() };
+    assert_eq!(layout_hint_parser("<l:t>>\t"), Ok((">\t", format_hint)));
+
+    let error = nom::Err::Error(nom::error::Error {
+        input: "Hello<l:c>",
+        code: nom::error::ErrorKind::Tag,
+    });
+    assert_eq!(layout_hint_parser("Hello<l:c>"), Err(error));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<l:c>", code: nom::error::ErrorKind::Tag });
+    assert_eq!(layout_hint_parser("<<l:c>"), Err(error));
+}
+
+#[test]
+fn test_style_value_parser() {
+    assert_eq!(style_value_parser("r"), Ok(("", "r")));
+    assert_eq!(style_value_parser("b"), Ok(("", "b")));
+    assert_eq!(style_value_parser("i"), Ok(("", "i")));
+    assert_eq!(style_value_parser("bi"), Ok(("", "bi")));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    assert_eq!(style_value_parser("z"), Err(error));
+}
+
+#[test]
+fn test_style_hint_parser() {
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "r".into() };
+    assert_eq!(style_hint_parser("<st:r>"), Ok(("", format_hint)));
+
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "b".into() };
+    assert_eq!(style_hint_parser("<st:b>"), Ok(("", format_hint)));
+
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "i".into() };
+    assert_eq!(style_hint_parser("<st:i>"), Ok(("", format_hint)));
+
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Style, value: "bi".into() };
+    assert_eq!(style_hint_parser("<st:bi>"), Ok(("", format_hint)));
+
+    let error = nom::Err::Error(nom::error::Error {
+        input: "Hello<st:r>",
+        code: nom::error::ErrorKind::Tag,
+    });
+    assert_eq!(style_hint_parser("Hello<st:r>"), Err(error));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<st:b>", code: nom::error::ErrorKind::Tag });
+    assert_eq!(style_hint_parser("<<st:b>"), Err(error));
+}
+
+#[test]
+fn test_size_value_parser() {
+    assert_eq!(size_value_parser("s"), Ok(("", "s")));
+    assert_eq!(size_value_parser("n"), Ok(("", "n")));
+    assert_eq!(size_value_parser("b"), Ok(("", "b")));
+    assert_eq!(size_value_parser("g"), Ok(("", "g")));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    assert_eq!(size_value_parser("z"), Err(error));
+}
+
+#[test]
+fn test_size_hint_parser() {
+    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "s".into() };
+    assert_eq!(size_hint_parser("<si:s>"), Ok(("", format_hint)));
+
+    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "n".into() };
+    assert_eq!(size_hint_parser("<si:n>"), Ok(("", format_hint)));
+
+    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "b".into() };
+    assert_eq!(size_hint_parser("<si:b>"), Ok(("", format_hint)));
+
+    let format_hint = RichTextValue::FormatHint { key: RichTextHintType::Size, value: "g".into() };
+    assert_eq!(size_hint_parser("<si:g>"), Ok(("", format_hint)));
+
+    let error = nom::Err::Error(nom::error::Error {
+        input: "Hello<si:n>",
+        code: nom::error::ErrorKind::Tag,
+    });
+    assert_eq!(size_hint_parser("Hello<si:n>"), Err(error));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "<si:s>", code: nom::error::ErrorKind::Tag });
+    assert_eq!(size_hint_parser("<<si:s>"), Err(error));
+}
+
+#[test]
+fn test_outlined_value_parser() {
+    assert_eq!(outlined_value_parser("t"), Ok(("", "t")));
+    assert_eq!(outlined_value_parser("f"), Ok(("", "f")));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "z", code: nom::error::ErrorKind::Tag });
+    assert_eq!(outlined_value_parser("z"), Err(error));
+}
+
+#[test]
+fn test_outlined_hint_parser() {
+    let format_hint =
+        RichTextValue::FormatHint { key: RichTextHintType::Outlined, value: "t".into() };
+    assert_eq!(outlined_hint_parser("<o:t>>\t"), Ok((">\t", format_hint)));
+
+    let error =
+        nom::Err::Error(nom::error::Error { input: "l:c>", code: nom::error::ErrorKind::Tag });
+    assert_eq!(outlined_hint_parser("<l:c>"), Err(error));
 }
 
 #[test]

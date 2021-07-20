@@ -26,3 +26,34 @@ impl Distance {
         }
     }
 }
+
+//-------------------------------------------------------------------------------------------------
+// Tests.
+//-------------------------------------------------------------------------------------------------
+
+#[test]
+fn test_distance_calculate_chebyshev() {
+    let p1 = (2, 5);
+    let p2 = (6, 13);
+    let distance = Distance::Chebyshev.calculate(p1, p2);
+    let expected = 8.0;
+    assert_eq!(distance, expected);
+}
+
+#[test]
+fn test_distance_calculate_euclidean() {
+    let p1 = (2, 5);
+    let p2 = (6, 13);
+    let distance = Distance::Euclidean.calculate(p1, p2);
+    let expected = 8.944;
+    assert!((distance - expected).abs() < 0.001);
+}
+
+#[test]
+fn test_distance_calculate_manhattan() {
+    let p1 = (2, 5);
+    let p2 = (6, 13);
+    let distance = Distance::Manhattan.calculate(p1, p2);
+    let expected = 12.0;
+    assert_eq!(distance, expected);
+}

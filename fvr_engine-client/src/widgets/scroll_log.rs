@@ -51,7 +51,12 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Creates a new scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), dimensions: (u32, u32), style: FrameStyle) -> Self {
+    pub fn new(
+        origin: (u32, u32),
+        dimensions: (u32, u32),
+        style: FrameStyle,
+        max_lines: u32,
+    ) -> Self {
         let frame = Frame::new(origin, (dimensions.0 - 2, dimensions.1 - 2), style);
 
         // Subtract from the height to nest the scrollbar within the frame.
@@ -60,7 +65,8 @@ impl ScrollLog {
 
         // Subtract from the dimensions to account for the frame and the scrollbar column.
         let wrapper_origin = (origin.0 + 1, origin.1 + 1);
-        let wrapper = RichTextWrapper::new(wrapper_origin, (dimensions.0 - 3, dimensions.1 - 2));
+        let wrapper =
+            RichTextWrapper::new(wrapper_origin, (dimensions.0 - 3, dimensions.1 - 2), max_lines);
 
         Self { origin, dimensions, frame, scrollbar, wrapper, dirty: true }
     }

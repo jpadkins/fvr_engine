@@ -2,6 +2,7 @@
 // STD includes.
 //-------------------------------------------------------------------------------------------------
 use std::f64;
+use std::fmt::{Display, Formatter};
 
 //-------------------------------------------------------------------------------------------------
 // Statics.
@@ -129,14 +130,17 @@ impl Direction {
     pub fn closest_cardinal_direction((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> Direction {
         let (dx, dy) = (x2 - x1, y2 - y1);
 
-        if dx == 0 || dy == 0 {
-            return NULL_DIRECTION;
-        }
+        // TODO: Why did GoRogue return NULL here?
+        // if dx == 0 || dy == 0 {
+        //     return NULL_DIRECTION;
+        // }
 
-        let angle = (dx as f64).atan2(dy as f64);
-        let mut degree = angle * (100.0 / f64::consts::PI);
+        let angle = (dy as f64).atan2(dx as f64);
+        let mut degree = angle * (180.0 / f64::consts::PI);
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
+
+        println!("degree: {}", degree);
 
         if degree < 45.0 {
             NORTH_DIRECTION
@@ -158,12 +162,13 @@ impl Direction {
     pub fn closest_direction((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> Direction {
         let (dx, dy) = (x2 - x1, y2 - y1);
 
-        if dx == 0 || dy == 0 {
-            return NULL_DIRECTION;
-        }
+        // TODO: Why did GoRogue return NULL here?
+        // if dx == 0 || dy == 0 {
+        //     return NULL_DIRECTION;
+        // }
 
-        let angle = (dx as f64).atan2(dy as f64);
-        let mut degree = angle * (100.0 / f64::consts::PI);
+        let angle = (dy as f64).atan2(dx as f64);
+        let mut degree = angle * 180.0 / f64::consts::PI;
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
 
@@ -204,4 +209,44 @@ impl Direction {
             Orientation::Null => NULL_DIRECTION,
         }
     }
+}
+
+impl Display for Direction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.orientation {
+            Orientation::North => write!(f, "Orientation::North"),
+            Orientation::Northeast => write!(f, "Orientation::Northeast"),
+            Orientation::East => write!(f, "Orientation::East"),
+            Orientation::Southeast => write!(f, "Orientation::Southeast"),
+            Orientation::South => write!(f, "Orientation::South"),
+            Orientation::Southwest => write!(f, "Orientation::Southwest"),
+            Orientation::West => write!(f, "Orientation::West"),
+            Orientation::Northwest => write!(f, "Orientation::Northwest"),
+            Orientation::Null => write!(f, "Orientation::Null"),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Tests.
+//-------------------------------------------------------------------------------------------------
+
+#[test]
+fn test_direction_closest_cardinal_direction() {
+    assert_eq!(Direction::closest_cardinal_direction((1, 1), (2, 1)), EAST_DIRECTION);
+    assert_eq!(Direction::closest_cardinal_direction((1, 1), (2, 10)), SOUTH_DIRECTION);
+    assert_eq!(Direction::closest_cardinal_direction((7, 2), (0, 2)), WEST_DIRECTION);
+    assert_eq!(Direction::closest_cardinal_direction((1, 1), (0, 0)), NORTH_DIRECTION);
+}
+
+#[test]
+fn test_direction_closest_direction() {
+    assert_eq!(Direction::closest_direction((1, 1), (2, 1)), EAST_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (1, 2)), SOUTH_DIRECTION);
+    assert_eq!(Direction::closest_direction((7, 2), (0, 2)), WEST_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (1, 0)), NORTH_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (0, 0)), NORTHWEST_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (2, 2)), SOUTHEAST_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (0, 2)), SOUTHWEST_DIRECTION);
+    assert_eq!(Direction::closest_direction((1, 1), (2, 0)), NORTHEAST_DIRECTION);
 }
