@@ -16,7 +16,7 @@ enum State {
     // The initial state when the transition begins.
     Initial,
     // The state when the terminal is fading in.
-    FadingIn,
+    Fading,
     // The final state when the transition ends.
     Finished,
 }
@@ -57,10 +57,10 @@ impl Fade {
             // Set the terminal to the initial opacity and set the state to fading in.
             State::Initial => {
                 terminal.set_opacity(self.initial_opacity);
-                self.state = State::FadingIn;
+                self.state = State::Fading;
             }
             // Increment the opacity and set the state to finished if the final opacity is reached.
-            State::FadingIn => {
+            State::Fading => {
                 // Find the diff between the initial and final opacity.
                 let diff = (self.final_opacity - self.initial_opacity).abs();
 
