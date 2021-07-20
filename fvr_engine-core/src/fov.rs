@@ -56,7 +56,8 @@ impl Fov {
 
     //---------------------------------------------------------------------------------------------
     // Recursive shadowcasting implementation.
-    // Adapted from the GoRogue library.
+    // Adapted from http://www.roguebasin.com/index.php/FOV_using_recursive_shadowcasting and the
+    // GoRogue library.
     //---------------------------------------------------------------------------------------------
     #[allow(clippy::too_many_arguments)]
     fn cast_shadow(
@@ -201,7 +202,8 @@ impl Fov {
 
     //---------------------------------------------------------------------------------------------
     // Recursive shadowcasting implementation for limited wedge.
-    // Adapted from the GoRogue library.
+    // Adapted from http://www.roguebasin.com/index.php/FOV_using_recursive_shadowcasting and the
+    // GoRogue library.
     //---------------------------------------------------------------------------------------------
     #[allow(clippy::too_many_arguments)]
     fn cast_shadow_limited(
