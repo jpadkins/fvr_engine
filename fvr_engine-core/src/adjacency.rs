@@ -1,4 +1,9 @@
 //-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
+use once_cell::sync::Lazy;
+
+//-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::direction::*;
@@ -6,20 +11,23 @@ use crate::direction::*;
 //-------------------------------------------------------------------------------------------------
 // Statics.
 //-------------------------------------------------------------------------------------------------
-pub static CARDINAL_ADJACENCIES: [Direction; 4] =
-    [NORTH_DIRECTION, EAST_DIRECTION, SOUTH_DIRECTION, WEST_DIRECTION];
-pub static DIAGONAL_ADJACENCIES: [Direction; 4] =
-    [NORTHEAST_DIRECTION, SOUTHEAST_DIRECTION, SOUTHWEST_DIRECTION, NORTHWEST_DIRECTION];
-pub static EIGHT_WAY_ADJACENCIES: [Direction; 8] = [
-    NORTH_DIRECTION,
-    NORTHEAST_DIRECTION,
-    EAST_DIRECTION,
-    SOUTHEAST_DIRECTION,
-    SOUTH_DIRECTION,
-    SOUTHWEST_DIRECTION,
-    WEST_DIRECTION,
-    NORTHWEST_DIRECTION,
-];
+pub static CARDINAL_ADJACENCIES: Lazy<Vec<Direction>> =
+    Lazy::new(|| vec![NORTH_DIRECTION, EAST_DIRECTION, SOUTH_DIRECTION, WEST_DIRECTION]);
+pub static DIAGONAL_ADJACENCIES: Lazy<Vec<Direction>> = Lazy::new(|| {
+    vec![NORTHEAST_DIRECTION, SOUTHEAST_DIRECTION, SOUTHWEST_DIRECTION, NORTHWEST_DIRECTION]
+});
+pub static EIGHT_WAY_ADJACENCIES: Lazy<Vec<Direction>> = Lazy::new(|| {
+    vec![
+        NORTH_DIRECTION,
+        NORTHEAST_DIRECTION,
+        EAST_DIRECTION,
+        SOUTHEAST_DIRECTION,
+        SOUTH_DIRECTION,
+        SOUTHWEST_DIRECTION,
+        WEST_DIRECTION,
+        NORTHWEST_DIRECTION,
+    ]
+});
 
 //-------------------------------------------------------------------------------------------------
 // Enumerates the types of adjacencies.
@@ -91,6 +99,16 @@ impl Adjacency {
         };
 
         indices.map(|i| Direction::from_index(i))
+    }
+
+    pub fn neighbors(&self, (x, y): (i32, i32)) -> impl Iterator<Item = (i32, i32)> {
+        let adjacencies = match self {
+            Self::Cardinals => &CARDINAL_ADJACENCIES,
+            Self::Diagonals => &DIAGONAL_ADJACENCIES,
+            Self::EightWay => &EIGHT_WAY_ADJACENCIES,
+        };
+
+        adjacencies.iter().map(move |dir| (x + dir.dx(), y + dir.dy()))
     }
 }
 
