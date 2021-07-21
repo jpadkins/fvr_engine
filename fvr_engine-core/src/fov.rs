@@ -25,18 +25,21 @@ pub struct Fov {
     current_fov: HashSet<(u32, u32)>,
     // Coords in the previous fov.
     previous_fov: HashSet<(u32, u32)>,
+    // The distance method.
+    distance: Distance,
 }
 
 impl Fov {
     //---------------------------------------------------------------------------------------------
     // Creates a new fov.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: (u32, u32)) -> Self {
+    pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
         Self {
             opacity_map: GridMap::new(dimensions.0, dimensions.1),
             light: GridMap::new(dimensions.0, dimensions.1),
             current_fov: HashSet::new(),
             previous_fov: HashSet::new(),
+            distance,
         }
     }
 
@@ -72,7 +75,6 @@ impl Fov {
         radius: f64,
         origin: (u32, u32),
         decay: f64,
-        distance: Distance,
     ) {
         if start < end {
             return;
@@ -104,7 +106,7 @@ impl Fov {
                     break;
                 }
 
-                let delta_radius = distance.calculate_slope(dx as f64, dy as f64);
+                let delta_radius = self.distance.calculate_slope(dx as f64, dy as f64);
                 let current_coord = (current_x as u32, current_y as u32);
 
                 if delta_radius <= radius {
@@ -136,7 +138,6 @@ impl Fov {
                         radius,
                         origin,
                         decay,
-                        distance,
                     );
                     new_start = slope_right;
                 }
@@ -151,7 +152,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Ccalculates the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn calculate(&mut self, origin: (u32, u32), radius: f64, distance: Distance) {
+    pub fn calculate(&mut self, origin: (u32, u32), radius: f64) {
         // Calculate decay.
         let radius = radius.max(1.0);
         let decay = 1.0 / (radius + 1.0);
@@ -171,32 +172,8 @@ impl Fov {
 
         // Begin shadowcasting.
         for dir in Adjacency::Diagonals.iter() {
-            self.cast_shadow(
-                1,
-                1.0,
-                0.0,
-                0,
-                dir.dx(),
-                dir.dy(),
-                0,
-                radius,
-                origin,
-                decay,
-                distance,
-            );
-            self.cast_shadow(
-                1,
-                1.0,
-                0.0,
-                dir.dx(),
-                0,
-                0,
-                dir.dy(),
-                radius,
-                origin,
-                decay,
-                distance,
-            );
+            self.cast_shadow(1, 1.0, 0.0, 0, dir.dx(), dir.dy(), 0, radius, origin, decay);
+            self.cast_shadow(1, 1.0, 0.0, dir.dx(), 0, 0, dir.dy(), radius, origin, decay);
         }
     }
 
@@ -218,7 +195,6 @@ impl Fov {
         radius: f64,
         origin: (u32, u32),
         decay: f64,
-        distance: Distance,
         angle: f64,
         span: f64,
     ) {
@@ -252,7 +228,7 @@ impl Fov {
                     break;
                 }
 
-                let delta_radius = distance.calculate_slope(dx as f64, dy as f64);
+                let delta_radius = self.distance.calculate_slope(dx as f64, dy as f64);
                 let atan2 = (angle
                     - Misc::scaled_atan2(
                         (current_x - origin.0 as i32) as f64,
@@ -290,7 +266,6 @@ impl Fov {
                         radius,
                         origin,
                         decay,
-                        distance,
                         angle,
                         span,
                     );
@@ -308,7 +283,6 @@ impl Fov {
         &mut self,
         origin: (u32, u32),
         radius: f64,
-        distance: Distance,
         mut angle: f64,
         mut span: f64,
     ) {
@@ -334,33 +308,17 @@ impl Fov {
         self.current_fov.insert(origin);
 
         // Perform shadowcasting.
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 0, 1, 1, 0, radius, origin, decay, distance, angle, span,
-        );
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 1, 0, 0, 1, radius, origin, decay, distance, angle, span,
-        );
+        self.cast_shadow_limited(1, 1.0, 0.0, 0, 1, 1, 0, radius, origin, decay, angle, span);
+        self.cast_shadow_limited(1, 1.0, 0.0, 1, 0, 0, 1, radius, origin, decay, angle, span);
 
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 0, -1, 1, 0, radius, origin, decay, distance, angle, span,
-        );
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, -1, 0, 0, 1, radius, origin, decay, distance, angle, span,
-        );
+        self.cast_shadow_limited(1, 1.0, 0.0, 0, -1, 1, 0, radius, origin, decay, angle, span);
+        self.cast_shadow_limited(1, 1.0, 0.0, -1, 0, 0, 1, radius, origin, decay, angle, span);
 
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 0, -1, -1, 0, radius, origin, decay, distance, angle, span,
-        );
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, -1, 0, 0, -1, radius, origin, decay, distance, angle, span,
-        );
+        self.cast_shadow_limited(1, 1.0, 0.0, 0, -1, -1, 0, radius, origin, decay, angle, span);
+        self.cast_shadow_limited(1, 1.0, 0.0, -1, 0, 0, -1, radius, origin, decay, angle, span);
 
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 0, 1, -1, 0, radius, origin, decay, distance, angle, span,
-        );
-        self.cast_shadow_limited(
-            1, 1.0, 0.0, 1, 0, 0, -1, radius, origin, decay, distance, angle, span,
-        );
+        self.cast_shadow_limited(1, 1.0, 0.0, 0, 1, -1, 0, radius, origin, decay, angle, span);
+        self.cast_shadow_limited(1, 1.0, 0.0, 1, 0, 0, -1, radius, origin, decay, angle, span);
     }
 }
 

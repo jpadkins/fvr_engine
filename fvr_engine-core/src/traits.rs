@@ -83,6 +83,21 @@ macro_rules! map2d_iter {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Helper macro for immutably iterating a Map2d with indices.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! map2d_iter_index {
+    ($map2d:expr, $x:ident, $y:ident, $item:ident, $work:expr) => {
+        for $x in 0..$map2d.width() {
+            for $y in 0..$map2d.height() {
+                let $item = $map2d.get_xy(($x, $y));
+                $work
+            }
+        }
+    };
+}
+
+//-------------------------------------------------------------------------------------------------
 // Helper macro for mutably iterating a Map2d.
 //-------------------------------------------------------------------------------------------------
 #[macro_export]

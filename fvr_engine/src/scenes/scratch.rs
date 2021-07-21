@@ -30,6 +30,7 @@ pub struct Scratch {
     scroll_log: ScrollLog,
     fov: Fov,
     span: i32,
+    dijkstra: DijkstraMap,
 }
 
 impl Scratch {
@@ -45,8 +46,9 @@ impl Scratch {
                 FrameStyle::LineBlockCorner,
                 9,
             ),
-            fov: Fov::new((55, 33)),
+            fov: Fov::new((55, 33), Distance::Euclidean),
             span: 45,
+            dijkstra: DijkstraMap::new((55, 33), Distance::Euclidean),
         }
     }
 }
@@ -82,14 +84,16 @@ impl Scene for Scratch {
         let mut rng = rand::thread_rng();
 
         for x in 0..55 {
-            for y in 1..33 {
-                if rng.gen::<u32>() % 7 == 0 {
+            for y in 0..33 {
+                if rng.gen::<u32>() % 4 == 0 {
                     *self.fov.opacity_map_mut().get_xy_mut((x, y)) = false;
+                    *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Blocked;
                     terminal.get_xy_mut((x, y)).glyph = 'T';
                     terminal.get_xy_mut((x, y)).foreground_color =
                         PaletteColor::BrightGreen.into();
                 } else {
                     *self.fov.opacity_map_mut().get_xy_mut((x, y)) = true;
+                    *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Passable;
                     terminal.get_xy_mut((x, y)).glyph = '.';
                     terminal.get_xy_mut((x, y)).foreground_color = PaletteColor::DarkGreen.into();
                 }
@@ -98,6 +102,9 @@ impl Scene for Scratch {
 
         terminal.get_xy_mut((28, 17)).glyph = '@';
         terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
+
+        *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DijkstraState::Goal;
+        self.dijkstra.calculate();
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -128,9 +135,6 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        let scroll_log_action = self.scroll_log.update(input, terminal)?;
-        let back_button_action = self.back_button.update(input, terminal);
-
         if input.action_just_pressed(InputAction::Decline) {
             self.span = match self.span {
                 45 => 90,
@@ -146,20 +150,44 @@ impl Scene for Scratch {
                     self.fov.calculate_limited(
                         (28, 17),
                         20.0,
-                        Distance::Euclidean,
                         Misc::angle_between((28, 17), (xy.0 as i32, xy.1 as i32)),
                         self.span as f64,
                     );
 
                     for x in 0..55 {
-                        for y in 1..33 {
-                            terminal.get_xy_mut((x, y)).foreground_opacity =
-                                *self.fov.get_xy((x, y)) as f32;
+                        for y in 0..33 {
+                            if terminal.get_xy((x, y)).glyph == '.' {
+                                *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Passable;
+                            }
+                        }
+                    }
+                    *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DijkstraState::Goal;
+
+                    if *self.dijkstra.states().get_xy(xy) == DijkstraState::Passable {
+                        *self.dijkstra.states_mut().get_xy_mut(xy) = DijkstraState::Goal;
+                    }
+
+                    self.dijkstra.recalculate();
+
+                    for x in 0..55 {
+                        for y in 0..33 {
+                            // terminal.get_xy_mut((x, y)).foreground_opacity =
+                            //     *self.fov.get_xy((x, y)) as f32;
+                            let weight = *self.dijkstra.get_xy((x, y)) as f32;
+
+                            if weight < 0.0 {
+                                terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
+                            } else {
+                                terminal.get_xy_mut((x, y)).foreground_opacity = 20.0 / weight;
+                            }
                         }
                     }
                 }
             }
         }
+
+        let scroll_log_action = self.scroll_log.update(input, terminal)?;
+        let back_button_action = self.back_button.update(input, terminal);
 
         if input.action_just_pressed(InputAction::Quit)
             || input.key_just_pressed(SdlKey::Escape)

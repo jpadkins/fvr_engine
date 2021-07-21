@@ -1,5 +1,6 @@
 mod adjacency;
 mod cp437;
+mod dijkstra_map;
 mod direction;
 mod distance;
 mod fov;
@@ -17,6 +18,7 @@ mod traits;
 pub mod prelude {
     pub use crate::adjacency::*;
     pub use crate::cp437::*;
+    pub use crate::dijkstra_map::*;
     pub use crate::direction::*;
     pub use crate::distance::*;
     pub use crate::fov::*;
