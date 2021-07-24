@@ -31,6 +31,8 @@ pub struct Scratch {
     fov: Fov,
     span: i32,
     dijkstra: DijkstraMap,
+    flee: FleeMap,
+    toggle: bool,
 }
 
 impl Scratch {
@@ -49,6 +51,8 @@ impl Scratch {
             fov: Fov::new((55, 33), Distance::Euclidean),
             span: 45,
             dijkstra: DijkstraMap::new((55, 33), Distance::Euclidean),
+            flee: FleeMap::new((55, 33), Distance::Euclidean),
+            toggle: true,
         }
     }
 }
@@ -105,6 +109,7 @@ impl Scene for Scratch {
 
         *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DIJKSTRA_DEFAULT_GOAL;
         self.dijkstra.calculate();
+        self.flee.calculate(&self.dijkstra);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -144,6 +149,16 @@ impl Scene for Scratch {
             };
         }
 
+        if input.action_just_pressed(InputAction::Decline) {
+            if self.toggle {
+                self.toggle = false;
+                println!("flee!");
+            } else {
+                self.toggle = true;
+                println!("dijkstra!");
+            }
+        }
+
         if input.mouse_moved() || input.action_just_pressed(InputAction::Decline) {
             if let Some(xy) = input.mouse_coord() {
                 if xy.0 < 55 {
@@ -169,19 +184,30 @@ impl Scene for Scratch {
                     }
 
                     self.dijkstra.recalculate();
+                    self.flee.calculate(&self.dijkstra);
+
+                    // println!("dikstra: {:?}", *self.dijkstra.get_xy(xy));
+                    // println!("flee:    {:?}", *self.flee.get_xy(xy));
 
                     for x in 0..55 {
                         for y in 0..33 {
-                            // terminal.get_xy_mut((x, y)).foreground_opacity =
-                            //     *self.fov.get_xy((x, y)) as f32;
-                            if let Some(weight) = self.dijkstra.get_xy((x, y)) {
-                                terminal.get_xy_mut((x, y)).foreground_opacity =
-                                    20.0 / *weight as f32;
+                            if self.toggle {
+                                if let Some(weight) = self.dijkstra.get_xy((x, y)) {
+                                    terminal.get_xy_mut((x, y)).foreground_opacity = *weight as f32 * (1.0 / 15.0);
+                                } else {
+                                    terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
+                                }
                             } else {
-                                terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
+                                if let Some(weight) = self.flee.get_xy((x, y)) {
+                                    terminal.get_xy_mut((x, y)).foreground_opacity = -1.0 * *weight as f32 * (1.0 / 15.0);
+                                } else {
+                                    terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
+                                }
                             }
                         }
                     }
+
+                    terminal.get_xy_mut((28, 17)).foreground_opacity = 1.0;
                 }
             }
         }

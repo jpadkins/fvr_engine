@@ -158,8 +158,8 @@ impl Fov {
         let decay = 1.0 / (radius + 1.0);
 
         // Reset the fov hash sets.
-        self.previous_fov = self.current_fov.clone();
-        self.current_fov = HashSet::new();
+        self.previous_fov.clear();
+        self.previous_fov.extend(self.current_fov.drain());
 
         // Reset the light map.
         map2d_iter_mut!(self.light, item, {
@@ -295,8 +295,8 @@ impl Fov {
         span *= 1.0 / 360.0;
 
         // Reset the fov hash sets.
-        self.previous_fov = self.current_fov.clone();
-        self.current_fov = HashSet::new();
+        self.previous_fov.clear();
+        self.previous_fov.extend(self.current_fov.drain());
 
         // Reset the light map.
         map2d_iter_mut!(self.light, item, {

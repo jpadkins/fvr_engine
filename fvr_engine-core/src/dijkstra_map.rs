@@ -6,6 +6,7 @@ use std::collections::HashSet;
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
+use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d_iter_index;
@@ -44,6 +45,8 @@ pub struct DijkstraMap {
     processed: HashSet<(u32, u32)>,
     // Helper hash set for storing coords to process.
     edges: HashSet<(u32, u32)>,
+    // Helper vec for iterating edges.
+    edges_vec: Vec<(u32, u32)>,
     // Set of walkable coords.
     walkable: HashSet<(u32, u32)>,
     // Stores the input states.
@@ -62,6 +65,7 @@ impl DijkstraMap {
         Self {
             processed: HashSet::new(),
             edges: HashSet::new(),
+            edges_vec: Vec::new(),
             walkable: HashSet::new(),
             states: GridMap::new(dimensions.0, dimensions.1),
             weights: GridMap::new(dimensions.0, dimensions.1),
@@ -70,29 +74,87 @@ impl DijkstraMap {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a ref to the states of the dijkstra map.
+    // Returns a ref to the set of walkable coords.
+    //---------------------------------------------------------------------------------------------
+    pub fn walkable(&self) -> &HashSet<(u32, u32)> {
+        &self.walkable
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns a ref to the states.
     //---------------------------------------------------------------------------------------------
     pub fn states(&self) -> &GridMap<DijkstraState> {
         &self.states
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a mut ref to the states of the dijkstra map.
+    // Returns a mut ref to the states.
     //---------------------------------------------------------------------------------------------
     pub fn states_mut(&mut self) -> &mut GridMap<DijkstraState> {
         &mut self.states
     }
 
-    // pub fn min_direction(&self, xy: (u32, u32)) -> Direction
-    // pub fn max_direction(&self, xy: (u32, u32)) -> Direction
+    //---------------------------------------------------------------------------------------------
+    // Returns the direction of the min weight relative to a coord.
+    //---------------------------------------------------------------------------------------------
+    pub fn min_direction(&self, xy: (u32, u32)) -> Direction {
+        let mut min_weight = f64::MAX;
+        let mut direction = NULL_DIRECTION;
+        let adjacency = self.distance.adjacency();
+
+        for dir in adjacency.iter() {
+            // TODO: Better way to do this? Change parameter types?
+            let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
+
+            if !self.weights.in_bounds(coord) {
+                continue;
+            }
+
+            if let Some(weight) = self.weights.get_xy(coord) {
+                if *weight < min_weight {
+                    min_weight = *weight;
+                    direction = *dir;
+                }
+            }
+        }
+
+        direction
+    }
 
     //---------------------------------------------------------------------------------------------
-    // Calculates the output weights of the dijkstra map.
+    // Returns the direction of the max weight relative to a coord.
+    //---------------------------------------------------------------------------------------------
+    pub fn max_direction(&self, xy: (u32, u32)) -> Direction {
+        let mut max_weight = f64::MAX;
+        let mut direction = NULL_DIRECTION;
+        let adjacency = self.distance.adjacency();
+
+        for dir in adjacency.iter() {
+            // TODO: Better way to do this? Change parameter types?
+            let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
+
+            if !self.weights.in_bounds(coord) {
+                continue;
+            }
+
+            if let Some(weight) = self.weights.get_xy(coord) {
+                if *weight > max_weight {
+                    max_weight = *weight;
+                    direction = *dir;
+                }
+            }
+        }
+
+        direction
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Calculates the output weights.
     // Must be called once whenever any blocked state changes.
     //---------------------------------------------------------------------------------------------
     pub fn calculate(&mut self) {
         // Recreate the set of walkable coords.
-        self.walkable = HashSet::new();
+        self.walkable.clear();
 
         map2d_iter_index!(self.states, x, y, state, {
             match state {
@@ -118,8 +180,8 @@ impl DijkstraMap {
         let max_weight = (self.states.width() * self.states.height()) as f64;
 
         // Clear the processed and edges sets.
-        self.processed = HashSet::new();
-        self.edges = HashSet::new();
+        self.processed.clear();
+        self.edges.clear();
 
         // Find and set the initial weights for passable and goal coords.
         for coord in self.walkable.iter() {
@@ -138,19 +200,19 @@ impl DijkstraMap {
         }
 
         // Iterate the edges until all coords have been processed.
-        let mut edge_vec: Vec<(u32, u32)> = Vec::new();
+        self.edges_vec.clear();
 
         while !self.edges.is_empty() {
             // Copy the edges into a vec so we can mutate the set inside the loop.
-            edge_vec.extend(self.edges.iter());
+            self.edges_vec.extend(self.edges.iter());
 
-            for edge in edge_vec.iter() {
+            for edge in self.edges_vec.iter() {
                 // Find the current weight at the edge (which will always be Some).
                 let current_weight = self.weights.get_xy(*edge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
-                let edge_point = (edge.0 as i32, edge.1 as i32);
-                for neighbor in adjacency.neighbors(edge_point) {
+                let edge_coord = (edge.0 as i32, edge.1 as i32);
+                for neighbor in adjacency.neighbors(edge_coord) {
                     // If the neighbor has been processed or is blocked, continue.
                     let neighbor_coord = (neighbor.0 as u32, neighbor.1 as u32);
                     if self.processed.contains(&neighbor_coord)
@@ -162,7 +224,7 @@ impl DijkstraMap {
                     // Calculate the new weight for the neighbor (which will always be Some).
                     let neighbor_weight = self.weights.get_xy(neighbor_coord).unwrap();
                     let new_weight =
-                        current_weight + self.distance.calculate(edge_point, neighbor);
+                        current_weight + self.distance.calculate(edge_coord, neighbor);
 
                     // If the new weight is less (closer) than the previous weight, update and
                     // add the neighbor to the queue of edges to process.
@@ -177,7 +239,7 @@ impl DijkstraMap {
                 self.processed.insert(*edge);
             }
 
-            edge_vec.clear();
+            self.edges_vec.clear();
         }
     }
 }
