@@ -12,13 +12,9 @@ use crate::map2d_iter_index;
 use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
-// Statics.
+// Constants.
 //-------------------------------------------------------------------------------------------------
-
-// Weight value that represents a blocked coord in the map.
-static DIJKSTRA_MAP_NULL: f64 = -1.0;
-// Weight value that represents a goal coord in the map.
-static DIJKSTRA_MAP_GOAL: f64 = 0.0;
+pub const DIJKSTRA_DEFAULT_GOAL: DijkstraState = DijkstraState::Goal(0);
 
 //-------------------------------------------------------------------------------------------------
 // Enumerates the possible input states for the dijkstra map.
@@ -30,7 +26,7 @@ pub enum DijkstraState {
     // A passable point in the map.
     Passable,
     // A goal in the map.
-    Goal,
+    Goal(i32),
 }
 
 impl Default for DijkstraState {
@@ -53,7 +49,7 @@ pub struct DijkstraMap {
     // Stores the input states.
     states: GridMap<DijkstraState>,
     // Stores the output weights.
-    weights: GridMap<f64>,
+    weights: GridMap<Option<f64>>,
     // The distance method.
     distance: Distance,
 }
@@ -101,7 +97,7 @@ impl DijkstraMap {
         map2d_iter_index!(self.states, x, y, state, {
             match state {
                 DijkstraState::Blocked => {
-                    *self.weights.get_xy_mut((x, y)) = DIJKSTRA_MAP_NULL;
+                    *self.weights.get_xy_mut((x, y)) = None;
                 }
                 _ => {
                     self.walkable.insert((x, y));
@@ -130,13 +126,14 @@ impl DijkstraMap {
             match self.states.get_xy(*coord) {
                 DijkstraState::Passable => {
                     // Set all passable coords to the max weight.
-                    *self.weights.get_xy_mut(*coord) = max_weight;
+                    *self.weights.get_xy_mut(*coord) = Some(max_weight);
                 }
-                _ => {
-                    // Set all goal coords to 0.0 and add them as edges.
-                    *self.weights.get_xy_mut(*coord) = DIJKSTRA_MAP_GOAL;
+                &DijkstraState::Goal(weight) => {
+                    // Set all goal coords to their weight and add them as edges.
+                    *self.weights.get_xy_mut(*coord) = Some(weight as f64);
                     self.edges.insert(*coord);
                 }
+                _ => {}
             }
         }
 
@@ -148,8 +145,8 @@ impl DijkstraMap {
             edge_vec.extend(self.edges.iter());
 
             for edge in edge_vec.iter() {
-                // Find the current weight at the edge.
-                let current_weight = *self.weights.get_xy(*edge);
+                // Find the current weight at the edge (which will always be Some).
+                let current_weight = self.weights.get_xy(*edge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
                 let edge_point = (edge.0 as i32, edge.1 as i32);
@@ -162,15 +159,15 @@ impl DijkstraMap {
                         continue;
                     }
 
-                    // Calculate the new weight for the neighbor.
-                    let neighbor_weight = *self.weights.get_xy(neighbor_coord);
+                    // Calculate the new weight for the neighbor (which will always be Some).
+                    let neighbor_weight = self.weights.get_xy(neighbor_coord).unwrap();
                     let new_weight =
                         current_weight + self.distance.calculate(edge_point, neighbor);
 
                     // If the new weight is less (closer) than the previous weight, update and
                     // add the neighbor to the queue of edges to process.
                     if new_weight < neighbor_weight {
-                        *self.weights.get_xy_mut(neighbor_coord) = new_weight;
+                        *self.weights.get_xy_mut(neighbor_coord) = Some(new_weight);
                         self.edges.insert(neighbor_coord);
                     }
                 }
@@ -189,7 +186,7 @@ impl DijkstraMap {
 // Impl Map2dView for DijkstraMap.
 //-------------------------------------------------------------------------------------------------
 impl Map2dView for DijkstraMap {
-    type Type = f64;
+    type Type = Option<f64>;
 
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.

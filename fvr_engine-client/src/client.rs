@@ -35,7 +35,7 @@ use crate::terminal::*;
 const MINIMUM_WINDOW_SIZE: (u32, u32) = (1280, 720);
 
 // Render at 60 fps.
-const FRAME_INTERVAL: Duration = Duration::from_millis(1000 / 60);
+const FRAME_INTERVAL: Duration = Duration::from_micros(1000000 / 60);
 
 // Duration to sleep when frame duration has not yet passed.
 const SLEEP_INTERVAL: Duration = Duration::from_millis(2);

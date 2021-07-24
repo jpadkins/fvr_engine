@@ -34,7 +34,7 @@ const WINDOW_DIMENSIONS: (u32, u32) = (1280, 720);
 const TERMINAL_DIMENSIONS: (u32, u32) = (85, 33);
 const TILE_DIMENSIONS: (u32, u32) = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
-const UPDATE_INTERVAL: Duration = Duration::from_millis(1000 / 60);
+const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
 
 fn main() -> Result<()> {
     let mut client = Client::new(

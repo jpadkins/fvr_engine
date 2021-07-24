@@ -86,13 +86,13 @@ impl Scene for Scratch {
         for x in 0..55 {
             for y in 0..33 {
                 if rng.gen::<u32>() % 4 == 0 {
-                    *self.fov.opacity_map_mut().get_xy_mut((x, y)) = false;
+                    *self.fov.states_mut().get_xy_mut((x, y)) = false;
                     *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Blocked;
                     terminal.get_xy_mut((x, y)).glyph = 'T';
                     terminal.get_xy_mut((x, y)).foreground_color =
                         PaletteColor::BrightGreen.into();
                 } else {
-                    *self.fov.opacity_map_mut().get_xy_mut((x, y)) = true;
+                    *self.fov.states_mut().get_xy_mut((x, y)) = true;
                     *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Passable;
                     terminal.get_xy_mut((x, y)).glyph = '.';
                     terminal.get_xy_mut((x, y)).foreground_color = PaletteColor::DarkGreen.into();
@@ -103,7 +103,7 @@ impl Scene for Scratch {
         terminal.get_xy_mut((28, 17)).glyph = '@';
         terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
 
-        *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DijkstraState::Goal;
+        *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DIJKSTRA_DEFAULT_GOAL;
         self.dijkstra.calculate();
 
         let mut stats_frame =
@@ -157,14 +157,15 @@ impl Scene for Scratch {
                     for x in 0..55 {
                         for y in 0..33 {
                             if terminal.get_xy((x, y)).glyph == '.' {
-                                *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Passable;
+                                *self.dijkstra.states_mut().get_xy_mut((x, y)) =
+                                    DijkstraState::Passable;
                             }
                         }
                     }
-                    *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DijkstraState::Goal;
+                    *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DIJKSTRA_DEFAULT_GOAL;
 
                     if *self.dijkstra.states().get_xy(xy) == DijkstraState::Passable {
-                        *self.dijkstra.states_mut().get_xy_mut(xy) = DijkstraState::Goal;
+                        *self.dijkstra.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
                     }
 
                     self.dijkstra.recalculate();
@@ -173,12 +174,11 @@ impl Scene for Scratch {
                         for y in 0..33 {
                             // terminal.get_xy_mut((x, y)).foreground_opacity =
                             //     *self.fov.get_xy((x, y)) as f32;
-                            let weight = *self.dijkstra.get_xy((x, y)) as f32;
-
-                            if weight < 0.0 {
-                                terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
+                            if let Some(weight) = self.dijkstra.get_xy((x, y)) {
+                                terminal.get_xy_mut((x, y)).foreground_opacity =
+                                    20.0 / *weight as f32;
                             } else {
-                                terminal.get_xy_mut((x, y)).foreground_opacity = 20.0 / weight;
+                                terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
                             }
                         }
                     }

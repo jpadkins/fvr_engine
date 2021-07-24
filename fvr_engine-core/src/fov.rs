@@ -14,11 +14,11 @@ use crate::misc::*;
 use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
-// Fov calculates field of view, given an opacity map and source coord.
+// Fov calculates field of view, given an input opacity states and source coord.
 //-------------------------------------------------------------------------------------------------
 pub struct Fov {
     // Stores the opaque/transparent state of the underlying map. false = opaque.
-    opacity_map: GridMap<bool>,
+    states: GridMap<bool>,
     // Stores the calculated light values. > 0.0 means the coord is visible.
     light: GridMap<f64>,
     // Coords in the current fov.
@@ -35,7 +35,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
         Self {
-            opacity_map: GridMap::new(dimensions.0, dimensions.1),
+            states: GridMap::new(dimensions.0, dimensions.1),
             light: GridMap::new(dimensions.0, dimensions.1),
             current_fov: HashSet::new(),
             previous_fov: HashSet::new(),
@@ -44,17 +44,17 @@ impl Fov {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a ref to the opacity map of the fov.
+    // Returns a ref to the input states of the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn opacity_map(&self) -> &GridMap<bool> {
-        &self.opacity_map
+    pub fn states(&self) -> &GridMap<bool> {
+        &self.states
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a mut ref to the opacity map of the fov.
+    // Returns a mut ref to the input states of the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn opacity_map_mut(&mut self) -> &mut GridMap<bool> {
-        &mut self.opacity_map
+    pub fn states_mut(&mut self) -> &mut GridMap<bool> {
+        &mut self.states
     }
 
     //---------------------------------------------------------------------------------------------
@@ -119,13 +119,13 @@ impl Fov {
                 }
 
                 if blocked {
-                    if !self.opacity_map.get_xy(current_coord) {
+                    if !self.states.get_xy(current_coord) {
                         new_start = slope_right;
                     } else {
                         blocked = false;
                         start = new_start;
                     }
-                } else if !self.opacity_map.get_xy(current_coord) && (d as f64) < radius {
+                } else if !self.states.get_xy(current_coord) && (d as f64) < radius {
                     blocked = true;
                     self.cast_shadow(
                         d + 1,
@@ -247,13 +247,13 @@ impl Fov {
                 }
 
                 if blocked {
-                    if !self.opacity_map.get_xy(current_coord) {
+                    if !self.states.get_xy(current_coord) {
                         new_start = slope_right;
                     } else {
                         blocked = false;
                         start = new_start;
                     }
-                } else if !self.opacity_map.get_xy(current_coord) && (d as f64) < radius {
+                } else if !self.states.get_xy(current_coord) && (d as f64) < radius {
                     blocked = true;
                     self.cast_shadow_limited(
                         d + 1,
@@ -332,14 +332,14 @@ impl Map2dView for Fov {
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn width(&self) -> u32 {
-        self.opacity_map.width()
+        self.states.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
-        self.opacity_map.height()
+        self.states.height()
     }
 
     //---------------------------------------------------------------------------------------------
