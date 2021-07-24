@@ -43,13 +43,13 @@ impl Default for DijkstraState {
 //-------------------------------------------------------------------------------------------------
 pub struct DijkstraMap {
     // Helper hash set for storing processed cooords.
-    processed: HashSet<(u32, u32)>,
+    processed: HashSet<UCoord>,
     // Helper hash set for storing coords to process.
-    edges: HashSet<(u32, u32)>,
+    edges: HashSet<UCoord>,
     // Helper vec for iterating edges.
-    edges_vec: Vec<(u32, u32)>,
+    edges_vec: Vec<UCoord>,
     // Set of walkable coords.
-    walkable: HashSet<(u32, u32)>,
+    walkable: HashSet<UCoord>,
     // Stores the input states.
     states: GridMap<DijkstraState>,
     // Stores the output weights.
@@ -62,7 +62,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Creates a new dijkstra map.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
+    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
         Self {
             processed: HashSet::new(),
             edges: HashSet::new(),
@@ -77,7 +77,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns a ref to the set of walkable coords of the dijkstra map.
     //---------------------------------------------------------------------------------------------
-    pub fn walkable(&self) -> &HashSet<(u32, u32)> {
+    pub fn walkable(&self) -> &HashSet<UCoord> {
         &self.walkable
     }
 
@@ -98,7 +98,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the min weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn min_direction(&self, xy: (u32, u32)) -> Direction {
+    pub fn min_direction(&self, xy: UCoord) -> Direction {
         let mut min_weight = f64::MAX;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
@@ -125,7 +125,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the max weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn max_direction(&self, xy: (u32, u32)) -> Direction {
+    pub fn max_direction(&self, xy: UCoord) -> Direction {
         let mut max_weight = f64::MAX;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
@@ -275,7 +275,7 @@ impl Map2dView for DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         self.weights.get_xy(xy)
     }
 }

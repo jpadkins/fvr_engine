@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::direction::*;
+use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------
 // Statics.
@@ -162,7 +163,7 @@ impl Adjacency {
     //---------------------------------------------------------------------------------------------
     // Returns an iterator over the neighboring coords around a coord for a given adjacency.
     //---------------------------------------------------------------------------------------------
-    pub fn neighbors(&self, (x, y): (i32, i32)) -> impl Iterator<Item = (i32, i32)> {
+    pub fn neighbors(&self, (x, y): ICoord) -> impl Iterator<Item = ICoord> {
         let adjacencies = match self {
             Self::Cardinals => &CARDINAL_ADJACENCIES,
             Self::Diagonals => &DIAGONAL_ADJACENCIES,
@@ -175,7 +176,7 @@ impl Adjacency {
     //---------------------------------------------------------------------------------------------
     // Returns a reverse iterator over the neighboring coords around a coord for a given adjacency.
     //---------------------------------------------------------------------------------------------
-    pub fn neighbors_rev(&self, (x, y): (i32, i32)) -> impl Iterator<Item = (i32, i32)> {
+    pub fn neighbors_rev(&self, (x, y): ICoord) -> impl Iterator<Item = ICoord> {
         let adjacencies = match self {
             Self::Cardinals => &CARDINAL_ADJACENCIES,
             Self::Diagonals => &DIAGONAL_ADJACENCIES,
@@ -190,9 +191,9 @@ impl Adjacency {
     //---------------------------------------------------------------------------------------------
     pub fn neighbors_from(
         &self,
-        (x, y): (i32, i32),
+        (x, y): ICoord,
         start: Direction,
-    ) -> impl Iterator<Item = (i32, i32)> {
+    ) -> impl Iterator<Item = ICoord> {
         self.iter_from(start).map(move |dir| (x + dir.dx(), y + dir.dy()))
     }
 
@@ -201,9 +202,9 @@ impl Adjacency {
     //---------------------------------------------------------------------------------------------
     pub fn neighbors_from_rev(
         &self,
-        (x, y): (i32, i32),
+        (x, y): ICoord,
         start: Direction,
-    ) -> impl Iterator<Item = (i32, i32)> {
+    ) -> impl Iterator<Item = ICoord> {
         self.iter_from_rev(start).map(move |dir| (x + dir.dx(), y + dir.dy()))
     }
 }
@@ -288,7 +289,7 @@ fn test_adjacency_iter_from_rev_eight_way() {
 #[test]
 fn test_adjacency_neighbors_cardinals() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::Cardinals.neighbors(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::Cardinals.neighbors(xy).collect();
     let expected = vec![(1, 0), (2, 1), (1, 2), (0, 1)];
     assert_eq!(neighbors, expected);
 }
@@ -296,7 +297,7 @@ fn test_adjacency_neighbors_cardinals() {
 #[test]
 fn test_adjacency_neighbors_diagonals() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::Diagonals.neighbors(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::Diagonals.neighbors(xy).collect();
     let expected = vec![(2, 0), (2, 2), (0, 2), (0, 0)];
     assert_eq!(neighbors, expected);
 }
@@ -304,7 +305,7 @@ fn test_adjacency_neighbors_diagonals() {
 #[test]
 fn test_adjacency_neighbors_eight_way() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::EightWay.neighbors(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::EightWay.neighbors(xy).collect();
     let expected = vec![(1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1), (0, 0)];
     assert_eq!(neighbors, expected);
 }
@@ -313,7 +314,7 @@ fn test_adjacency_neighbors_eight_way() {
 #[test]
 fn test_adjacency_neighbors_rev_cardinals() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::Cardinals.neighbors_rev(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::Cardinals.neighbors_rev(xy).collect();
     let mut expected = vec![(1, 0), (2, 1), (1, 2), (0, 1)];
     expected.reverse();
     assert_eq!(neighbors, expected);
@@ -322,7 +323,7 @@ fn test_adjacency_neighbors_rev_cardinals() {
 #[test]
 fn test_adjacency_neighbors_rev_diagonals() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::Diagonals.neighbors_rev(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::Diagonals.neighbors_rev(xy).collect();
     let mut expected = vec![(2, 0), (2, 2), (0, 2), (0, 0)];
     expected.reverse();
     assert_eq!(neighbors, expected);
@@ -331,7 +332,7 @@ fn test_adjacency_neighbors_rev_diagonals() {
 #[test]
 fn test_adjacency_neighbors_rev_eight_way() {
     let xy = (1, 1);
-    let neighbors: Vec<(i32, i32)> = Adjacency::EightWay.neighbors_rev(xy).collect();
+    let neighbors: Vec<ICoord> = Adjacency::EightWay.neighbors_rev(xy).collect();
     let mut expected = vec![(1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1), (0, 0)];
     expected.reverse();
     assert_eq!(neighbors, expected);

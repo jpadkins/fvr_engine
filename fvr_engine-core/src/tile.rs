@@ -9,6 +9,11 @@ use serde_derive::{Deserialize, Serialize};
 pub use sdl2::pixels::Color as SdlColor;
 
 //-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::misc::*;
+
+//-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
 pub const TILE_STYLE_COUNT: usize = 4;
@@ -197,7 +202,7 @@ pub enum TileLayout {
     // The glyph is positioned based on font metrics, as though it was text.
     Text,
     // The glyph is positioned based on offset values from the center position.
-    Exact((i32, i32)),
+    Exact(ICoord),
 }
 
 impl TileLayout {

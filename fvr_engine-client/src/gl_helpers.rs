@@ -15,6 +15,11 @@ use gl::types::*;
 use image::DynamicImage;
 
 //-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
+use fvr_engine_core::prelude::*;
+
+//-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
 
@@ -222,7 +227,7 @@ pub fn generate_indices(num_quads: usize) -> Vec<GLuint> {
 }
 
 // Binds and uploads the data from an image to a texture, returning the size.
-pub fn load_texture<P>(path: P, texture: GLuint, active: GLenum) -> Result<(u32, u32)>
+pub fn load_texture<P>(path: P, texture: GLuint, active: GLenum) -> Result<UCoord>
 where
     P: AsRef<Path>,
 {

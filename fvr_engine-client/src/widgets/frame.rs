@@ -322,9 +322,9 @@ pub enum FrameStyle {
 //-------------------------------------------------------------------------------------------------
 pub struct Frame {
     // Origin of the frame when drawing.
-    pub origin: (u32, u32),
+    pub origin: UCoord,
     // Dimensions of the area inside the frame.
-    pub inner_dimensions: (u32, u32),
+    pub inner_dimensions: UCoord,
     // Style of the frame.
     pub style: FrameStyle,
     // Optional top-left text.
@@ -341,7 +341,7 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Creates a new frame.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), inner_dimensions: (u32, u32), style: FrameStyle) -> Self {
+    pub fn new(origin: UCoord, inner_dimensions: UCoord, style: FrameStyle) -> Self {
         Self {
             origin,
             inner_dimensions,
@@ -356,7 +356,7 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (u32, u32) {
+    pub fn origin(&self) -> UCoord {
         self.origin
     }
 
@@ -377,7 +377,7 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Returns the inner dimensions of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn inner_dimensions(&self) -> (u32, u32) {
+    pub fn inner_dimensions(&self) -> UCoord {
         self.inner_dimensions
     }
 

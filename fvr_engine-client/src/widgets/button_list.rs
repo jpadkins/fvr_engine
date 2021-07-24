@@ -27,7 +27,7 @@ pub enum ButtonListAction {
 //-------------------------------------------------------------------------------------------------
 pub struct ButtonList {
     // Origin of the button list.
-    origin: (u32, u32),
+    origin: UCoord,
     // Vec of buttons in the list.
     buttons: Vec<Button>,
     // Whether to add a space between the buttons.
@@ -38,7 +38,7 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Creates a new button list.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), spacing: bool) -> Self {
+    pub fn new(origin: UCoord, spacing: bool) -> Self {
         Self { origin, buttons: Vec::new(), spacing }
     }
 
@@ -72,7 +72,7 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Returns the button list's origin.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (u32, u32) {
+    pub fn origin(&self) -> UCoord {
         self.origin
     }
 
@@ -94,7 +94,7 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Updates the origin of the button list.
     //---------------------------------------------------------------------------------------------
-    pub fn set_origin(&mut self, origin: (u32, u32)) {
+    pub fn set_origin(&mut self, origin: UCoord) {
         self.origin = origin;
         self.refresh_button_origins();
     }
@@ -102,7 +102,7 @@ impl ButtonList {
     //---------------------------------------------------------------------------------------------
     // Creates a new button list from a vec of buttons.
     //---------------------------------------------------------------------------------------------
-    pub fn from_buttons_vec(origin: (u32, u32), buttons: Vec<Button>, spacing: bool) -> Self {
+    pub fn from_buttons_vec(origin: UCoord, buttons: Vec<Button>, spacing: bool) -> Self {
         let mut button_list = Self { origin, buttons, spacing };
         button_list.refresh_button_origins();
         button_list

@@ -5,6 +5,11 @@ use std::f64;
 use std::fmt::{Display, Formatter};
 
 //-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::misc::*;
+
+//-------------------------------------------------------------------------------------------------
 // Statics.
 //-------------------------------------------------------------------------------------------------
 pub static NORTH_DIRECTION: Direction =
@@ -98,7 +103,7 @@ impl Direction {
     //---------------------------------------------------------------------------------------------
     // Returns the coord for the direction.
     //---------------------------------------------------------------------------------------------
-    pub fn coord(&self) -> (i32, i32) {
+    pub fn coord(&self) -> ICoord {
         (self.dx, self.dy)
     }
 
@@ -127,7 +132,7 @@ impl Direction {
     // Returns the closest cardinal direction for a line, rounding clockwise.
     // Adapted from the GoRogue library.
     //---------------------------------------------------------------------------------------------
-    pub fn closest_cardinal_direction((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> Direction {
+    pub fn closest_cardinal_direction((x1, y1): ICoord, (x2, y2): ICoord) -> Direction {
         let (dx, dy) = (x2 - x1, y2 - y1);
 
         // TODO: Why did GoRogue return NULL here?
@@ -159,7 +164,7 @@ impl Direction {
     // Returns the closest direction for a line, rounding clockwise.
     // Adapted from the GoRogue library.
     //---------------------------------------------------------------------------------------------
-    pub fn closest_direction((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> Direction {
+    pub fn closest_direction((x1, y1): ICoord, (x2, y2): ICoord) -> Direction {
         let (dx, dy) = (x2 - x1, y2 - y1);
 
         // TODO: Why did GoRogue return NULL here?

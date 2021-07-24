@@ -34,9 +34,9 @@ pub enum ScrollLogAction {
 //-------------------------------------------------------------------------------------------------
 pub struct ScrollLog {
     // The origin of the log.
-    origin: (u32, u32),
+    origin: UCoord,
     // The size of the log.
-    dimensions: (u32, u32),
+    dimensions: UCoord,
     // The frame around the scroll log.
     frame: Frame,
     // The scrollbar for the log.
@@ -52,8 +52,8 @@ impl ScrollLog {
     // Creates a new scroll log.
     //---------------------------------------------------------------------------------------------
     pub fn new(
-        origin: (u32, u32),
-        dimensions: (u32, u32),
+        origin: UCoord,
+        dimensions: UCoord,
         style: FrameStyle,
         max_lines: u32,
     ) -> Self {
@@ -74,7 +74,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (u32, u32) {
+    pub fn origin(&self) -> UCoord {
         self.origin
     }
 
@@ -95,7 +95,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Returns the dimensions of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn inner_dimensions(&self) -> (u32, u32) {
+    pub fn inner_dimensions(&self) -> UCoord {
         self.dimensions
     }
 

@@ -72,9 +72,9 @@ struct Vertex {
 //-------------------------------------------------------------------------------------------------
 pub struct RendererV2 {
     // Dimensions of each tile in the terminal in # of pixels.
-    tile_dimensions: (u32, u32),
+    tile_dimensions: UCoord,
     // Dimensions of the terminal in # of tiles.
-    terminal_dimensions: (u32, u32),
+    terminal_dimensions: UCoord,
     // Frame clear color.
     clear_color: SdlColor,
     // Cached current size of the viewport.
@@ -133,8 +133,8 @@ impl RendererV2 {
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn new<S>(
-        tile_dimensions: (u32, u32),
-        terminal_dimensions: (u32, u32),
+        tile_dimensions: UCoord,
+        terminal_dimensions: UCoord,
         font_name: S,
     ) -> Result<Self>
     where
@@ -672,7 +672,7 @@ impl RendererV2 {
     // Update the OpenGL viewport and projection matrices for a new window size.
     // (should be called whenever the window size changes and no more than once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update_viewport(&mut self, (width, height): (u32, u32)) -> Result<()> {
+    pub fn update_viewport(&mut self, (width, height): UCoord) -> Result<()> {
         // Update the OpenGL viewport and query and save the new size.
         unsafe {
             gl::Viewport(0, 0, width as GLsizei, height as GLsizei);
@@ -747,7 +747,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Convert a coord in screen space to the corresponding coord in world space.
     //---------------------------------------------------------------------------------------------
-    pub fn screen_to_world_coords(&self, (x, y): (i32, i32)) -> Option<(i32, i32)> {
+    pub fn screen_to_world_coords(&self, (x, y): ICoord) -> Option<ICoord> {
         // Convert the screen coords to [-1, 1]
         let normalized_x = -1.0 + 2.0 * x as f32 / self.viewport[2] as f32;
         let normalized_y = 1.0 - 2.0 * y as f32 / self.viewport[3] as f32;
@@ -779,7 +779,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Convert a coord in screen space to the corresponding tile coord in the faux terminal.
     //---------------------------------------------------------------------------------------------
-    pub fn screen_to_terminal_coords(&self, (x, y): (i32, i32)) -> Option<(u32, u32)> {
+    pub fn screen_to_terminal_coords(&self, (x, y): ICoord) -> Option<UCoord> {
         let world = self.screen_to_world_coords((x, y))?;
 
         Some((world.0 as u32 / self.tile_dimensions.0, world.1 as u32 / self.tile_dimensions.1))
@@ -788,7 +788,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Push a colored quad onto the background vertices, based on a tile.
     //---------------------------------------------------------------------------------------------
-    fn push_background_quad(&mut self, (x, y): (u32, u32), tile: &Tile) {
+    fn push_background_quad(&mut self, (x, y): UCoord, tile: &Tile) {
         let mut vertex = Vertex::default();
 
         // Each vertex of the quad shares the same color values (for now).
@@ -850,7 +850,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     fn push_foreground_quad(
         &mut self,
-        (x, y): (u32, u32),
+        (x, y): UCoord,
         tile: &Tile,
         outline_quad: bool,
         opacity: GLfloat,

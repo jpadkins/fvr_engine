@@ -12,7 +12,7 @@ where
     T: Map2dType,
 {
     // Dimensions of the grid map.
-    dimensions: (u32, u32),
+    dimensions: UCoord,
     // Underlying data of the grid map.
     data: Vec<T>,
 }
@@ -24,7 +24,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Creates a new GridMap.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: (u32, u32)) -> Self {
+    pub fn new(dimensions: UCoord) -> Self {
         let data = vec![Default::default(); (dimensions.0 * dimensions.1) as usize];
         Self { dimensions, data }
     }
@@ -63,7 +63,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         let index = Misc::index_2d(xy, self.width());
         &self.data[index]
     }
@@ -88,7 +88,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
+    fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type {
         let index = Misc::index_2d(xy, self.width());
         &mut self.data[index]
     }

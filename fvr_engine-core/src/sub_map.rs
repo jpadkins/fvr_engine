@@ -57,7 +57,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Helper function for translating subsection coord to base map coord.
     //---------------------------------------------------------------------------------------------
-    fn translate_xy(&self, (x, y): (u32, u32)) -> (u32, u32) {
+    fn translate_xy(&self, (x, y): UCoord) -> UCoord {
         (x + self.subsection.x as u32, y + self.subsection.y as u32)
     }
 }
@@ -95,7 +95,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         let xy = self.translate_xy(xy);
         self.base_map.get_xy(xy)
     }
@@ -120,7 +120,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
+    fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type {
         let xy = self.translate_xy(xy);
         self.base_map.get_xy_mut(xy)
     }

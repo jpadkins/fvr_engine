@@ -94,7 +94,7 @@ pub enum ScrollbarAction {
 //-------------------------------------------------------------------------------------------------
 pub struct Scrollbar {
     // Origin of the scrollbar.
-    origin: (u32, u32),
+    origin: UCoord,
     // Height of the scrollbar.
     height: u32,
     // Height of the content that the scrollbar represents.
@@ -143,7 +143,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Creates a new scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), height: u32, content_height: u32) -> Self {
+    pub fn new(origin: UCoord, height: u32, content_height: u32) -> Self {
         debug_assert!(height > 2);
 
         let top_button = Button::new(Default::default(), TOP_CHAR.into(), ButtonLayout::Center);
@@ -169,7 +169,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (u32, u32) {
+    pub fn origin(&self) -> UCoord {
         self.origin
     }
 
@@ -183,7 +183,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Update the origin of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn set_origin(&mut self, origin: (u32, u32)) {
+    pub fn set_origin(&mut self, origin: UCoord) {
         self.origin = origin;
         self.dirty = true;
     }
@@ -266,7 +266,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Helper function to determine whether the scrollbar contains a coord.
     //---------------------------------------------------------------------------------------------
-    fn contains(&self, coord: &(u32, u32)) -> bool {
+    fn contains(&self, coord: &UCoord) -> bool {
         coord.0 == self.origin.0
             && coord.1 >= self.origin.1
             && coord.1 < self.origin.1 + self.height

@@ -22,9 +22,9 @@ pub struct Fov {
     // Stores the calculated light values. > 0.0 means the coord is visible.
     light: GridMap<f64>,
     // Coords in the current fov.
-    current_fov: HashSet<(u32, u32)>,
+    current_fov: HashSet<UCoord>,
     // Coords in the previous fov.
-    previous_fov: HashSet<(u32, u32)>,
+    previous_fov: HashSet<UCoord>,
     // The distance method.
     distance: Distance,
 }
@@ -33,7 +33,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Creates a new fov.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
+    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
         Self {
             states: GridMap::new(dimensions),
             light: GridMap::new(dimensions),
@@ -73,7 +73,7 @@ impl Fov {
         yx: i32,
         yy: i32,
         radius: f64,
-        origin: (u32, u32),
+        origin: UCoord,
         decay: f64,
     ) {
         if start < end {
@@ -152,7 +152,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Ccalculates the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn calculate(&mut self, origin: (u32, u32), radius: f64) {
+    pub fn calculate(&mut self, origin: UCoord, radius: f64) {
         // Calculate decay.
         let radius = radius.max(1.0);
         let decay = 1.0 / (radius + 1.0);
@@ -193,7 +193,7 @@ impl Fov {
         yx: i32,
         yy: i32,
         radius: f64,
-        origin: (u32, u32),
+        origin: UCoord,
         decay: f64,
         angle: f64,
         span: f64,
@@ -281,7 +281,7 @@ impl Fov {
 
     pub fn calculate_limited(
         &mut self,
-        origin: (u32, u32),
+        origin: UCoord,
         radius: f64,
         mut angle: f64,
         mut span: f64,
@@ -352,7 +352,7 @@ impl Map2dView for Fov {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         self.light.get_xy(xy)
     }
 }

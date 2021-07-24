@@ -129,9 +129,9 @@ impl FormatState {
 #[derive(Default)]
 pub struct RichTextWrapper {
     // Origin of the rich text wrapper.
-    origin: (u32, u32),
+    origin: UCoord,
     // Dimensions of the visible area.
-    dimensions: (u32, u32),
+    dimensions: UCoord,
     // Maximum number of wrapped lines.
     max_lines: u32,
     // Current # of lines in the rich text.
@@ -162,7 +162,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Creates a new rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: (u32, u32), dimensions: (u32, u32), max_lines: u32) -> Self {
+    pub fn new(origin: UCoord, dimensions: UCoord, max_lines: u32) -> Self {
         // Push a newline index for the beginning of the wrapped text.
         let newline_indices = vec![0];
 
@@ -172,7 +172,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (u32, u32) {
+    pub fn origin(&self) -> UCoord {
         self.origin
     }
 
@@ -193,7 +193,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Returns the dimensions of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub fn dimensions(&self) -> UCoord {
         self.dimensions
     }
 

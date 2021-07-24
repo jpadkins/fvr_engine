@@ -32,7 +32,7 @@ use crate::terminal::*;
 // TODO: Load these from config?
 
 // Minimum window size.
-const MINIMUM_WINDOW_SIZE: (u32, u32) = (1280, 720);
+const MINIMUM_WINDOW_SIZE: UCoord = (1280, 720);
 
 // Render at 60 fps.
 const FRAME_INTERVAL: Duration = Duration::from_micros(1000000 / 60);
@@ -48,7 +48,7 @@ const FPS_LOG_INTERVAL: Duration = Duration::from_secs(5);
 //-------------------------------------------------------------------------------------------------
 pub struct Client {
     // Dimensions of the faux terminal.
-    terminal_dimensions: (u32, u32),
+    terminal_dimensions: UCoord,
     // The SDL2 context (not used after initialization, but it must stay in scope).
     _sdl2_context: Sdl,
     // The SDL2 video context (not used after initialization, but it must stay in scope).
@@ -86,9 +86,9 @@ impl Client {
     //---------------------------------------------------------------------------------------------
     pub fn new<S>(
         window_title: S,
-        window_dimensions: (u32, u32),
-        terminal_dimensions: (u32, u32),
-        tile_dimensions: (u32, u32),
+        window_dimensions: UCoord,
+        terminal_dimensions: UCoord,
+        tile_dimensions: UCoord,
         font_name: S,
     ) -> Result<Self>
     where

@@ -25,7 +25,7 @@ impl Terminal {
     // Creates a new terminal.
     // (there should only ever be one, for now)
     //---------------------------------------------------------------------------------------------
-    pub(crate) fn new(dimensions: (u32, u32)) -> Self {
+    pub(crate) fn new(dimensions: UCoord) -> Self {
         Self { tiles: GridMap::new(dimensions), opacity: 1.0 }
     }
 
@@ -72,7 +72,7 @@ impl Terminal {
     #[allow(clippy::too_many_arguments)]
     pub fn update_tile(
         &mut self,
-        xy: (u32, u32),
+        xy: UCoord,
         glyph: Option<char>,
         layout: Option<TileLayout>,
         style: Option<TileStyle>,
@@ -164,7 +164,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Iterates the xy coords in the terminal and their corresponding tiles.
     //---------------------------------------------------------------------------------------------
-    pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = ((u32, u32), &Tile)> {
+    pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = (UCoord, &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())
             .map(move |xy| (xy, self.tiles.get_xy(xy)))
@@ -217,7 +217,7 @@ impl Map2dView for Terminal {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         self.tiles.get_xy(xy)
     }
 }
@@ -238,7 +238,7 @@ impl Map2dViewMut for Terminal {
     //---------------------------------------------------------------------------------------------
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
+    fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type {
         self.tiles.get_xy_mut(xy)
     }
 }

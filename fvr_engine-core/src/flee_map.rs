@@ -29,15 +29,15 @@ const FLEE_MAP_MAGNITUDE: f64 = -1.6;
 //-------------------------------------------------------------------------------------------------
 pub struct FleeMap {
     // Helper hash set for storing processed cooords.
-    processed: HashSet<(u32, u32)>,
+    processed: HashSet<UCoord>,
     // Helper hash set for storing coords to process.
-    edges: HashSet<(u32, u32)>,
+    edges: HashSet<UCoord>,
     // Helper vec for iterating edges.
-    edges_vec: Vec<(u32, u32)>,
+    edges_vec: Vec<UCoord>,
     // Calculated weights of the flee map.
     weights: GridMap<Option<f64>>,
     // Priority queue used for calculating weights.
-    queue: PriorityQueue<(u32, u32), OrderedFloat<f64>>,
+    queue: PriorityQueue<UCoord, OrderedFloat<f64>>,
     // The distance method.
     distance: Distance,
 }
@@ -46,7 +46,7 @@ impl FleeMap {
     //---------------------------------------------------------------------------------------------
     // Creates a new flee map.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
+    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
         Self {
             processed: HashSet::new(),
             edges: HashSet::new(),
@@ -166,7 +166,7 @@ impl Map2dView for FleeMap {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
+    fn get_xy(&self, xy: UCoord) -> &Self::Type {
         self.weights.get_xy(xy)
     }
 }

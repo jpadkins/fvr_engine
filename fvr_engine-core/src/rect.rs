@@ -4,6 +4,11 @@
 use std::cmp::{max, min};
 
 //-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::misc::*;
+
+//-------------------------------------------------------------------------------------------------
 // Rect describes a rectangle.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -22,35 +27,35 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Creates a new rect.
     //---------------------------------------------------------------------------------------------
-    pub fn new((x, y): (i32, i32), width: i32, height: i32) -> Self {
+    pub fn new((x, y): ICoord, width: i32, height: i32) -> Self {
         Self { x, y, width, height }
     }
 
     //---------------------------------------------------------------------------------------------
     // Create a new rect centered on a point.
     //---------------------------------------------------------------------------------------------
-    pub fn new_with_center(center: (i32, i32), width: i32, height: i32) -> Self {
+    pub fn new_with_center(center: ICoord, width: i32, height: i32) -> Self {
         Self { x: center.0 - (width / 2), y: center.1 - (height / 2), width, height }
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the rect.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> (i32, i32) {
+    pub fn origin(&self) -> ICoord {
         (self.x, self.y)
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the max extent of the rect (opposite of origin).
     //---------------------------------------------------------------------------------------------
-    pub fn max_entent(&self) -> (i32, i32) {
+    pub fn max_entent(&self) -> ICoord {
         (self.x + self.width - 1, self.y + self.height - 1)
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the dimensions of the rect.
     //---------------------------------------------------------------------------------------------
-    pub fn dimensions(&self) -> (i32, i32) {
+    pub fn dimensions(&self) -> ICoord {
         (self.width, self.height)
     }
 
@@ -64,7 +69,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns the center of the rect.
     //---------------------------------------------------------------------------------------------
-    pub fn center(&self) -> (i32, i32) {
+    pub fn center(&self) -> ICoord {
         (self.x + (self.width / 2), self.y + (self.height / 2))
     }
 
@@ -78,7 +83,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns whether the rect contains a point.
     //---------------------------------------------------------------------------------------------
-    pub fn contains(&self, xy: (i32, i32)) -> bool {
+    pub fn contains(&self, xy: ICoord) -> bool {
         xy.0 >= self.x
             && xy.0 < self.x + self.width
             && xy.1 >= self.y
@@ -98,7 +103,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Pushes points in the rect into a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn push_points(&self, points: &mut Vec<(i32, i32)>) {
+    pub fn push_points(&self, points: &mut Vec<ICoord>) {
         if self.is_empty() {
             return;
         }
@@ -113,7 +118,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns points in the rect as a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn points(&self) -> Vec<(i32, i32)> {
+    pub fn points(&self) -> Vec<ICoord> {
         let mut points = Vec::new();
         self.push_points(&mut points);
         points
@@ -122,7 +127,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Pushes points on the rect's perimeter into a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn push_perimeter_points(&self, points: &mut Vec<(i32, i32)>) {
+    pub fn push_perimeter_points(&self, points: &mut Vec<ICoord>) {
         if self.is_empty() {
             return;
         }
@@ -141,7 +146,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns the points on the rect's perimeter as a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn perimeter_points(&self) -> Vec<(i32, i32)> {
+    pub fn perimeter_points(&self) -> Vec<ICoord> {
         let mut points = Vec::new();
         self.push_perimeter_points(&mut points);
         points
@@ -150,7 +155,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Pushes the points in the rect but not in another rect into a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn push_difference(&self, other: &Rect, points: &mut Vec<(i32, i32)>) {
+    pub fn push_difference(&self, other: &Rect, points: &mut Vec<ICoord>) {
         for xy in self.points() {
             if other.contains(xy) {
                 continue;
@@ -163,7 +168,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns the points in the rect but not in another rect as a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn difference(&self, other: &Rect) -> Vec<(i32, i32)> {
+    pub fn difference(&self, other: &Rect) -> Vec<ICoord> {
         let mut points = Vec::new();
         self.push_difference(other, &mut points);
         points
@@ -172,7 +177,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Pushes the points shared by the rect and another rect into a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn push_union(&self, other: &Rect, points: &mut Vec<(i32, i32)>) {
+    pub fn push_union(&self, other: &Rect, points: &mut Vec<ICoord>) {
         for xy in self.points() {
             if other.contains(xy) {
                 points.push(xy);
@@ -183,7 +188,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Returns the points shared by the rect and another rect as a vec.
     //---------------------------------------------------------------------------------------------
-    pub fn union(&self, other: &Rect) -> Vec<(i32, i32)> {
+    pub fn union(&self, other: &Rect) -> Vec<ICoord> {
         let mut points = Vec::new();
         self.push_union(other, &mut points);
         points
