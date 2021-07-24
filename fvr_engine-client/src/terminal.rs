@@ -25,8 +25,8 @@ impl Terminal {
     // Creates a new terminal.
     // (there should only ever be one, for now)
     //---------------------------------------------------------------------------------------------
-    pub(crate) fn new(width: u32, height: u32) -> Self {
-        Self { tiles: GridMap::<Tile>::new(width, height), opacity: 1.0 }
+    pub(crate) fn new(dimensions: (u32, u32)) -> Self {
+        Self { tiles: GridMap::new(dimensions), opacity: 1.0 }
     }
 
     //---------------------------------------------------------------------------------------------

@@ -35,8 +35,8 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     pub fn new(dimensions: (u32, u32), distance: Distance) -> Self {
         Self {
-            states: GridMap::new(dimensions.0, dimensions.1),
-            light: GridMap::new(dimensions.0, dimensions.1),
+            states: GridMap::new(dimensions),
+            light: GridMap::new(dimensions),
             current_fov: HashSet::new(),
             previous_fov: HashSet::new(),
             distance,

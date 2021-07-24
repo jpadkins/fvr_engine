@@ -10,6 +10,7 @@ use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d_iter_index;
+use crate::misc::*;
 use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -67,28 +68,28 @@ impl DijkstraMap {
             edges: HashSet::new(),
             edges_vec: Vec::new(),
             walkable: HashSet::new(),
-            states: GridMap::new(dimensions.0, dimensions.1),
-            weights: GridMap::new(dimensions.0, dimensions.1),
+            states: GridMap::new(dimensions),
+            weights: GridMap::new(dimensions),
             distance,
         }
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a ref to the set of walkable coords.
+    // Returns a ref to the set of walkable coords of the dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn walkable(&self) -> &HashSet<(u32, u32)> {
         &self.walkable
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a ref to the states.
+    // Returns a ref to the states of the dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn states(&self) -> &GridMap<DijkstraState> {
         &self.states
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns a mut ref to the states.
+    // Returns a mut ref to the states of the dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn states_mut(&mut self) -> &mut GridMap<DijkstraState> {
         &mut self.states
@@ -211,10 +212,10 @@ impl DijkstraMap {
                 let current_weight = self.weights.get_xy(*edge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
-                let edge_coord = (edge.0 as i32, edge.1 as i32);
+                let edge_coord = Misc::u2i(*edge);
                 for neighbor in adjacency.neighbors(edge_coord) {
                     // If the neighbor has been processed or is blocked, continue.
-                    let neighbor_coord = (neighbor.0 as u32, neighbor.1 as u32);
+                    let neighbor_coord = Misc::i2u(neighbor);
                     if self.processed.contains(&neighbor_coord)
                         || !self.walkable.contains(&neighbor_coord)
                     {

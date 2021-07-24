@@ -11,10 +11,8 @@ pub struct GridMap<T>
 where
     T: Map2dType,
 {
-    // Width of the grid map.
-    width: u32,
-    // Height of the grid map.
-    height: u32,
+    // Dimensions of the grid map.
+    dimensions: (u32, u32),
     // Underlying data of the grid map.
     data: Vec<T>,
 }
@@ -26,9 +24,9 @@ where
     //---------------------------------------------------------------------------------------------
     // Creates a new GridMap.
     //---------------------------------------------------------------------------------------------
-    pub fn new(width: u32, height: u32) -> Self {
-        let data = vec![Default::default(); (width * height) as usize];
-        Self { width, height, data }
+    pub fn new(dimensions: (u32, u32)) -> Self {
+        let data = vec![Default::default(); (dimensions.0 * dimensions.1) as usize];
+        Self { dimensions, data }
     }
 }
 
@@ -45,14 +43,14 @@ where
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn width(&self) -> u32 {
-        self.width
+        self.dimensions.0
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
-        self.height
+        self.dimensions.1
     }
 
     //---------------------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ where
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
     fn get_xy(&self, xy: (u32, u32)) -> &Self::Type {
-        let index = Misc::index_2d(xy, self.width);
+        let index = Misc::index_2d(xy, self.width());
         &self.data[index]
     }
 }
@@ -91,7 +89,7 @@ where
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
     fn get_xy_mut(&mut self, xy: (u32, u32)) -> &mut Self::Type {
-        let index = Misc::index_2d(xy, self.width);
+        let index = Misc::index_2d(xy, self.width());
         &mut self.data[index]
     }
 }
@@ -106,7 +104,7 @@ fn test_grid_map() {
     let height = 6;
     let x = width / 2;
     let y = height / 2;
-    let mut grid_map = GridMap::new(width, height);
+    let mut grid_map = GridMap::new((width, height));
 
     // Test get*().
     assert_eq!(*grid_map.get(Misc::index_2d((x, y), width)), u32::default());

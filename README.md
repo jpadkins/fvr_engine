@@ -98,9 +98,6 @@ Lib containing text parsers, including:
 - continue adapting C# implementation.
 - refactor frame to use rect?
 - change Grid/Sub map new() parameters to dimensions: (u32, u32) instead of width/height>
-- change opacity_map on fov to just states or similar.
-- remove usage of (i32, i32) in argumetns/return values that should be coordinates.
-- remove all method comments that end with "of the <struct name>"
 
 ## CONVENTIONS
 

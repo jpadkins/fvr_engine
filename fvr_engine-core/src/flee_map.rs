@@ -15,6 +15,7 @@ use priority_queue::PriorityQueue;
 use crate::dijkstra_map::*;
 use crate::distance::*;
 use crate::grid_map::*;
+use crate::misc::*;
 use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -50,12 +51,15 @@ impl FleeMap {
             processed: HashSet::new(),
             edges: HashSet::new(),
             edges_vec: Vec::new(),
-            weights: GridMap::new(dimensions.0, dimensions.1),
+            weights: GridMap::new(dimensions),
             queue: PriorityQueue::new(),
             distance,
         }
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Calculates the flee map weights from a dijkstra map.
+    //---------------------------------------------------------------------------------------------
     pub fn calculate(&mut self, states: &DijkstraMap) {
         // Find the adjacency method and clear the states.
         let adjacency = self.distance.adjacency();
@@ -78,10 +82,9 @@ impl FleeMap {
             let next = self.queue.pop().unwrap().0;
             self.processed.insert(next);
 
-            // Iterate all neighboring coords around the next coord.
-            for neighbor in adjacency.neighbors((next.0 as i32, next.1 as i32)) {
-                // TODO: Fix the types here.
-                let neighbor = (neighbor.0 as u32, neighbor.1 as u32);
+            // Iterate all neighboring coords around the next coord, populating the edge set.
+            for neighbor in adjacency.neighbors(Misc::u2i(next)) {
+                let neighbor = Misc::i2u(neighbor);
 
                 if !self.processed.contains(&neighbor) && states.walkable().contains(&neighbor) {
                     self.edges.insert(neighbor);
@@ -97,10 +100,10 @@ impl FleeMap {
                     let current_weight = self.weights.get_xy(*edge).unwrap();
 
                     // Iterate all neighboring coords around the edge.
-                    let edge_coord = (edge.0 as i32, edge.1 as i32);
+                    let edge_coord = Misc::u2i(*edge);
                     for neighbor in adjacency.neighbors(edge_coord) {
                         // If the neighbor has been processed or is blocked, continue.
-                        let neighbor_coord = (neighbor.0 as u32, neighbor.1 as u32);
+                        let neighbor_coord = Misc::i2u(neighbor);
                         if self.processed.contains(&neighbor_coord)
                             || !states.walkable().contains(&neighbor_coord)
                         {

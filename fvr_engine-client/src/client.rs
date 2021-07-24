@@ -218,7 +218,7 @@ impl Client {
     // Returns a new terminal matching the client's dimensions.
     //---------------------------------------------------------------------------------------------
     pub fn create_terminal(&self) -> Terminal {
-        Terminal::new(self.terminal_dimensions.0, self.terminal_dimensions.1)
+        Terminal::new(self.terminal_dimensions)
     }
 
     //---------------------------------------------------------------------------------------------

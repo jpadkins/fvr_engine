@@ -165,7 +165,7 @@ impl Scene for Scratch {
                     self.fov.calculate_limited(
                         (28, 17),
                         20.0,
-                        Misc::angle_between((28, 17), (xy.0 as i32, xy.1 as i32)),
+                        Misc::angle_between((28, 17), Misc::u2i(xy)),
                         self.span as f64,
                     );
 

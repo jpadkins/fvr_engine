@@ -147,7 +147,7 @@ fn test_sub_map() {
         *obj.get_xy((5, 5))
     }
 
-    let mut grid_map = crate::grid_map::GridMap::new(10, 10);
+    let mut grid_map = crate::grid_map::GridMap::new((10, 10));
     *grid_map.get_xy_mut((1, 0)) = 10;
     *grid_map.get_xy_mut((5, 5)) = 10;
 
