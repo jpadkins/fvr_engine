@@ -101,6 +101,7 @@ Lib containing text parsers, including:
 - move transitions to client?
 - implement shake effect
 - MAKE SURE possible overflow is handled with u32 <-> i32 coord conversions!
+- change dijkstra processed to use grid map.
 
 ## CONVENTIONS
 

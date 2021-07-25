@@ -73,6 +73,8 @@ pub struct AStar {
     heuristic: Heuristic,
     // The distance method.
     distance: Distance,
+    // Whether to speed up the heuristic at the cost of accuracy.
+    fast: bool,
 }
 
 impl AStar {
@@ -101,7 +103,7 @@ impl AStar {
     }
 
     //-------------------------------------------------------------------------------------------------
-    // Creates a new AStar.
+    // Creates a new a star.
     //-------------------------------------------------------------------------------------------------
     pub fn new(distance: Distance) -> Self {
         let tie_breaker = 1.0;
@@ -114,6 +116,25 @@ impl AStar {
             tie_breaker,
             heuristic: Self::heuristic(distance, tie_breaker),
             distance,
+            fast: false,
+        }
+    }
+
+    //-------------------------------------------------------------------------------------------------
+    // Creates a new "fast" a star, giving a speed boost at the cost of accuracy.
+    //-------------------------------------------------------------------------------------------------
+    pub fn fast(distance: Distance) -> Self {
+        let tie_breaker = 1.0;
+
+        Self {
+            nodes: GridMap::new((0, 0)),
+            processed: GridMap::new((0, 0)),
+            previous_dimensions: (0, 0),
+            queue: PriorityQueue::new(),
+            tie_breaker,
+            heuristic: Self::heuristic(Distance::Manhattan, tie_breaker),
+            distance,
+            fast: true,
         }
     }
 
@@ -150,7 +171,13 @@ impl AStar {
             self.processed.resize(dimensions);
             self.previous_dimensions = dimensions;
             self.tie_breaker = Self::tie_breaker(dimensions);
-            self.heuristic = Self::heuristic(self.distance, self.tie_breaker);
+
+            // Fast heuristic always uses Manhattan distance.
+            if self.fast {
+                self.heuristic = Self::heuristic(Distance::Manhattan, self.tie_breaker);
+            } else {
+                self.heuristic = Self::heuristic(self.distance, self.tie_breaker);
+            }
 
             // Resize capacity to known limit ahead of time.
             self.queue.reserve((dimensions.0 * dimensions.1) as usize);
@@ -198,13 +225,13 @@ impl AStar {
                 while {
                     if node.as_ref().unwrap().borrow().parent.is_some() {
                         xy = node.as_ref().unwrap().borrow().parent.as_ref().unwrap().borrow().xy;
+                        points.push(xy);
                         xy != start
                     } else {
                         false
                     }
                 } {
                     node = self.nodes.get_xy(xy);
-                    points.push(node.as_ref().unwrap().borrow().xy);
                 }
 
                 return;
@@ -242,7 +269,8 @@ impl AStar {
                     depth *= *weights.as_ref().unwrap().get_xy(xy);
                 }
 
-                let depth = OrderedFloat(depth) + self.nodes.get_xy(node.0).as_ref().unwrap().borrow().depth;
+                let depth = OrderedFloat(depth)
+                    + self.nodes.get_xy(node.0).as_ref().unwrap().borrow().depth;
 
                 // Ensure the node is initialized.
                 if !is_visited {
@@ -257,7 +285,9 @@ impl AStar {
                 // If the node has been processed and the previous depth is not higher, continue.
                 let is_enqueued = self.queue.get(&xy).is_some();
 
-                if (is_visited && is_enqueued) && depth >= self.nodes.get_xy(xy).as_ref().unwrap().borrow().depth {
+                if (is_visited && is_enqueued)
+                    && depth >= self.nodes.get_xy(xy).as_ref().unwrap().borrow().depth
+                {
                     continue;
                 }
 
@@ -277,5 +307,3 @@ impl AStar {
         }
     }
 }
-
-pub struct FastAStar;

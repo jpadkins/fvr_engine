@@ -46,7 +46,7 @@ impl Scratch {
                 FrameStyle::LineBlockCorner,
                 9,
             ),
-            astar: AStar::new(Distance::Euclidean),
+            astar: AStar::fast(Distance::Euclidean),
             path: Vec::new(),
             passability: GridMap::new((55, 33)),
         }
@@ -55,14 +55,6 @@ impl Scratch {
     fn blit(&mut self, terminal: &mut Terminal, start: UCoord) {
         for x in 0..55 {
             for y in 0..33 {
-                let glyph = terminal.get_xy((x, y)).glyph;
-
-                if glyph == 'T' {
-                    *self.passability.get_xy_mut((x, y)) = Passability::Blocked;
-                } else {
-                    *self.passability.get_xy_mut((x, y)) = Passability::Passable;
-                }
-
                 terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
             }
         }
@@ -111,18 +103,21 @@ impl Scene for Scratch {
 
         for x in 0..55 {
             for y in 0..33 {
-                terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
-
                 if rng.gen::<u32>() % 4 == 0 {
                     terminal.get_xy_mut((x, y)).glyph = 'T';
                     terminal.get_xy_mut((x, y)).foreground_color =
                         PaletteColor::BrightGreen.into();
+                    *self.passability.get_xy_mut((x, y)) = Passability::Blocked;
                 } else {
                     terminal.get_xy_mut((x, y)).glyph = '.';
                     terminal.get_xy_mut((x, y)).foreground_color = PaletteColor::DarkGreen.into();
+                    *self.passability.get_xy_mut((x, y)) = Passability::Passable;
                 }
+
+                terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
             }
         }
+        *self.passability.get_xy_mut((28, 17)) = Passability::Passable;
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
