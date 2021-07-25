@@ -6,8 +6,8 @@ use crate::misc::*;
 //-------------------------------------------------------------------------------------------------
 // Map2dType constraints the types which a Map2dView/Mut may contain.
 //-------------------------------------------------------------------------------------------------
-pub trait Map2dType: Clone + Default {}
-impl<T> Map2dType for T where T: Clone + Default {}
+pub trait Map2dType: Copy + Default {}
+impl<T> Map2dType for T where T: Copy + Default {}
 
 //-------------------------------------------------------------------------------------------------
 // Describes an immutable access API for a 2d grid.

@@ -102,6 +102,7 @@ Lib containing text parsers, including:
 - implement shake effect
 - MAKE SURE possible overflow is handled with u32 <-> i32 coord conversions!
 - change dijkstra processed to use grid map.
+- go back through code that uses "unwrap" and make sure ".as_ref().unwrap()" is not a better alternative.
 
 ## CONVENTIONS
 

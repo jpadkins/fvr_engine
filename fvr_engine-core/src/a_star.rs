@@ -1,10 +1,4 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
-//-------------------------------------------------------------------------------------------------
-use std::cell::RefCell;
-use std::rc::Rc;
-
-//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use ordered_float::OrderedFloat;
@@ -47,12 +41,19 @@ impl Default for Passability {
 //-------------------------------------------------------------------------------------------------
 type Heuristic = Box<dyn Fn(UCoord, UCoord) -> f64>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+//-------------------------------------------------------------------------------------------------
+// Wraps heuristic data for a node.
+//-------------------------------------------------------------------------------------------------
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 struct AStarNode {
+    // Coord of the node.
     xy: UCoord,
+    // Distance from the start to the node.
     depth: OrderedFloat<f64>,
+    // Distance from the node to the end.
     distance_left: OrderedFloat<f64>,
-    parent: Option<Rc<RefCell<AStarNode>>>,
+    // Coord of the node's parent.
+    parent: Option<UCoord>,
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -60,7 +61,7 @@ struct AStarNode {
 //-------------------------------------------------------------------------------------------------
 pub struct AStar {
     // Map of nodes for queue.
-    nodes: GridMap<Option<Rc<RefCell<AStarNode>>>>,
+    nodes: GridMap<Option<AStarNode>>,
     // Stores processed state for coords.
     processed: GridMap<bool>,
     // Dimensions of the last map.
@@ -197,15 +198,10 @@ impl AStar {
         let distance_left = OrderedFloat((self.heuristic)(start, end));
 
         if let Some(node) = start_node {
-            node.borrow_mut().depth = depth;
-            node.borrow_mut().distance_left = distance_left;
+            node.depth = depth;
+            node.distance_left = distance_left;
         } else {
-            *start_node = Some(Rc::new(RefCell::new(AStarNode {
-                xy: start,
-                depth,
-                distance_left,
-                parent: None,
-            })));
+            *start_node = Some(AStarNode { xy: start, depth, distance_left, parent: None });
         }
 
         self.queue.push(start, -distance_left);
@@ -223,10 +219,11 @@ impl AStar {
                 let mut xy = UCoord::default();
 
                 while {
-                    if node.as_ref().unwrap().borrow().parent.is_some() {
-                        xy = node.as_ref().unwrap().borrow().parent.as_ref().unwrap().borrow().xy;
-                        points.push(xy);
-                        xy != start
+                    if let Some(parent_xy) = node.as_ref().unwrap().parent {
+                        points.push(parent_xy);
+                        xy = parent_xy;
+
+                        parent_xy != start
                     } else {
                         false
                     }
@@ -269,32 +266,31 @@ impl AStar {
                     depth *= *weights.as_ref().unwrap().get_xy(xy);
                 }
 
-                let depth = OrderedFloat(depth)
-                    + self.nodes.get_xy(node.0).as_ref().unwrap().borrow().depth;
+                let depth =
+                    OrderedFloat(depth) + self.nodes.get_xy(node.0).as_ref().unwrap().depth;
 
                 // Ensure the node is initialized.
                 if !is_visited {
-                    *self.nodes.get_xy_mut(xy) = Some(Rc::new(RefCell::new(AStarNode {
+                    *self.nodes.get_xy_mut(xy) = Some(AStarNode {
                         xy,
                         depth: OrderedFloat(f64::MAX),
                         distance_left: OrderedFloat(f64::MAX),
                         parent: None,
-                    })));
+                    });
                 }
 
                 // If the node has been processed and the previous depth is not higher, continue.
                 let is_enqueued = self.queue.get(&xy).is_some();
 
                 if (is_visited && is_enqueued)
-                    && depth >= self.nodes.get_xy(xy).as_ref().unwrap().borrow().depth
+                    && depth >= self.nodes.get_xy(xy).as_ref().unwrap().depth
                 {
                     continue;
                 }
 
                 // Otherwise this is a better path and the node should be updated.
-                let parent = Some(self.nodes.get_xy_mut(node.0).as_ref().unwrap().clone());
-                let mut neighbor = self.nodes.get_xy_mut(xy).as_ref().unwrap().borrow_mut();
-                neighbor.parent = parent;
+                let mut neighbor = self.nodes.get_xy_mut(xy).as_mut().unwrap();
+                neighbor.parent = Some(node.0);
                 neighbor.depth = depth;
                 neighbor.distance_left = depth + OrderedFloat((self.heuristic)(xy, end));
 
