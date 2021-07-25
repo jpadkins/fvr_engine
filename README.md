@@ -109,9 +109,9 @@ Lib containing text parsers, including:
 - Frames work best with _odd_ dimensions.
 - Managing cursor should _always_ be done at the root scene level.
 - includes order:
- - "STD Includes."
- - "Extern crate includes."
- - "Workspace includes."
- - "Local includes."
- - "Constants."
- - "Statics."
+  - "STD Includes."
+  - "Extern crate includes."
+  - "Workspace includes."
+  - "Local includes."
+  - "Constants."
+  - "Statics."
