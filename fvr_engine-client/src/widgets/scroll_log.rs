@@ -51,12 +51,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Creates a new scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn new(
-        origin: UCoord,
-        dimensions: UCoord,
-        style: FrameStyle,
-        max_lines: u32,
-    ) -> Self {
+    pub fn new(origin: UCoord, dimensions: UCoord, style: FrameStyle, max_lines: u32) -> Self {
         let frame = Frame::new(origin, (dimensions.0 - 2, dimensions.1 - 2), style);
 
         // Subtract from the height to nest the scrollbar within the frame.

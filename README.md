@@ -98,8 +98,18 @@ Lib containing text parsers, including:
 - continue adapting C# implementation.
 - refactor frame to use rect?
 - change Grid/Sub map new() parameters to dimensions: (u32, u32) instead of width/height>
+- move transitions to client?
+- implement shake effect
+- MAKE SURE possible overflow is handled with u32 <-> i32 coord conversions!
 
 ## CONVENTIONS
 
 - Frames work best with _odd_ dimensions.
 - Managing cursor should _always_ be done at the root scene level.
+- includes order:
+ - "STD Includes."
+ - "Extern crate includes."
+ - "Workspace includes."
+ - "Local includes."
+ - "Constants."
+ - "Statics."

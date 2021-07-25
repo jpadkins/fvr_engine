@@ -34,6 +34,7 @@ pub static EIGHT_WAY_ADJACENCIES: Lazy<Vec<Direction>> = Lazy::new(|| {
 // Enumerates the types of adjacencies.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Adjacency {
     // The cardinal adjacencies.
     Cardinals,

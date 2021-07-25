@@ -43,6 +43,7 @@ pub static DIRECTIONS: [Direction; 8] = [
 //-------------------------------------------------------------------------------------------------
 // Enumerates possible orientations.
 //-------------------------------------------------------------------------------------------------
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Orientation {
     // The orientation up.

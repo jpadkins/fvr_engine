@@ -7,6 +7,7 @@ use crate::distance::*;
 //-------------------------------------------------------------------------------------------------
 // Enumerates the shape options.
 //-------------------------------------------------------------------------------------------------
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Radius {
     // A circle around a point.

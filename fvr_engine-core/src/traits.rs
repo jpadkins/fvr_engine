@@ -6,8 +6,8 @@ use crate::misc::*;
 //-------------------------------------------------------------------------------------------------
 // Map2dType constraints the types which a Map2dView/Mut may contain.
 //-------------------------------------------------------------------------------------------------
-pub trait Map2dType: Copy + Default {}
-impl<T> Map2dType for T where T: Copy + Default {}
+pub trait Map2dType: Clone + Default {}
+impl<T> Map2dType for T where T: Clone + Default {}
 
 //-------------------------------------------------------------------------------------------------
 // Describes an immutable access API for a 2d grid.
@@ -24,6 +24,11 @@ pub trait Map2dView {
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32;
+
+    //---------------------------------------------------------------------------------------------
+    // Return the dimensions of the Map2dView.
+    //---------------------------------------------------------------------------------------------
+    fn dimensions(&self) -> UCoord;
 
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at an index.

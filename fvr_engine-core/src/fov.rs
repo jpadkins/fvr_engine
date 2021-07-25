@@ -14,11 +14,48 @@ use crate::misc::*;
 use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
+// Enumerates the possible transparency input states for the underlying map.
+//-------------------------------------------------------------------------------------------------
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Transparency {
+    // Blocks visibility.
+    Opaque,
+    // Does not block visibility.
+    Transparent,
+}
+
+impl Default for Transparency {
+    fn default() -> Self {
+        Transparency::Transparent
+    }
+}
+
+// Impl conversions between bool for convenience.
+impl From<bool> for Transparency {
+    fn from(b: bool) -> Self {
+        if b {
+            Self::Transparent
+        } else {
+            Self::Opaque
+        }
+    }
+}
+impl From<Transparency> for bool {
+    fn from(transparency: Transparency) -> Self {
+        match transparency {
+            Transparency::Opaque => false,
+            Transparency::Transparent => true,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
 // Fov calculates field of view, given an input opacity states and source coord.
 //-------------------------------------------------------------------------------------------------
 pub struct Fov {
     // Stores the opaque/transparent state of the underlying map. false = opaque.
-    states: GridMap<bool>,
+    states: GridMap<Transparency>,
     // Stores the calculated light values. > 0.0 means the coord is visible.
     light: GridMap<f64>,
     // Coords in the current fov.
@@ -46,14 +83,14 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Returns a ref to the input states of the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn states(&self) -> &GridMap<bool> {
+    pub fn states(&self) -> &GridMap<Transparency> {
         &self.states
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns a mut ref to the input states of the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn states_mut(&mut self) -> &mut GridMap<bool> {
+    pub fn states_mut(&mut self) -> &mut GridMap<Transparency> {
         &mut self.states
     }
 
@@ -118,14 +155,16 @@ impl Fov {
                     }
                 }
 
+                let opaque = !bool::from(*self.states.get_xy(current_coord));
+
                 if blocked {
-                    if !self.states.get_xy(current_coord) {
+                    if opaque {
                         new_start = slope_right;
                     } else {
                         blocked = false;
                         start = new_start;
                     }
-                } else if !self.states.get_xy(current_coord) && (d as f64) < radius {
+                } else if opaque && (d as f64) < radius {
                     blocked = true;
                     self.cast_shadow(
                         d + 1,
@@ -246,14 +285,16 @@ impl Fov {
                     }
                 }
 
+                let opaque = !bool::from(*self.states.get_xy(current_coord));
+
                 if blocked {
-                    if !self.states.get_xy(current_coord) {
+                    if opaque {
                         new_start = slope_right;
                     } else {
                         blocked = false;
                         start = new_start;
                     }
-                } else if !self.states.get_xy(current_coord) && (d as f64) < radius {
+                } else if opaque && (d as f64) < radius {
                     blocked = true;
                     self.cast_shadow_limited(
                         d + 1,
@@ -332,14 +373,21 @@ impl Map2dView for Fov {
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn width(&self) -> u32 {
-        self.states.width()
+        self.light.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
-        self.states.height()
+        self.light.height()
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Return the dimensions of the Map2dView.
+    //---------------------------------------------------------------------------------------------
+    fn dimensions(&self) -> UCoord {
+        self.light.dimensions()
     }
 
     //---------------------------------------------------------------------------------------------

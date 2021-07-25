@@ -8,6 +8,7 @@ use crate::radius::*;
 //-------------------------------------------------------------------------------------------------
 // Enumerates the distance calculation methods.
 //-------------------------------------------------------------------------------------------------
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Distance {
     // Chessboard distance.

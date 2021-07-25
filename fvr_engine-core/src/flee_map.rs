@@ -83,8 +83,8 @@ impl FleeMap {
             self.processed.insert(next);
 
             // Iterate all neighboring coords around the next coord, populating the edge set.
-            for neighbor in adjacency.neighbors(Misc::u2i(next)) {
-                let neighbor = Misc::i2u(neighbor);
+            for neighbor in adjacency.neighbors(Misc::utoi(next)) {
+                let neighbor = Misc::itou(neighbor);
 
                 if !self.processed.contains(&neighbor) && states.walkable().contains(&neighbor) {
                     self.edges.insert(neighbor);
@@ -100,10 +100,10 @@ impl FleeMap {
                     let current_weight = self.weights.get_xy(*edge).unwrap();
 
                     // Iterate all neighboring coords around the edge.
-                    let edge_coord = Misc::u2i(*edge);
+                    let edge_coord = Misc::utoi(*edge);
                     for neighbor in adjacency.neighbors(edge_coord) {
                         // If the neighbor has been processed or is blocked, continue.
-                        let neighbor_coord = Misc::i2u(neighbor);
+                        let neighbor_coord = Misc::itou(neighbor);
                         if self.processed.contains(&neighbor_coord)
                             || !states.walkable().contains(&neighbor_coord)
                         {
@@ -154,6 +154,13 @@ impl Map2dView for FleeMap {
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
         self.weights.height()
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Return the dimensions of the Map2dView.
+    //---------------------------------------------------------------------------------------------
+    fn dimensions(&self) -> UCoord {
+        self.weights.dimensions()
     }
 
     //---------------------------------------------------------------------------------------------

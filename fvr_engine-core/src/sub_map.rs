@@ -86,6 +86,13 @@ where
     }
 
     //---------------------------------------------------------------------------------------------
+    // Return the dimensions of the Map2dView.
+    //---------------------------------------------------------------------------------------------
+    fn dimensions(&self) -> UCoord {
+        Misc::itou(self.subsection.dimensions())
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at an index.
     //---------------------------------------------------------------------------------------------
     fn get(&self, index: usize) -> &Self::Type {
@@ -137,14 +144,14 @@ fn test_sub_map() {
         T: Map2dType,
         M: Map2dView<Type = T>,
     {
-        *obj.get_xy((5, 5))
+        obj.get_xy((5, 5)).clone()
     }
 
     fn dyn_trait_func<T>(obj: &dyn Map2dView<Type = T>) -> T
     where
         T: Map2dType,
     {
-        *obj.get_xy((5, 5))
+        obj.get_xy((5, 5)).clone()
     }
 
     let mut grid_map = crate::grid_map::GridMap::new((10, 10));

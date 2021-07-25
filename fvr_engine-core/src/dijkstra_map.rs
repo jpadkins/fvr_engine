@@ -19,7 +19,7 @@ use crate::traits::*;
 pub const DIJKSTRA_DEFAULT_GOAL: DijkstraState = DijkstraState::Goal(0);
 
 //-------------------------------------------------------------------------------------------------
-// Enumerates the possible input states for the dijkstra map.
+// Enumerates the possible input states for the underlying map.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DijkstraState {
@@ -42,11 +42,11 @@ impl Default for DijkstraState {
 // Adapted from http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps
 //-------------------------------------------------------------------------------------------------
 pub struct DijkstraMap {
-    // Helper hash set for storing processed cooords.
+    // Hash set for storing processed cooords.
     processed: HashSet<UCoord>,
-    // Helper hash set for storing coords to process.
+    // Hash set for storing coords to process.
     edges: HashSet<UCoord>,
-    // Helper vec for iterating edges.
+    // Vec for iterating edges.
     edges_vec: Vec<UCoord>,
     // Set of walkable coords.
     walkable: HashSet<UCoord>,
@@ -212,10 +212,10 @@ impl DijkstraMap {
                 let current_weight = self.weights.get_xy(*edge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
-                let edge_coord = Misc::u2i(*edge);
+                let edge_coord = Misc::utoi(*edge);
                 for neighbor in adjacency.neighbors(edge_coord) {
                     // If the neighbor has been processed or is blocked, continue.
-                    let neighbor_coord = Misc::i2u(neighbor);
+                    let neighbor_coord = Misc::itou(neighbor);
                     if self.processed.contains(&neighbor_coord)
                         || !self.walkable.contains(&neighbor_coord)
                     {
@@ -263,6 +263,13 @@ impl Map2dView for DijkstraMap {
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> u32 {
         self.weights.height()
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Return the dimensions of the Map2dView.
+    //---------------------------------------------------------------------------------------------
+    fn dimensions(&self) -> UCoord {
+        self.weights.dimensions()
     }
 
     //---------------------------------------------------------------------------------------------

@@ -28,11 +28,9 @@ const BACK_BUTTON_TEXT: &str = "◄ [esc] Main Menu";
 pub struct Scratch {
     back_button: Button,
     scroll_log: ScrollLog,
-    fov: Fov,
-    span: i32,
-    dijkstra: DijkstraMap,
-    flee: FleeMap,
-    toggle: bool,
+    astar: AStar,
+    path: Vec<UCoord>,
+    passability: GridMap<Passability>,
 }
 
 impl Scratch {
@@ -48,12 +46,36 @@ impl Scratch {
                 FrameStyle::LineBlockCorner,
                 9,
             ),
-            fov: Fov::new((55, 33), Distance::Euclidean),
-            span: 45,
-            dijkstra: DijkstraMap::new((55, 33), Distance::Euclidean),
-            flee: FleeMap::new((55, 33), Distance::Euclidean),
-            toggle: true,
+            astar: AStar::new(Distance::Euclidean),
+            path: Vec::new(),
+            passability: GridMap::new((55, 33)),
         }
+    }
+
+    fn blit(&mut self, terminal: &mut Terminal, start: UCoord) {
+        for x in 0..55 {
+            for y in 0..33 {
+                let glyph = terminal.get_xy((x, y)).glyph;
+
+                if glyph == 'T' {
+                    *self.passability.get_xy_mut((x, y)) = Passability::Blocked;
+                } else {
+                    *self.passability.get_xy_mut((x, y)) = Passability::Passable;
+                }
+
+                terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
+            }
+        }
+
+        self.path.clear();
+        self.astar.push_path(start, (28, 17), &self.passability, None, &mut self.path);
+
+        for xy in self.path.iter() {
+            terminal.get_xy_mut(*xy).background_color = PaletteColor::Gold.const_into();
+        }
+
+        terminal.get_xy_mut((28, 17)).glyph = '@';
+        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
     }
 }
 
@@ -89,27 +111,18 @@ impl Scene for Scratch {
 
         for x in 0..55 {
             for y in 0..33 {
+                terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
+
                 if rng.gen::<u32>() % 4 == 0 {
-                    *self.fov.states_mut().get_xy_mut((x, y)) = false;
-                    *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Blocked;
                     terminal.get_xy_mut((x, y)).glyph = 'T';
                     terminal.get_xy_mut((x, y)).foreground_color =
                         PaletteColor::BrightGreen.into();
                 } else {
-                    *self.fov.states_mut().get_xy_mut((x, y)) = true;
-                    *self.dijkstra.states_mut().get_xy_mut((x, y)) = DijkstraState::Passable;
                     terminal.get_xy_mut((x, y)).glyph = '.';
                     terminal.get_xy_mut((x, y)).foreground_color = PaletteColor::DarkGreen.into();
                 }
             }
         }
-
-        terminal.get_xy_mut((28, 17)).glyph = '@';
-        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
-
-        *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DIJKSTRA_DEFAULT_GOAL;
-        self.dijkstra.calculate();
-        self.flee.calculate(&self.dijkstra);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -140,74 +153,10 @@ impl Scene for Scratch {
         input: &InputManager,
         terminal: &mut Terminal,
     ) -> Result<SceneAction> {
-        if input.action_just_pressed(InputAction::Decline) {
-            self.span = match self.span {
-                45 => 90,
-                90 => 180,
-                180 => 45,
-                _ => 45,
-            };
-        }
-
-        if input.action_just_pressed(InputAction::Decline) {
-            if self.toggle {
-                self.toggle = false;
-                println!("flee!");
-            } else {
-                self.toggle = true;
-                println!("dijkstra!");
-            }
-        }
-
         if input.mouse_moved() || input.action_just_pressed(InputAction::Decline) {
             if let Some(xy) = input.mouse_coord() {
                 if xy.0 < 55 {
-                    self.fov.calculate_limited(
-                        (28, 17),
-                        20.0,
-                        Misc::angle_between((28, 17), Misc::u2i(xy)),
-                        self.span as f64,
-                    );
-
-                    for x in 0..55 {
-                        for y in 0..33 {
-                            if terminal.get_xy((x, y)).glyph == '.' {
-                                *self.dijkstra.states_mut().get_xy_mut((x, y)) =
-                                    DijkstraState::Passable;
-                            }
-                        }
-                    }
-                    *self.dijkstra.states_mut().get_xy_mut((28, 17)) = DIJKSTRA_DEFAULT_GOAL;
-
-                    if *self.dijkstra.states().get_xy(xy) == DijkstraState::Passable {
-                        *self.dijkstra.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
-                    }
-
-                    self.dijkstra.recalculate();
-                    self.flee.calculate(&self.dijkstra);
-
-                    // println!("dikstra: {:?}", *self.dijkstra.get_xy(xy));
-                    // println!("flee:    {:?}", *self.flee.get_xy(xy));
-
-                    for x in 0..55 {
-                        for y in 0..33 {
-                            if self.toggle {
-                                if let Some(weight) = self.dijkstra.get_xy((x, y)) {
-                                    terminal.get_xy_mut((x, y)).foreground_opacity = *weight as f32 * (1.0 / 15.0);
-                                } else {
-                                    terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
-                                }
-                            } else {
-                                if let Some(weight) = self.flee.get_xy((x, y)) {
-                                    terminal.get_xy_mut((x, y)).foreground_opacity = -1.0 * *weight as f32 * (1.0 / 15.0);
-                                } else {
-                                    terminal.get_xy_mut((x, y)).foreground_opacity = 1.0;
-                                }
-                            }
-                        }
-                    }
-
-                    terminal.get_xy_mut((28, 17)).foreground_opacity = 1.0;
+                    self.blit(terminal, xy);
                 }
             }
         }
