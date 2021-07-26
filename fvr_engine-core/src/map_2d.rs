@@ -100,6 +100,21 @@ macro_rules! map2d_iter {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Helper macro for mutably iterating a Map2d.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! map2d_iter_mut {
+    ($map2d:expr, $item:ident, $work:expr) => {
+        for x in 0..$map2d.width() {
+            for y in 0..$map2d.height() {
+                let $item = $map2d.get_xy_mut((x, y));
+                $work
+            }
+        }
+    };
+}
+
+//-------------------------------------------------------------------------------------------------
 // Helper macro for immutably iterating a Map2d with indices.
 //-------------------------------------------------------------------------------------------------
 #[macro_export]
@@ -115,14 +130,14 @@ macro_rules! map2d_iter_index {
 }
 
 //-------------------------------------------------------------------------------------------------
-// Helper macro for mutably iterating a Map2d.
+// Helper macro for mutably iterating a Map2d with indices.
 //-------------------------------------------------------------------------------------------------
 #[macro_export]
-macro_rules! map2d_iter_mut {
-    ($map2d:expr, $item:ident, $work:expr) => {
-        for x in 0..$map2d.width() {
-            for y in 0..$map2d.height() {
-                let $item = $map2d.get_xy_mut((x, y));
+macro_rules! map2d_iter_index_mut {
+    ($map2d:expr, $x:ident, $y:ident, $item:ident, $work:expr) => {
+        for $x in 0..$map2d.width() {
+            for $y in 0..$map2d.height() {
+                let $item = $map2d.get_xy_mut(($x, $y));
                 $work
             }
         }

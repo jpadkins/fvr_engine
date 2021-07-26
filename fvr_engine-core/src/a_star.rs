@@ -10,8 +10,8 @@ use priority_queue::PriorityQueue;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d_iter_mut;
+use crate::map_2d::*;
 use crate::misc::*;
-use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -104,7 +104,7 @@ impl AStar {
     }
 
     //-------------------------------------------------------------------------------------------------
-    // Creates a new a star.
+    // Creates a new a-star.
     //-------------------------------------------------------------------------------------------------
     pub fn new(distance: Distance) -> Self {
         let tie_breaker = 1.0;
@@ -122,7 +122,7 @@ impl AStar {
     }
 
     //-------------------------------------------------------------------------------------------------
-    // Creates a new "fast" a star, giving a speed boost at the cost of accuracy.
+    // Creates a new "fast" a-star, giving a speed boost at the cost of accuracy.
     //-------------------------------------------------------------------------------------------------
     pub fn fast(distance: Distance) -> Self {
         let tie_breaker = 1.0;
@@ -140,7 +140,7 @@ impl AStar {
     }
 
     //-------------------------------------------------------------------------------------------------
-    // Calculates the shortest path between two points and pushes it to a vec.
+    // Calculates the shortest path between two points and pushes it into a vec.
     //-------------------------------------------------------------------------------------------------
     pub fn push_path<M>(
         &mut self,
@@ -301,5 +301,23 @@ impl AStar {
                 }
             }
         }
+    }
+
+    //-------------------------------------------------------------------------------------------------
+    // Calculates the shortest path between two points and returns it in a new vec.
+    //-------------------------------------------------------------------------------------------------
+    pub fn path<M>(
+        &mut self,
+        start: UCoord,
+        end: UCoord,
+        states: &M,
+        weights: Option<&GridMap<f64>>,
+    ) -> Vec<UCoord>
+    where
+        M: Map2d<Passability>,
+    {
+        let mut points = Vec::new();
+        self.push_path(start, end, states, weights, &mut points);
+        points
     }
 }

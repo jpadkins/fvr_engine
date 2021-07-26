@@ -7,6 +7,7 @@ mod distance;
 mod flee_map;
 mod fov;
 mod grid_map;
+mod map_2d;
 mod misc;
 mod palette_color;
 mod radius;
@@ -15,7 +16,6 @@ mod serialized_metrics;
 mod sub_map;
 mod tile;
 mod timer;
-mod traits;
 
 pub mod prelude {
     pub use crate::a_star::*;
@@ -27,6 +27,7 @@ pub mod prelude {
     pub use crate::flee_map::*;
     pub use crate::fov::*;
     pub use crate::grid_map::*;
+    pub use crate::map_2d::*;
     pub use crate::misc::*;
     pub use crate::palette_color::*;
     pub use crate::radius::*;
@@ -35,5 +36,4 @@ pub mod prelude {
     pub use crate::sub_map::*;
     pub use crate::tile::*;
     pub use crate::timer::*;
-    pub use crate::traits::*;
 }

@@ -10,8 +10,8 @@ use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d_iter_index;
+use crate::map_2d::*;
 use crate::misc::*;
-use crate::traits::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -104,7 +104,6 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            // TODO: Better way to do this? Change parameter types?
             let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
 
             if !self.weights.in_bounds(coord) {
@@ -131,7 +130,6 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            // TODO: Better way to do this? Change parameter types?
             let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
 
             if !self.weights.in_bounds(coord) {
@@ -147,6 +145,22 @@ impl DijkstraMap {
         }
 
         direction
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Combines the weights of another dijkstra / flee map into the dijkstra map.
+    //---------------------------------------------------------------------------------------------
+    pub fn combine<M>(&mut self, weights: &M)
+    where
+        M: Map2dView<Type = Option<f64>>,
+    {
+        map2d_iter_index!(weights, x, y, item, {
+            if let Some(weight) = self.weights.get_xy_mut((x, y)) {
+                if let Some(other_weight) = item {
+                    *weight += other_weight;
+                }
+            }
+        });
     }
 
     //---------------------------------------------------------------------------------------------
