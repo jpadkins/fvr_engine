@@ -55,6 +55,7 @@ impl Scratch {
     fn blit(&mut self, terminal: &mut Terminal, start: UCoord) {
         for x in 0..55 {
             for y in 0..33 {
+                terminal.get_xy_mut((x, y)).background_opacity = 1.0;
                 terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
             }
         }
@@ -63,6 +64,7 @@ impl Scratch {
         self.astar.push_path(start, (28, 17), &self.passability, None, &mut self.path);
 
         for xy in self.path.iter().skip(1) {
+            terminal.get_xy_mut(*xy).background_opacity = 0.25;
             terminal.get_xy_mut(*xy).background_color = PaletteColor::Gold.const_into();
         }
 

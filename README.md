@@ -33,11 +33,11 @@ A data-driven text-based roleplaying game engine.
   - [ ] cell cache deserialized
   - [ ] color palette deserialized
   - [ ] dynamic prefabs
-  - [ ] shadowcasting fov
-  - [ ] geometrical types
+  - [x] shadowcasting fov
+  - [x] geometrical types
   - [ ] line drawing
   - [ ] modal popups
-  - [ ] scrolling dialogue windows
+  - [x] scrolling dialogue windows
 
 - implement "huge" characters
   - perhaps also per-tile implement animations that "live" in the client?
@@ -99,6 +99,7 @@ Lib containing text parsers, including:
 - refactor frame to use rect?
 - move transitions to client?
 - implement shake effect
+- determine if priority values in flee map should be negated like astar.
 
 ## CONVENTIONS
 

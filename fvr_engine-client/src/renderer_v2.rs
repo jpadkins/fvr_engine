@@ -788,13 +788,22 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Push a colored quad onto the background vertices, based on a tile.
     //---------------------------------------------------------------------------------------------
-    fn push_background_quad(&mut self, (x, y): UCoord, tile: &Tile) {
+    fn push_background_quad(&mut self, (x, y): UCoord, tile: &Tile, opacity: GLfloat) {
         let mut vertex = Vertex::default();
 
         // Each vertex of the quad shares the same color values (for now).
-        vertex.color[0] = tile.background_color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
-        vertex.color[1] = tile.background_color.0.g as GLfloat * COLOR_NORMALIZE_8BIT;
-        vertex.color[2] = tile.background_color.0.b as GLfloat * COLOR_NORMALIZE_8BIT;
+        vertex.color[0] = tile.background_color.0.r as GLfloat
+            * COLOR_NORMALIZE_8BIT
+            * opacity
+            * tile.background_opacity;
+        vertex.color[1] = tile.background_color.0.g as GLfloat
+            * COLOR_NORMALIZE_8BIT
+            * opacity
+            * tile.background_opacity;
+        vertex.color[2] = tile.background_color.0.b as GLfloat
+            * COLOR_NORMALIZE_8BIT
+            * opacity
+            * tile.background_opacity;
 
         // Top left.
         vertex.position[0] = (x * self.tile_dimensions.0) as GLfloat;
@@ -949,7 +958,7 @@ impl RendererV2 {
         for (coord, tile) in terminal.coords_and_tiles_iter() {
             // Skip the background if it would not be visible.
             if tile.background_color.0.a != 0 && tile.background_color.0 != self.clear_color {
-                self.push_background_quad(coord, tile);
+                self.push_background_quad(coord, tile, opacity);
             }
 
             // Skip the foreground if it would not be visible

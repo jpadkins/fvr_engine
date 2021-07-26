@@ -32,6 +32,7 @@ static TRACK_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::DarkGrey.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -44,6 +45,7 @@ static GRIP_TILE: Tile = Tile {
     background_color: PaletteColor::DarkGrey.const_into(),
     foreground_color: TileColor::TRANSPARENT,
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -56,6 +58,7 @@ static LIMIT_TOP_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::DarkGrey.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -68,6 +71,7 @@ static LIMIT_BOTTOM_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::DarkGrey.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };

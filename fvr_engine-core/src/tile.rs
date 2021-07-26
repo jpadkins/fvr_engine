@@ -259,6 +259,8 @@ pub struct Tile {
     pub foreground_color: TileColor,
     // The color of the tile's glyph's outline.
     pub outline_color: TileColor,
+    // The opacity of the tile's background.
+    pub background_opacity: f32,
     // The opacity of the tile's glyph.
     pub foreground_opacity: f32,
     // The opacity of the tile's glyph's outline.
@@ -276,6 +278,7 @@ impl Default for Tile {
             background_color: TileColor::TRANSPARENT,
             foreground_color: TileColor::TRANSPARENT,
             outline_color: TileColor::TRANSPARENT,
+            background_opacity: 1.0,
             foreground_opacity: 1.0,
             outline_opacity: 1.0,
         }

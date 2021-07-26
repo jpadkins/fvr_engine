@@ -26,6 +26,7 @@ pub struct RichTextFormatSettings {
     pub background_color: Option<TileColor>,
     pub foreground_color: Option<TileColor>,
     pub outline_color: Option<TileColor>,
+    pub background_opacity: Option<f32>,
     pub foreground_opacity: Option<f32>,
     pub outline_opacity: Option<f32>,
 }
@@ -219,6 +220,7 @@ impl RichTextWriter {
         background_color: Option<TileColor>,
         foreground_color: Option<TileColor>,
         outline_color: Option<TileColor>,
+        background_opacity: Option<f32>,
         foreground_opacity: Option<f32>,
         outline_opacity: Option<f32>,
     ) where
@@ -267,6 +269,9 @@ impl RichTextWriter {
             }
             if let Some(outline_color) = outline_color {
                 tile.outline_color = outline_color;
+            }
+            if let Some(background_opacity) = background_opacity {
+                tile.background_opacity = background_opacity;
             }
             if let Some(foreground_opacity) = foreground_opacity {
                 tile.foreground_opacity = foreground_opacity;
@@ -333,6 +338,9 @@ impl RichTextWriter {
             }
             if let Some(outline_color) = settings.outline_color {
                 tile.outline_color = outline_color;
+            }
+            if let Some(background_opacity) = settings.background_opacity {
+                tile.background_opacity = background_opacity;
             }
             if let Some(foreground_opacity) = settings.foreground_opacity {
                 tile.foreground_opacity = foreground_opacity;

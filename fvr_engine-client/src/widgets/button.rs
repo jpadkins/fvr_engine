@@ -22,6 +22,7 @@ static CENTER_DEFAULT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
     background_color: None,
     foreground_color: Some(PaletteColor::BrightGrey.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
@@ -33,6 +34,7 @@ static TEXT_DEFAULT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     background_color: None,
     foreground_color: Some(PaletteColor::BrightGrey.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
@@ -46,6 +48,7 @@ static CENTER_FOCUSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
     background_color: None,
     foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
@@ -57,6 +60,7 @@ static TEXT_FOCUSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     background_color: None,
     foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
@@ -70,6 +74,7 @@ static CENTER_PRESSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings 
     background_color: None,
     foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
@@ -81,6 +86,7 @@ static TEXT_PRESSED_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     background_color: None,
     foreground_color: Some(PaletteColor::Gold.const_into()),
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };

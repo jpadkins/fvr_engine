@@ -27,6 +27,7 @@ static FANCY_CORNER_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -40,6 +41,7 @@ static FANCY_HORIZONTAL_THIN_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -53,6 +55,7 @@ static FANCY_HORIZONTAL_THICK_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -66,6 +69,7 @@ static FANCY_VERTICAL_THIN_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -79,6 +83,7 @@ static FANCY_VERTICAL_THICK_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -93,6 +98,7 @@ static LINE_TOP_LEFT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -106,6 +112,7 @@ static LINE_TOP_RIGHT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -119,6 +126,7 @@ static LINE_BOTTOM_LEFT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -132,6 +140,7 @@ static LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -145,6 +154,7 @@ static LINE_HORIZONTAL_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -158,6 +168,7 @@ static LINE_VERTICAL_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -172,6 +183,7 @@ static DOUBLE_LINE_TOP_LEFT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -185,6 +197,7 @@ static DOUBLE_LINE_TOP_RIGHT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -198,6 +211,7 @@ static DOUBLE_LINE_BOTTOM_LEFT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -211,6 +225,7 @@ static DOUBLE_LINE_BOTTOM_RIGHT_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -224,6 +239,7 @@ static DOUBLE_LINE_HORIZONTAL_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -237,6 +253,7 @@ static DOUBLE_LINE_VERTICAL_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -251,6 +268,7 @@ static SIMPLE_LINE_TILE: Tile = Tile {
     background_color: TileColor::TRANSPARENT,
     foreground_color: PaletteColor::White.const_into(),
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -265,6 +283,7 @@ static SYSTEM_LINE_TILE: Tile = Tile {
     background_color: PaletteColor::White.const_into(),
     foreground_color: TileColor::TRANSPARENT,
     outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
     foreground_opacity: 1.0,
     outline_opacity: 1.0,
 };
@@ -278,6 +297,7 @@ static TEXT_FORMAT_SETTINGS: RichTextFormatSettings = RichTextFormatSettings {
     background_color: None,
     foreground_color: None,
     outline_color: None,
+    background_opacity: None,
     foreground_opacity: None,
     outline_opacity: None,
 };
