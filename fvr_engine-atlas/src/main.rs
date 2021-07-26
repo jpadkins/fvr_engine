@@ -19,7 +19,7 @@ const DEFAULT_FONT: &str = "deja_vu_sans_mono";
 const OUTPUT_DIR: &str = "./resources/font_atlases";
 
 // Directory of input bmfont files.
-const FONTS_DIR: &str = "./fvr_engine-atlas_generator/fonts";
+const FONTS_DIR: &str = "./fvr_engine-atlas/fonts";
 
 // Glyphs that are always copied from the default font.
 // const ALWAYS_DEFAULT_GLYPHS: &[u32] = &[
@@ -243,7 +243,7 @@ fn generate_all() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let matches = App::new("FVR_ENGINE-ATLAS_GENERATOR")
+    let matches = App::new("FVR_ENGINE-ATLAS")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version("0.0.1")
         .author("Jacob Adkins (jpadkins@pm.me) 2020-2021")

@@ -1,5 +1,5 @@
 [package]
-name = "fvr_engine-atlas_generator"
+name = "fvr_engine-atlas"
 version = "0.1.0"
 authors = ["Jacob Adkins <jacobpadkins@gmail.com>"]
 edition = "2018"

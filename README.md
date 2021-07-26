@@ -56,18 +56,7 @@ The main FVR_ENGINE crate. Runs a game from config files.
 
 Includes a "scene stack" for managing game scenes.
 
-### fvr_engine-core
-Lib containing commonly shared types.
-
-- traits for map2d
-- tile and related structs
-- glyph/font metrics for deserialization
-- timer
-- translate map for viewing map2d with translation
-- grid map for exposing map2d backed by vec
-- cp437 helpers
-
-### fvr_engine-atlas_generator
+### fvr_engine-atlas
 
 Utility for generating atlas textures for codepage 437 from TTF fonts.
 Ensures that all codepoints are covered by filling in any missing entries with DejaVuSansMono.
@@ -88,6 +77,17 @@ Basic steps:
 
 ### fvr_engine-client
 Lib for handling the game window, user input, and drawing to the faux terminal.
+
+### fvr_engine-core
+Lib containing commonly shared types.
+
+- traits for map2d
+- tile and related structs
+- glyph/font metrics for deserialization
+- timer
+- translate map for viewing map2d with translation
+- grid map for exposing map2d backed by vec
+- cp437 helpers
 
 ### fvr_engine-parser
 Lib containing text parsers, including:

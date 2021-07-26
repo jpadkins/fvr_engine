@@ -2,9 +2,9 @@
 
 members = [
   "fvr_engine",
-  "fvr_engine-core",
-  "fvr_engine-atlas_generator",
+  "fvr_engine-atlas",
   "fvr_engine-client",
+  "fvr_engine-core",
   "fvr_engine-parser",
 ]
 
