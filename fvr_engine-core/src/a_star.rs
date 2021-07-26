@@ -9,8 +9,8 @@ use priority_queue::PriorityQueue;
 //-------------------------------------------------------------------------------------------------
 use crate::distance::*;
 use crate::grid_map::*;
+use crate::map2d::*;
 use crate::map2d_iter_mut;
-use crate::map_2d::*;
 use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------

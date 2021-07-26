@@ -97,12 +97,8 @@ Lib containing text parsers, including:
 
 - continue adapting C# implementation.
 - refactor frame to use rect?
-- change Grid/Sub map new() parameters to dimensions: (u32, u32) instead of width/height>
 - move transitions to client?
 - implement shake effect
-- MAKE SURE possible overflow is handled with u32 <-> i32 coord conversions!
-- change dijkstra processed to use grid map.
-- go back through code that uses "unwrap" and make sure ".as_ref().unwrap()" is not a better alternative.
 
 ## CONVENTIONS
 

@@ -62,7 +62,7 @@ impl Scratch {
         self.path.clear();
         self.astar.push_path(start, (28, 17), &self.passability, None, &mut self.path);
 
-        for xy in self.path.iter() {
+        for xy in self.path.iter().skip(1) {
             terminal.get_xy_mut(*xy).background_color = PaletteColor::Gold.const_into();
         }
 

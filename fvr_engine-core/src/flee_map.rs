@@ -16,8 +16,8 @@ use crate::dijkstra_map::*;
 use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
+use crate::map2d::*;
 use crate::map2d_iter_index;
-use crate::map_2d::*;
 use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -154,6 +154,10 @@ impl FleeMap {
 
             // Iterate all neighboring coords around the next coord, populating the edge set.
             for neighbor in adjacency.neighbors(Misc::utoi(next)) {
+                if neighbor.0 >= states.width() as i32 || neighbor.1 >= states.height() as i32 {
+                    continue;
+                }
+
                 let neighbor = Misc::itou(neighbor);
 
                 if !self.processed.contains(&neighbor) && states.walkable().contains(&neighbor) {
@@ -173,7 +177,14 @@ impl FleeMap {
                     let edge_coord = Misc::utoi(*edge);
                     for neighbor in adjacency.neighbors(edge_coord) {
                         // If the neighbor has been processed or is blocked, continue.
+                        if neighbor.0 >= states.width() as i32
+                            || neighbor.1 >= states.height() as i32
+                        {
+                            continue;
+                        }
+
                         let neighbor_coord = Misc::itou(neighbor);
+
                         if self.processed.contains(&neighbor_coord)
                             || !states.walkable().contains(&neighbor_coord)
                         {

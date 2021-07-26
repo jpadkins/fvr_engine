@@ -9,9 +9,9 @@ use std::collections::HashSet;
 use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
-use crate::map2d_iter_index;
-use crate::map_2d::*;
+use crate::map2d::*;
 use crate::misc::*;
+use crate::{map2d_iter_index, map2d_iter_mut};
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -42,8 +42,8 @@ impl Default for DijkstraState {
 // Adapted from http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps
 //-------------------------------------------------------------------------------------------------
 pub struct DijkstraMap {
-    // Hash set for storing processed cooords.
-    processed: HashSet<UCoord>,
+    // Stores processed state for coords.
+    processed: GridMap<bool>,
     // Hash set for storing coords to process.
     edges: HashSet<UCoord>,
     // Vec for iterating edges.
@@ -64,7 +64,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     pub fn new(dimensions: UCoord, distance: Distance) -> Self {
         Self {
-            processed: HashSet::new(),
+            processed: GridMap::new(dimensions),
             edges: HashSet::new(),
             edges_vec: Vec::new(),
             walkable: HashSet::new(),
@@ -194,8 +194,10 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
         let max_weight = (self.states.width() * self.states.height()) as f64;
 
-        // Clear the processed and edges sets.
-        self.processed.clear();
+        // Clear the processed map and edges set.
+        map2d_iter_mut!(self.processed, item, {
+            *item = false;
+        });
         self.edges.clear();
 
         // Find and set the initial weights for passable and goal coords.
@@ -228,9 +230,16 @@ impl DijkstraMap {
                 // Iterate all neighboring coords around the edge.
                 let edge_coord = Misc::utoi(*edge);
                 for neighbor in adjacency.neighbors(edge_coord) {
-                    // If the neighbor has been processed or is blocked, continue.
+                    // If the neighbor is out of bounds, has been processed or is blocked, continue.
+                    if neighbor.0 >= self.states.width() as i32
+                        || neighbor.1 >= self.states.height() as i32
+                    {
+                        continue;
+                    }
+
                     let neighbor_coord = Misc::itou(neighbor);
-                    if self.processed.contains(&neighbor_coord)
+
+                    if *self.processed.get_xy(neighbor_coord)
                         || !self.walkable.contains(&neighbor_coord)
                     {
                         continue;
@@ -251,7 +260,7 @@ impl DijkstraMap {
 
                 // Set the edge as processed.
                 self.edges.remove(edge);
-                self.processed.insert(*edge);
+                *self.processed.get_xy_mut(*edge) = true;
             }
 
             self.edges_vec.clear();
