@@ -72,7 +72,7 @@ Basic steps:
     - pick `color to alpha` to remove white
     - pick `colorize` to change black outlined back to white
   - stick in directory under fonts/
-  - run with `cargo run -p fvr_engine-atlas_generator -- run` while in root dir of project
+  - run with `cargo run -p fvr_engine-atlas -- run` while in root dir of project
   - output goes to resources/fonts/
 
 ### fvr_engine-client

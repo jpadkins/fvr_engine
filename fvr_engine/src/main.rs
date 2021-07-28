@@ -15,6 +15,7 @@ use sdl2::keyboard::Keycode;
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_client::prelude::*;
 use fvr_engine_core::prelude::*;
+use fvr_engine_server::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -37,6 +38,12 @@ const FONT_NAME: &str = "deja_vu_sans_mono";
 const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
 
 fn main() -> Result<()> {
+    let mut render_dt;
+    let mut update_dt = Duration::from_secs(0);
+    let mut update_timer = Timer::new(UPDATE_INTERVAL);
+
+    let mut server = Server::new();
+
     let mut client = Client::new(
         WINDOW_TITLE,
         WINDOW_DIMENSIONS,
@@ -44,15 +51,12 @@ fn main() -> Result<()> {
         TILE_DIMENSIONS,
         FONT_NAME,
     )?;
+
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings()?;
 
-    let mut render_dt;
-    let mut update_dt = Duration::from_secs(0);
-    let mut update_timer = Timer::new(UPDATE_INTERVAL);
-
     let mut scene_stack = SceneStack::new();
-    scene_stack.push(Box::new(Initial::new()), &input, &mut terminal)?;
+    scene_stack.push(Box::new(Initial::new()), &mut server, &mut terminal, &input)?;
 
     'main: loop {
         while let Some(event) = client.poll_event() {
@@ -69,7 +73,7 @@ fn main() -> Result<()> {
         update_dt += render_dt;
 
         if update_timer.update(&render_dt) {
-            if !scene_stack.update(&update_dt, &input, &mut terminal)? {
+            if !scene_stack.update(&mut server, &mut terminal, &input, &update_dt)? {
                 break 'main;
             }
 
@@ -77,7 +81,7 @@ fn main() -> Result<()> {
             update_dt -= UPDATE_INTERVAL;
         }
 
-        scene_stack.render(&render_dt, &mut terminal)?;
+        scene_stack.render(&mut terminal, &render_dt)?;
 
         let _ = client.render_frame(&terminal)?;
     }

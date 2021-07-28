@@ -52,7 +52,7 @@ impl Fade {
     // Updates the fade trasition.
     // (should be called once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update(&mut self, dt: &Duration, terminal: &mut Terminal) -> bool {
+    pub fn update(&mut self, terminal: &mut Terminal, dt: &Duration) -> bool {
         match self.state {
             // Set the terminal to the initial opacity and set the state to fading in.
             State::Initial => {

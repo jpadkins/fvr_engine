@@ -1,0 +1,10 @@
+[package]
+name = "fvr_engine-server"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+fvr_engine-client = { path = "../fvr_engine-client", version = "0.1.0" }
+fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
+anyhow = "1.0.42"
+specs = "0.17.0"

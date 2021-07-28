@@ -14,6 +14,7 @@ use rand::prelude::*;
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_client::prelude::*;
 use fvr_engine_core::{map2d_iter_mut, prelude::*};
+use fvr_engine_server::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -52,13 +53,20 @@ impl Scratch {
         }
     }
 
-    fn blit(&mut self, terminal: &mut Terminal, start: UCoord) {
+    fn blit(&mut self, terminal: &mut Terminal, start: UCoord) -> Result<()> {
         for x in 0..55 {
             for y in 0..33 {
                 terminal.get_xy_mut((x, y)).background_opacity = 1.0;
                 terminal.get_xy_mut((x, y)).background_color = TileColor::TRANSPARENT;
             }
         }
+
+        if start.0 >= 55 || (start.1 == 0 && start.0 < 17) {
+            return Ok(());
+        }
+
+        self.scroll_log.append(&format!("\n<l:t><fc:y>> Cursor: <fc:$>{:?}", start))?;
+        self.scroll_log.scroll_to_bottom();
 
         self.path.clear();
         self.astar.push_path(start, (28, 17), &self.passability, None, &mut self.path);
@@ -69,7 +77,10 @@ impl Scratch {
         }
 
         terminal.get_xy_mut((28, 17)).glyph = '@';
+        terminal.get_xy_mut((28, 17)).style = TileStyle::Bold;
         terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
+
+        Ok(())
     }
 }
 
@@ -77,24 +88,24 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, input: &InputManager, terminal: &mut Terminal) -> Result<()> {
-        self.focus(input, terminal)?;
+    fn load(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()> {
+        self.focus(server, terminal, input)?;
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
+    fn unload(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, _server: &mut Server, terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         terminal.set_opaque();
-        terminal.set_all_tiles_default();
+        terminal.set_all_tiles_blank();
 
         map2d_iter_mut!(terminal, tile, {
             tile.glyph = ' ';
@@ -121,6 +132,10 @@ impl Scene for Scratch {
         }
         *self.passability.get_xy_mut((28, 17)) = Passability::Passable;
 
+        terminal.get_xy_mut((28, 17)).glyph = '@';
+        terminal.get_xy_mut((28, 17)).style = TileStyle::Bold;
+        terminal.get_xy_mut((28, 17)).foreground_color = TileColor::WHITE;
+
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
         stats_frame.top_left_text = Some("<character name>".into());
@@ -137,7 +152,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
+    fn unfocus(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         Ok(())
     }
 
@@ -146,15 +161,14 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        _dt: &Duration,
-        input: &InputManager,
+        _server: &mut Server,
         terminal: &mut Terminal,
+        input: &InputManager,
+        _dt: &Duration,
     ) -> Result<SceneAction> {
         if input.mouse_moved() || input.action_just_pressed(InputAction::Decline) {
             if let Some(xy) = input.mouse_coord() {
-                if xy.0 < 55 {
-                    self.blit(terminal, xy);
-                }
+                self.blit(terminal, xy)?;
             }
         }
 
@@ -198,7 +212,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     // Called whenever the scene's (visual) internal state should be updated and rendered.
     //---------------------------------------------------------------------------------------------
-    fn render(&mut self, _dt: &Duration, _terminal: &mut Terminal) -> Result<()> {
+    fn render(&mut self, _terminal: &mut Terminal, _dt: &Duration) -> Result<()> {
         Ok(())
     }
 }

@@ -2,12 +2,13 @@
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::misc::*;
+use crate::rect::*;
 
 //-------------------------------------------------------------------------------------------------
 // Map2dType constraints the types which a Map2dView/Mut may contain.
 //-------------------------------------------------------------------------------------------------
-pub trait Map2dType: Copy + Default {}
-impl<T> Map2dType for T where T: Copy + Default {}
+pub trait Map2dType: Clone + Default {}
+impl<T> Map2dType for T where T: Clone + Default {}
 
 //-------------------------------------------------------------------------------------------------
 // Describes an immutable access API for a 2d grid.
@@ -41,6 +42,13 @@ pub trait Map2dView {
     fn get_xy(&self, xy: UCoord) -> &Self::Type;
 
     //---------------------------------------------------------------------------------------------
+    // Get ref to contents of the Map2dView at an xy coord in relation to a view.
+    //---------------------------------------------------------------------------------------------
+    fn get_view_xy(&self, xy: UCoord, view: &Rect) -> &Self::Type {
+        self.get_xy((xy.0 + view.x as u32, xy.1 + view.y as u32))
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Returns whether a coord is in bounds of the Map2d.
     //---------------------------------------------------------------------------------------------
     fn in_bounds(&self, xy: UCoord) -> bool {
@@ -63,6 +71,13 @@ pub trait Map2dViewMut {
     // Get mut ref to contents of the Map2dView at an xy coord.
     //---------------------------------------------------------------------------------------------
     fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type;
+
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at an xy coord in relation to a view.
+    //---------------------------------------------------------------------------------------------
+    fn get_view_xy_mut(&mut self, xy: UCoord, view: &Rect) -> &mut Self::Type {
+        self.get_xy_mut((xy.0 + view.x as u32, xy.1 + view.y as u32))
+    }
 }
 
 //-------------------------------------------------------------------------------------------------

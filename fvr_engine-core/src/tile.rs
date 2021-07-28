@@ -21,6 +21,25 @@ pub const TILE_STYLE_NAMES: &[&str] = &["regular", "bold", "italic", "bold_itali
 pub const TILE_SIZE_COUNT: usize = 4;
 
 //-------------------------------------------------------------------------------------------------
+// Statics
+//-------------------------------------------------------------------------------------------------
+
+// Common blank tile.
+pub static BLANK_TILE: Tile = Tile {
+    glyph: ' ',
+    layout: TileLayout::Center,
+    style: TileStyle::Regular,
+    size: TileSize::Normal,
+    outlined: false,
+    background_color: TileColor::TRANSPARENT,
+    foreground_color: TileColor::TRANSPARENT,
+    outline_color: TileColor::TRANSPARENT,
+    background_opacity: 1.0,
+    foreground_opacity: 1.0,
+    outline_opacity: 1.0,
+};
+
+//-------------------------------------------------------------------------------------------------
 // Dummy external struct definition for serde.
 //-------------------------------------------------------------------------------------------------
 #[derive(Deserialize, Serialize)]
@@ -275,8 +294,8 @@ impl Default for Tile {
             style: Default::default(),
             size: Default::default(),
             outlined: false,
-            background_color: TileColor::TRANSPARENT,
-            foreground_color: TileColor::TRANSPARENT,
+            background_color: TileColor::BLUE,
+            foreground_color: TileColor::RED,
             outline_color: TileColor::TRANSPARENT,
             background_opacity: 1.0,
             foreground_opacity: 1.0,

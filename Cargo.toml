@@ -6,6 +6,7 @@ members = [
   "fvr_engine-client",
   "fvr_engine-core",
   "fvr_engine-parser",
+  "fvr_engine-server",
 ]
 
 default-members = [

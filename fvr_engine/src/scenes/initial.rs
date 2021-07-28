@@ -13,6 +13,7 @@ use anyhow::Result;
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_client::prelude::*;
 use fvr_engine_core::prelude::*;
+use fvr_engine_server::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -92,10 +93,10 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, _input: &InputManager, terminal: &mut Terminal) -> Result<()> {
+    fn load(&mut self, _server: &mut Server, terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         // Reset the terminal.
         terminal.set_transparent();
-        terminal.set_all_tiles_default();
+        terminal.set_all_tiles_blank();
 
         // Find dimensions of the title text.
         let mut logo_width = 0;
@@ -126,21 +127,21 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
+    fn unload(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
+    fn focus(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _input: &InputManager, _terminal: &mut Terminal) -> Result<()> {
+    fn unfocus(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
         Ok(())
     }
 
@@ -149,9 +150,10 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        dt: &Duration,
-        input: &InputManager,
+        _server: &mut Server,
         _terminal: &mut Terminal,
+        input: &InputManager,
+        dt: &Duration,
     ) -> Result<SceneAction> {
         if input.any_key_pressed() {
             return Ok(SceneAction::Swap(Box::new(MainMenu::new())));
@@ -200,13 +202,13 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called whenever the scene's (visual) internal state should be updated and rendered.
     //---------------------------------------------------------------------------------------------
-    fn render(&mut self, dt: &Duration, terminal: &mut Terminal) -> Result<()> {
+    fn render(&mut self, terminal: &mut Terminal, dt: &Duration) -> Result<()> {
         match self.state {
             State::FadeIn => {
-                let _ = self.fade_in.update(dt, terminal);
+                let _ = self.fade_in.update(terminal, dt);
             }
             State::FadeOut => {
-                let _ = self.fade_out.update(dt, terminal);
+                let _ = self.fade_out.update(terminal, dt);
             }
             _ => {}
         }
