@@ -54,7 +54,9 @@ impl Scratch {
         terminal: &mut Terminal,
         direction: &Direction,
     ) -> Result<()> {
-        match server.request(ClientRequest::Move(*direction)) {
+        let response = server.request(ClientRequest::Move(*direction))?;
+
+        match response {
             ServerResponse::Fail(resp) => {
                 if let Some(msg) = resp {
                     self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
@@ -176,6 +178,8 @@ impl Scene for Scratch {
 
         if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
             return Ok(SceneAction::Pop);
+        } else if input.action_just_pressed(InputAction::Accept) {
+            let _ = server.request(ClientRequest::Wait);
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {

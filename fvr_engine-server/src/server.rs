@@ -63,16 +63,22 @@ impl Server {
         self.zone.passable_map()
     }
 
-    pub fn request(&mut self, req: ClientRequest) -> ServerResponse {
+    pub fn request(&mut self, req: ClientRequest) -> Result<ServerResponse> {
         match req {
             ClientRequest::Move(dir) => {
-                if self.zone.move_player(dir) {
-                    ServerResponse::Success(None)
+                let result = self.zone.move_player(dir)?;
+
+                if result {
+                    self.zone.dispatch();
+                    Ok(ServerResponse::Success(None))
                 } else {
-                    ServerResponse::Fail(Some("Blocked!".into()))
+                    Ok(ServerResponse::Fail(Some("Blocked!".into())))
                 }
             }
-            ClientRequest::Wait => ServerResponse::Success(None),
+            ClientRequest::Wait => {
+                self.zone.dispatch();
+                Ok(ServerResponse::Success(None))
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ use priority_queue::PriorityQueue;
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
+use crate::dijkstra_map::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d::*;
@@ -57,6 +58,88 @@ impl Into<Passability> for bool {
     }
 }
 
+// Impl conversion between dijkstra state for convenience.
+impl Into<DijkstraState> for Passability {
+    fn into(self) -> DijkstraState {
+        if self.passable() {
+            DijkstraState::Passable
+        } else {
+            DijkstraState::Blocked
+        }
+    }
+}
+
+impl Into<Passability> for DijkstraState {
+    fn into(self) -> Passability {
+        if self == DijkstraState::Blocked {
+            Passability::Blocked
+        } else {
+            Passability::Passable
+        }
+    }
+}
+
+impl Into<DijkstraState> for &Passability {
+    fn into(self) -> DijkstraState {
+        if self.passable() {
+            DijkstraState::Passable
+        } else {
+            DijkstraState::Blocked
+        }
+    }
+}
+
+impl Into<&Passability> for DijkstraState {
+    fn into(self) -> &'static Passability {
+        if self == DijkstraState::Blocked {
+            &Passability::Blocked
+        } else {
+            &Passability::Passable
+        }
+    }
+}
+
+impl Into<&DijkstraState> for Passability {
+    fn into(self) -> &'static DijkstraState {
+        if self.passable() {
+            &DijkstraState::Passable
+        } else {
+            &DijkstraState::Blocked
+        }
+    }
+}
+
+impl Into<Passability> for &DijkstraState {
+    fn into(self) -> Passability {
+        if self == &DijkstraState::Blocked {
+            Passability::Blocked
+        } else {
+            Passability::Passable
+        }
+    }
+}
+
+impl Into<&DijkstraState> for &Passability {
+    fn into(self) -> &'static DijkstraState {
+        if self.passable() {
+            &DijkstraState::Passable
+        } else {
+            &DijkstraState::Blocked
+        }
+    }
+}
+
+impl Into<&Passability> for &DijkstraState {
+    fn into(self) -> &'static Passability {
+        if self == &DijkstraState::Blocked {
+            &Passability::Blocked
+        } else {
+            &Passability::Passable
+        }
+    }
+}
+
+// Passable bu default.
 impl Default for Passability {
     fn default() -> Self {
         Self::Passable

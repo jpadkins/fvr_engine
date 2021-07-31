@@ -231,9 +231,7 @@ impl DijkstraMap {
                 let edge_coord = Misc::utoi(*edge);
                 for neighbor in adjacency.neighbors(edge_coord) {
                     // If the neighbor is out of bounds, has been processed or is blocked, continue.
-                    if neighbor.0 >= self.states.width() as i32
-                        || neighbor.1 >= self.states.height() as i32
-                    {
+                    if !self.states.in_bounds_icoord(neighbor) {
                         continue;
                     }
 

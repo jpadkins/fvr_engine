@@ -54,6 +54,13 @@ pub trait Map2dView {
     fn in_bounds(&self, xy: UCoord) -> bool {
         xy.0 < self.width() && xy.1 < self.height()
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns whether a coord is in bounds of the Map2d.
+    //---------------------------------------------------------------------------------------------
+    fn in_bounds_icoord(&self, xy: ICoord) -> bool {
+        xy.0 >= 0 && xy.1 >= 0 && (xy.0 as u32) < self.width() && (xy.1 as u32) < self.height()
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
