@@ -7,6 +7,7 @@ use crate::zone::*;
 
 pub enum ClientRequest {
     Move(Direction),
+    Teleport(UCoord),
     Wait,
 }
 
@@ -67,16 +68,26 @@ impl Server {
         match req {
             ClientRequest::Move(dir) => {
                 let result = self.zone.move_player(dir)?;
+                self.zone.dispatch()?;
 
                 if result {
-                    self.zone.dispatch();
+                    Ok(ServerResponse::Success(None))
+                } else {
+                    Ok(ServerResponse::Fail(Some("Blocked!".into())))
+                }
+            }
+            ClientRequest::Teleport(xy) => {
+                let result = self.zone.teleport_player(xy)?;
+                self.zone.dispatch()?;
+
+                if result {
                     Ok(ServerResponse::Success(None))
                 } else {
                     Ok(ServerResponse::Fail(Some("Blocked!".into())))
                 }
             }
             ClientRequest::Wait => {
-                self.zone.dispatch();
+                self.zone.dispatch()?;
                 Ok(ServerResponse::Success(None))
             }
         }

@@ -264,7 +264,8 @@ impl AStar {
     {
         // If the start and end coords are equal, or either are not passable, return.
         if start == end
-            || *states.get_xy(start) == Passability::Blocked
+            // TODO: Should we always assume the starting coord is passable?
+            // || *states.get_xy(start) == Passability::Blocked
             || *states.get_xy(end) == Passability::Blocked
         {
             return;
@@ -347,11 +348,7 @@ impl AStar {
             // Process the node.
             for xy in adjacency.neighbors(Misc::utoi(node.0)) {
                 // Continue if the neighbor is not valid.
-                if xy.0 < 0
-                    || xy.1 < 0
-                    || xy.0 as u32 >= states.width()
-                    || xy.1 as u32 >= states.height()
-                {
+                if !states.in_bounds_icoord(xy) {
                     continue;
                 }
 

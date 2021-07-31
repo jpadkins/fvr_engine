@@ -78,6 +78,36 @@ impl Scratch {
         Ok(())
     }
 
+    fn handle_teleport(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        xy: UCoord,
+    ) -> Result<()> {
+        let response = server.request(ClientRequest::Teleport(xy))?;
+
+        match response {
+            ServerResponse::Fail(resp) => {
+                if let Some(msg) = resp {
+                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
+                }
+            }
+            ServerResponse::Success(resp) => {
+                if let Some(msg) = resp {
+                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
+                }
+            }
+        }
+
+        server.blit_zone(terminal, &self.view, (0, 0));
+
+        let tile = terminal.get_xy_mut(server.player_xy());
+        tile.glyph = '@';
+        tile.foreground_color = TileColor::WHITE;
+
+        Ok(())
+    }
+
     fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: UCoord) {
         server.blit_zone(terminal, &self.view, (0, 0));
         let player_xy = server.player_xy();
@@ -180,6 +210,10 @@ impl Scene for Scratch {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
             let _ = server.request(ClientRequest::Wait);
+            server.blit_zone(terminal, &self.view, (0, 0));
+            let tile = terminal.get_xy_mut(server.player_xy());
+            tile.glyph = '@';
+            tile.foreground_color = TileColor::WHITE;
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {
@@ -192,7 +226,8 @@ impl Scene for Scratch {
             input.set_cursor(Cursor::Hand);
         } else if input.mouse_moved() {
             if let Some(xy) = input.mouse_coord() {
-                self.draw_path(server, terminal, xy);
+                // self.draw_path(server, terminal, xy);
+                self.handle_teleport(server, terminal, xy)?;
                 self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", xy))?;
             }
         } else {

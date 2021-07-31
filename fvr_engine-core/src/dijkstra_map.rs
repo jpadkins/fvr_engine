@@ -104,13 +104,13 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
+            let coord = (xy.0 as i32 + dir.dx(), xy.1 as i32 + dir.dy());
 
-            if !self.weights.in_bounds(coord) {
+            if !self.weights.in_bounds_icoord(coord) {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(coord) {
+            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
                 if *weight < min_weight {
                     min_weight = *weight;
                     direction = *dir;
@@ -125,18 +125,18 @@ impl DijkstraMap {
     // Returns the direction of the max weight relative to a coord.
     //---------------------------------------------------------------------------------------------
     pub fn max_direction(&self, xy: UCoord) -> Direction {
-        let mut max_weight = f64::MAX;
+        let mut max_weight = f64::MIN;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            let coord = ((xy.0 as i32 + dir.dx()) as u32, (xy.1 as i32 + dir.dy()) as u32);
+            let coord = (xy.0 as i32 + dir.dx(), xy.1 as i32 + dir.dy());
 
-            if !self.weights.in_bounds(coord) {
+            if !self.weights.in_bounds_icoord(coord) {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(coord) {
+            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
                 if *weight > max_weight {
                     max_weight = *weight;
                     direction = *dir;
