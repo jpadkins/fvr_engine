@@ -30,6 +30,33 @@ pub enum Passability {
     Passable,
 }
 
+impl Passability {
+    pub fn passable(&self) -> bool {
+        self == &Passability::Passable
+    }
+}
+
+// Impl conversion between bool for convenience.
+impl Into<bool> for Passability {
+    fn into(self) -> bool {
+        if self.passable() {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Into<Passability> for bool {
+    fn into(self) -> Passability {
+        if self {
+            Passability::Passable
+        } else {
+            Passability::Blocked
+        }
+    }
+}
+
 impl Default for Passability {
     fn default() -> Self {
         Self::Passable

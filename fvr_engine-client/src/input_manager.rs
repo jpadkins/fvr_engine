@@ -85,8 +85,6 @@ pub struct InputManager {
     mouse_clicked: (bool, bool),
     // Current coord of the mouse within the faux terminal (or none if it is out of bounds).
     mouse_coord: Option<UCoord>,
-    // Previous coord of the mouse within the faux terminal (or none if it is out of bounds).
-    last_mouse_coord: Option<UCoord>,
     // Whether the mouse changed coords.
     mouse_moved: bool,
     // Set of keys that are currently pressed.
@@ -264,7 +262,6 @@ impl InputManager {
 
         // Previous mouse coord should be a record of the last different mouse coord.
         if self.mouse_coord != mouse_coord {
-            self.last_mouse_coord = self.mouse_coord;
             self.mouse_coord = mouse_coord;
             self.mouse_moved = true;
         }
@@ -310,13 +307,6 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     pub fn mouse_coord(&self) -> Option<UCoord> {
         self.mouse_coord
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns previous mouse coord within the faux terminal (or none if out of bounds).
-    //---------------------------------------------------------------------------------------------
-    pub fn last_mouse_coord(&self) -> Option<UCoord> {
-        self.last_mouse_coord
     }
 
     //---------------------------------------------------------------------------------------------

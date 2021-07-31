@@ -1,10 +1,18 @@
-use fvr_engine_core::prelude::*;
+use anyhow::Result;
+use specs::shred::Fetch;
+
+use fvr_engine_core::{prelude::*, xy_iter};
 
 use crate::zone::*;
 
-pub enum Command {
-    Wait,
+pub enum ClientRequest {
     Move(Direction),
+    Wait,
+}
+
+pub enum ServerResponse {
+    Fail(Option<String>),
+    Success(Option<String>),
 }
 
 pub struct Server {
@@ -12,28 +20,59 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         // TODO
-        Self { zone: Zone::new((55, 33)) }
+        let zone = Zone::new((55, 33))?;
+        Ok(Self { zone })
+    }
+
+    pub fn reload(&mut self) -> Result<()> {
+        *self = Self::new()?;
+
+        Ok(())
     }
 
     pub fn blit_zone<M>(&self, terminal: &mut M, src: &Rect, dst: UCoord)
     where
         M: Map2d<Tile>,
     {
-        let cells = self.zone.cells();
+        let cells = self.zone.cell_map();
+        let actors = self.zone.actor_map();
 
-        for x in 0..src.width {
-            for y in 0..src.height {
-                let xy = (x as u32 + dst.0, y as u32 + dst.1);
-                if let Some(thing) = cells.get_xy(xy).things.last() {
-                    // Cells should always contain at least one thing.
-                    *terminal.get_xy_mut(xy) = thing.tile;
+        xy_iter!(x, y, src.width as u32, src.height as u32, {
+            let xy = (dst.0 + x, dst.1 + y);
+
+            if let Some(actor) = actors.0.get_xy(xy) {
+                // Actors take precedence.
+                *terminal.get_xy_mut(xy) = actor.thing.tile;
+            } else if let Some(thing) = cells.0.get_xy(xy).things.last() {
+                // Cells should always contain at least one thing.
+                *terminal.get_xy_mut(xy) = thing.tile;
+            } else {
+                // Set tile to default to communicate missing data.
+                *terminal.get_xy_mut(xy) = Tile::default();
+            }
+        });
+    }
+
+    pub fn player_xy(&self) -> UCoord {
+        self.zone.player_xy().0
+    }
+
+    pub fn passable_map(&self) -> Fetch<PassableMap> {
+        self.zone.passable_map()
+    }
+
+    pub fn request(&mut self, req: ClientRequest) -> ServerResponse {
+        match req {
+            ClientRequest::Move(dir) => {
+                if self.zone.move_player(dir) {
+                    ServerResponse::Success(None)
                 } else {
-                    // Set tile to default to communicate missing data.
-                    *terminal.get_xy_mut(xy) = Tile::default();
+                    ServerResponse::Fail(Some("Blocked!".into()))
                 }
             }
+            ClientRequest::Wait => ServerResponse::Success(None),
         }
     }
 }

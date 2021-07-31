@@ -47,22 +47,42 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()>;
+    fn load(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        input: &InputManager,
+    ) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()>;
+    fn unload(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        input: &InputManager,
+    ) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()>;
+    fn focus(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        input: &InputManager,
+    ) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()>;
+    fn unfocus(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        input: &InputManager,
+    ) -> Result<()>;
 
     //---------------------------------------------------------------------------------------------
     // Called whenever the scene's (non-visual) internal state should be updated.
@@ -132,7 +152,12 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     // Pops the current scene off the stack.
     //---------------------------------------------------------------------------------------------
-    pub fn pop(&mut self, server: &mut Server, terminal: &mut Terminal, input: &InputManager) -> Result<()> {
+    pub fn pop(
+        &mut self,
+        server: &mut Server,
+        terminal: &mut Terminal,
+        input: &InputManager,
+    ) -> Result<()> {
         #[cfg(debug_assertions)]
         println!("[SceneStack] Pop  - current stack len: {}.", self.scenes.len());
 

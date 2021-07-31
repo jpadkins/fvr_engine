@@ -95,6 +95,34 @@ impl Misc {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Helper macro for iterating over a cartesian product given xy coords.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! xy_iter {
+    ($x:ident, $y:ident, $width:expr, $height:expr, $work:expr) => {
+        for $x in 0..$width {
+            for $y in 0..$height {
+                $work
+            }
+        }
+    };
+}
+
+//-------------------------------------------------------------------------------------------------
+// Helper macro for iterating over a cartesian product given dimensions tuple.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! xy_tuple_iter {
+    ($x:ident, $y:ident, $dimensions:expr, $work:expr) => {
+        for $x in 0..$dimensions.0 {
+            for $y in 0..$dimensions.1 {
+                $work
+            }
+        }
+    };
+}
+
+//-------------------------------------------------------------------------------------------------
 // Tests.
 //-------------------------------------------------------------------------------------------------
 

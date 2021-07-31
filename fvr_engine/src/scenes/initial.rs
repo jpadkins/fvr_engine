@@ -93,7 +93,12 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is added to the stack.
     //---------------------------------------------------------------------------------------------
-    fn load(&mut self, _server: &mut Server, terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
+    fn load(
+        &mut self,
+        _server: &mut Server,
+        terminal: &mut Terminal,
+        _input: &InputManager,
+    ) -> Result<()> {
         // Reset the terminal.
         terminal.set_transparent();
         terminal.set_all_tiles_blank();
@@ -127,21 +132,36 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     // Called when the scene is removed from the stack.
     //---------------------------------------------------------------------------------------------
-    fn unload(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
+    fn unload(
+        &mut self,
+        _server: &mut Server,
+        _terminal: &mut Terminal,
+        _input: &InputManager,
+    ) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made current again (e.g. a the next scene was popped).
     //---------------------------------------------------------------------------------------------
-    fn focus(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
+    fn focus(
+        &mut self,
+        _server: &mut Server,
+        _terminal: &mut Terminal,
+        _input: &InputManager,
+    ) -> Result<()> {
         Ok(())
     }
 
     //---------------------------------------------------------------------------------------------
     // Called when the scene is made no longer current (e.g. a new scene is pushed).
     //---------------------------------------------------------------------------------------------
-    fn unfocus(&mut self, _server: &mut Server, _terminal: &mut Terminal, _input: &InputManager) -> Result<()> {
+    fn unfocus(
+        &mut self,
+        _server: &mut Server,
+        _terminal: &mut Terminal,
+        _input: &InputManager,
+    ) -> Result<()> {
         Ok(())
     }
 

@@ -7,4 +7,8 @@ edition = "2018"
 fvr_engine-client = { path = "../fvr_engine-client", version = "0.1.0" }
 fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 anyhow = "1.0.42"
-specs = "0.17.0"
+rand = "0.8.3"
+
+[dependencies.specs]
+version = "0.17.0"
+features = ["specs-derive"]
