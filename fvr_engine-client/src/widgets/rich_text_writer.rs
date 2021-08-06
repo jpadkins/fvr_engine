@@ -61,7 +61,7 @@ impl RichTextWriter {
     //---------------------------------------------------------------------------------------------
     // Write rich text, wrapping at the map2d's width.
     //---------------------------------------------------------------------------------------------
-    pub fn write<M>(map: &mut M, xy: UCoord, text: &str) -> Result<()>
+    pub fn write<M>(map: &mut M, xy: ICoord, text: &str) -> Result<()>
     where
         M: Map2d<Tile>,
     {
@@ -174,7 +174,7 @@ impl RichTextWriter {
     //---------------------------------------------------------------------------------------------
     // Write plain text (no inline hints), wrapping at the map2d's width.
     //---------------------------------------------------------------------------------------------
-    pub fn write_plain<M>(map: &mut M, xy: UCoord, text: &str)
+    pub fn write_plain<M>(map: &mut M, xy: ICoord, text: &str)
     where
         M: Map2d<Tile>,
     {
@@ -211,7 +211,7 @@ impl RichTextWriter {
     #[allow(clippy::too_many_arguments)]
     pub fn write_formatted_plain<M>(
         map: &mut M,
-        xy: UCoord,
+        xy: ICoord,
         text: &str,
         layout: Option<TileLayout>,
         style: Option<TileStyle>,
@@ -290,7 +290,7 @@ impl RichTextWriter {
     //---------------------------------------------------------------------------------------------
     pub fn write_plain_with_settings<M>(
         map: &mut M,
-        xy: UCoord,
+        xy: ICoord,
         text: &str,
         settings: &RichTextFormatSettings,
     ) where

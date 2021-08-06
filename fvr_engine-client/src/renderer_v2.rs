@@ -72,9 +72,9 @@ struct Vertex {
 //-------------------------------------------------------------------------------------------------
 pub struct RendererV2 {
     // Dimensions of each tile in the terminal in # of pixels.
-    tile_dimensions: UCoord,
+    tile_dimensions: ICoord,
     // Dimensions of the terminal in # of tiles.
-    terminal_dimensions: UCoord,
+    terminal_dimensions: ICoord,
     // Frame clear color.
     clear_color: SdlColor,
     // Cached current size of the viewport.
@@ -124,7 +124,7 @@ pub struct RendererV2 {
     // Length will equal TILE_STYLE_COUNT * 2.
     // The first half of the vec will contain maps for the non-outlined metrics.
     // The second half of the vec will contain maps for the outlined metrics.
-    metrics: Vec<HashMap<u32, GlyphMetric>>,
+    metrics: Vec<HashMap<i32, GlyphMetric>>,
 }
 
 impl RendererV2 {
@@ -133,8 +133,8 @@ impl RendererV2 {
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn new<S>(
-        tile_dimensions: UCoord,
-        terminal_dimensions: UCoord,
+        tile_dimensions: ICoord,
+        terminal_dimensions: ICoord,
         font_name: S,
     ) -> Result<Self>
     where
@@ -672,7 +672,7 @@ impl RendererV2 {
     // Update the OpenGL viewport and projection matrices for a new window size.
     // (should be called whenever the window size changes and no more than once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update_viewport(&mut self, (width, height): UCoord) -> Result<()> {
+    pub fn update_viewport(&mut self, (width, height): ICoord) -> Result<()> {
         // Update the OpenGL viewport and query and save the new size.
         unsafe {
             gl::Viewport(0, 0, width as GLsizei, height as GLsizei);
@@ -779,16 +779,16 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Convert a coord in screen space to the corresponding tile coord in the faux terminal.
     //---------------------------------------------------------------------------------------------
-    pub fn screen_to_terminal_coords(&self, (x, y): ICoord) -> Option<UCoord> {
+    pub fn screen_to_terminal_coords(&self, (x, y): ICoord) -> Option<ICoord> {
         let world = self.screen_to_world_coords((x, y))?;
 
-        Some((world.0 as u32 / self.tile_dimensions.0, world.1 as u32 / self.tile_dimensions.1))
+        Some((world.0 as i32 / self.tile_dimensions.0, world.1 as i32 / self.tile_dimensions.1))
     }
 
     //---------------------------------------------------------------------------------------------
     // Push a colored quad onto the background vertices, based on a tile.
     //---------------------------------------------------------------------------------------------
-    fn push_background_quad(&mut self, (x, y): UCoord, tile: &Tile, opacity: GLfloat) {
+    fn push_background_quad(&mut self, (x, y): ICoord, tile: &Tile, opacity: GLfloat) {
         let mut vertex = Vertex::default();
 
         // Each vertex of the quad shares the same color values (for now).
@@ -859,7 +859,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     fn push_foreground_quad(
         &mut self,
-        (x, y): UCoord,
+        (x, y): ICoord,
         tile: &Tile,
         outline_quad: bool,
         opacity: GLfloat,
@@ -877,7 +877,7 @@ impl RendererV2 {
 
         // Retrieve the metrics for the tile's glyph and style.
         let metric = self.metrics[index]
-            .get(&(tile.glyph as u32))
+            .get(&(tile.glyph as i32))
             .with_context(|| format!("Failed to load outline metric for glyph {}.", tile.glyph))?;
 
         // Use either the foreground or outline color from the tile.

@@ -57,11 +57,11 @@ pub struct Fov {
     // Stores the opaque/transparent state of the underlying map. false = opaque.
     states: GridMap<Transparency>,
     // Stores the calculated light values. > 0.0 means the coord is visible.
-    light: GridMap<f64>,
+    light: GridMap<f32>,
     // Coords in the current fov.
-    current_fov: HashSet<UCoord>,
+    current_fov: HashSet<ICoord>,
     // Coords in the previous fov.
-    previous_fov: HashSet<UCoord>,
+    previous_fov: HashSet<ICoord>,
     // The distance method.
     distance: Distance,
 }
@@ -70,7 +70,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Creates a new fov.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
+    pub fn new(dimensions: ICoord, distance: Distance) -> Self {
         Self {
             states: GridMap::new(dimensions),
             light: GridMap::new(dimensions),
@@ -103,15 +103,15 @@ impl Fov {
     fn cast_shadow(
         &mut self,
         row: i32,
-        mut start: f64,
-        end: f64,
+        mut start: f32,
+        end: f32,
         xx: i32,
         xy: i32,
         yx: i32,
         yy: i32,
-        radius: f64,
-        origin: UCoord,
-        decay: f64,
+        radius: f32,
+        origin: ICoord,
+        decay: f32,
     ) {
         if start < end {
             return;
@@ -121,15 +121,15 @@ impl Fov {
         let mut blocked = false;
         let mut d = row;
 
-        while d as f64 <= radius && d < (self.width() + self.height()) as i32 && !blocked {
+        while d as f32 <= radius && d < (self.width() + self.height()) as i32 && !blocked {
             let dy = -d;
             let mut dx = dy;
 
             while dx <= 0 {
                 let current_x = origin.0 as i32 + dx * xx + dy * xy;
                 let current_y = origin.1 as i32 + dx * yx + dy * yy;
-                let slope_left = (dx as f64 - 0.5) / (dy as f64 + 0.5);
-                let slope_right = (dx as f64 + 0.5) / (dy as f64 - 0.5);
+                let slope_left = (dx as f32 - 0.5) / (dy as f32 + 0.5);
+                let slope_right = (dx as f32 + 0.5) / (dy as f32 - 0.5);
 
                 if !(current_x >= 0
                     && current_y >= 0
@@ -143,8 +143,8 @@ impl Fov {
                     break;
                 }
 
-                let delta_radius = self.distance.calculate_slope(dx as f64, dy as f64);
-                let current_coord = (current_x as u32, current_y as u32);
+                let delta_radius = self.distance.calculate_slope(dx as f32, dy as f32);
+                let current_coord = (current_x as i32, current_y as i32);
 
                 if delta_radius <= radius {
                     let brightness = 1.0 - decay * delta_radius;
@@ -164,7 +164,7 @@ impl Fov {
                         blocked = false;
                         start = new_start;
                     }
-                } else if opaque && (d as f64) < radius {
+                } else if opaque && (d as f32) < radius {
                     blocked = true;
                     self.cast_shadow(
                         d + 1,
@@ -191,7 +191,7 @@ impl Fov {
     //---------------------------------------------------------------------------------------------
     // Ccalculates the fov.
     //---------------------------------------------------------------------------------------------
-    pub fn calculate(&mut self, origin: UCoord, radius: f64) {
+    pub fn calculate(&mut self, origin: ICoord, radius: f32) {
         // Calculate decay.
         let radius = radius.max(1.0);
         let decay = 1.0 / (radius + 1.0);
@@ -225,17 +225,17 @@ impl Fov {
     fn cast_shadow_limited(
         &mut self,
         row: i32,
-        mut start: f64,
-        end: f64,
+        mut start: f32,
+        end: f32,
         xx: i32,
         xy: i32,
         yx: i32,
         yy: i32,
-        radius: f64,
-        origin: UCoord,
-        decay: f64,
-        angle: f64,
-        span: f64,
+        radius: f32,
+        origin: ICoord,
+        decay: f32,
+        angle: f32,
+        span: f32,
     ) {
         if start < end {
             return;
@@ -245,15 +245,15 @@ impl Fov {
         let mut blocked = false;
         let mut d = row;
 
-        while d as f64 <= radius && d < (self.width() + self.height()) as i32 && !blocked {
+        while d as f32 <= radius && d < (self.width() + self.height()) as i32 && !blocked {
             let dy = -d;
             let mut dx = dy;
 
             while dx <= 0 {
                 let current_x = origin.0 as i32 + dx * xx + dy * xy;
                 let current_y = origin.1 as i32 + dx * yx + dy * yy;
-                let slope_left = (dx as f64 - 0.5) / (dy as f64 + 0.5);
-                let slope_right = (dx as f64 + 0.5) / (dy as f64 - 0.5);
+                let slope_left = (dx as f32 - 0.5) / (dy as f32 + 0.5);
+                let slope_right = (dx as f32 + 0.5) / (dy as f32 - 0.5);
 
                 if !(current_x >= 0
                     && current_y >= 0
@@ -267,14 +267,14 @@ impl Fov {
                     break;
                 }
 
-                let delta_radius = self.distance.calculate_slope(dx as f64, dy as f64);
+                let delta_radius = self.distance.calculate_slope(dx as f32, dy as f32);
                 let atan2 = (angle
                     - Misc::scaled_atan2(
-                        (current_x - origin.0 as i32) as f64,
-                        (current_y - origin.1 as i32) as f64,
+                        (current_x - origin.0 as i32) as f32,
+                        (current_y - origin.1 as i32) as f32,
                     ))
                 .abs();
-                let current_coord = (current_x as u32, current_y as u32);
+                let current_coord = (current_x as i32, current_y as i32);
 
                 if delta_radius <= radius && (atan2 <= span * 0.5 || atan2 >= 1.0 - span * 0.5) {
                     let brightness = 1.0 - decay * delta_radius;
@@ -294,7 +294,7 @@ impl Fov {
                         blocked = false;
                         start = new_start;
                     }
-                } else if opaque && (d as f64) < radius {
+                } else if opaque && (d as f32) < radius {
                     blocked = true;
                     self.cast_shadow_limited(
                         d + 1,
@@ -322,10 +322,10 @@ impl Fov {
 
     pub fn calculate_limited(
         &mut self,
-        origin: UCoord,
-        radius: f64,
-        mut angle: f64,
-        mut span: f64,
+        origin: ICoord,
+        radius: f32,
+        mut angle: f32,
+        mut span: f32,
     ) {
         // Calculate decay.
         let radius = radius.max(1.0);
@@ -367,26 +367,26 @@ impl Fov {
 // Impl Map2dView for GridMap.
 //-------------------------------------------------------------------------------------------------
 impl Map2dView for Fov {
-    type Type = f64;
+    type Type = f32;
 
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn width(&self) -> u32 {
+    fn width(&self) -> i32 {
         self.light.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn height(&self) -> u32 {
+    fn height(&self) -> i32 {
         self.light.height()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the dimensions of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn dimensions(&self) -> UCoord {
+    fn dimensions(&self) -> ICoord {
         self.light.dimensions()
     }
 
@@ -400,7 +400,7 @@ impl Map2dView for Fov {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: UCoord) -> &Self::Type {
+    fn get_xy(&self, xy: ICoord) -> &Self::Type {
         self.light.get_xy(xy)
     }
 }

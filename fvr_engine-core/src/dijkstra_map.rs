@@ -45,15 +45,17 @@ pub struct DijkstraMap {
     // Stores processed state for coords.
     processed: GridMap<bool>,
     // Hash set for storing coords to process.
-    edges: HashSet<UCoord>,
+    edges: HashSet<ICoord>,
     // Vec for iterating edges.
-    edges_vec: Vec<UCoord>,
+    edges_vec: Vec<ICoord>,
     // Set of walkable coords.
-    walkable: HashSet<UCoord>,
+    walkable: HashSet<ICoord>,
     // Stores the input states.
     states: GridMap<DijkstraState>,
     // Stores the output weights.
-    weights: GridMap<Option<f64>>,
+    weights: GridMap<Option<f32>>,
+    // Processed coord with the most weight.
+    farthest_xy: ICoord,
     // The distance method.
     distance: Distance,
 }
@@ -62,7 +64,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Creates a new dijkstra map.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
+    pub fn new(dimensions: ICoord, distance: Distance) -> Self {
         Self {
             processed: GridMap::new(dimensions),
             edges: HashSet::new(),
@@ -70,14 +72,22 @@ impl DijkstraMap {
             walkable: HashSet::new(),
             states: GridMap::new(dimensions),
             weights: GridMap::new(dimensions),
+            farthest_xy: INVALID_ICOORD,
             distance,
         }
     }
 
     //---------------------------------------------------------------------------------------------
+    // Returns the coord with the most weight. May be one of multiple equal weighted coords.
+    //---------------------------------------------------------------------------------------------
+    pub fn farthest_xy(&self) -> ICoord {
+        self.farthest_xy
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Returns a ref to the set of walkable coords of the dijkstra map.
     //---------------------------------------------------------------------------------------------
-    pub fn walkable(&self) -> &HashSet<UCoord> {
+    pub fn walkable(&self) -> &HashSet<ICoord> {
         &self.walkable
     }
 
@@ -98,8 +108,8 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the min weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn min_direction(&self, xy: UCoord) -> Direction {
-        let mut min_weight = f64::MAX;
+    pub fn min_direction(&self, xy: ICoord) -> Direction {
+        let mut min_weight = f32::MAX;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
@@ -110,7 +120,7 @@ impl DijkstraMap {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
+            if let Some(weight) = self.weights.get_xy(coord) {
                 if *weight < min_weight {
                     min_weight = *weight;
                     direction = *dir;
@@ -124,8 +134,8 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the max weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn max_direction(&self, xy: UCoord) -> Direction {
-        let mut max_weight = f64::MIN;
+    pub fn max_direction(&self, xy: ICoord) -> Direction {
+        let mut max_weight = f32::MIN;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
@@ -136,7 +146,7 @@ impl DijkstraMap {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
+            if let Some(weight) = self.weights.get_xy(coord) {
                 if *weight > max_weight {
                     max_weight = *weight;
                     direction = *dir;
@@ -152,7 +162,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     pub fn combine<M>(&mut self, weights: &M)
     where
-        M: Map2dView<Type = Option<f64>>,
+        M: Map2dView<Type = Option<f32>>,
     {
         map2d_iter_index!(weights, x, y, item, {
             if let Some(weight) = self.weights.get_xy_mut((x, y)) {
@@ -161,6 +171,15 @@ impl DijkstraMap {
                 }
             }
         });
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Combines the weight value at a coord by a modifier value.
+    //---------------------------------------------------------------------------------------------
+    pub fn combine_xy(&mut self, xy: ICoord, modifier: f32) {
+        if let Some(weight) = self.weights.get_xy_mut(xy) {
+            *weight = *weight + modifier;
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -192,7 +211,7 @@ impl DijkstraMap {
     pub fn recalculate(&mut self) {
         // Find the adjacency method and max weight value.
         let adjacency = self.distance.adjacency();
-        let max_weight = (self.states.width() * self.states.height()) as f64;
+        let start_weight = (self.states.width() * self.states.height()) as f32;
 
         // Clear the processed map and edges set.
         map2d_iter_mut!(self.processed, item, {
@@ -205,11 +224,11 @@ impl DijkstraMap {
             match self.states.get_xy(*coord) {
                 DijkstraState::Passable => {
                     // Set all passable coords to the max weight.
-                    *self.weights.get_xy_mut(*coord) = Some(max_weight);
+                    *self.weights.get_xy_mut(*coord) = Some(start_weight);
                 }
                 &DijkstraState::Goal(weight) => {
                     // Set all goal coords to their weight and add them as edges.
-                    *self.weights.get_xy_mut(*coord) = Some(weight as f64);
+                    *self.weights.get_xy_mut(*coord) = Some(weight as f32);
                     self.edges.insert(*coord);
                 }
                 _ => {}
@@ -217,6 +236,8 @@ impl DijkstraMap {
         }
 
         // Iterate the edges until all coords have been processed.
+        let mut max_weight = 0.0;
+
         self.edges_vec.clear();
 
         while !self.edges.is_empty() {
@@ -228,31 +249,30 @@ impl DijkstraMap {
                 let current_weight = self.weights.get_xy(*edge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
-                let edge_coord = Misc::utoi(*edge);
-                for neighbor in adjacency.neighbors(edge_coord) {
+                for neighbor in adjacency.neighbors(*edge) {
                     // If the neighbor is out of bounds, has been processed or is blocked, continue.
                     if !self.states.in_bounds_icoord(neighbor) {
                         continue;
                     }
 
-                    let neighbor_coord = Misc::itou(neighbor);
-
-                    if *self.processed.get_xy(neighbor_coord)
-                        || !self.walkable.contains(&neighbor_coord)
-                    {
+                    if *self.processed.get_xy(neighbor) || !self.walkable.contains(&neighbor) {
                         continue;
                     }
 
                     // Calculate the new weight for the neighbor (which will always be Some).
-                    let neighbor_weight = self.weights.get_xy(neighbor_coord).unwrap();
-                    let new_weight =
-                        current_weight + self.distance.calculate(edge_coord, neighbor);
+                    let neighbor_weight = self.weights.get_xy(neighbor).unwrap();
+                    let new_weight = current_weight + self.distance.calculate(*edge, neighbor);
 
                     // If the new weight is less (closer) than the previous weight, update and
                     // add the neighbor to the queue of edges to process.
                     if new_weight < neighbor_weight {
-                        *self.weights.get_xy_mut(neighbor_coord) = Some(new_weight);
-                        self.edges.insert(neighbor_coord);
+                        *self.weights.get_xy_mut(neighbor) = Some(new_weight);
+                        self.edges.insert(neighbor);
+                    }
+
+                    if new_weight > max_weight {
+                        max_weight = new_weight;
+                        self.farthest_xy = neighbor;
                     }
                 }
 
@@ -270,26 +290,26 @@ impl DijkstraMap {
 // Impl Map2dView for DijkstraMap.
 //-------------------------------------------------------------------------------------------------
 impl Map2dView for DijkstraMap {
-    type Type = Option<f64>;
+    type Type = Option<f32>;
 
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn width(&self) -> u32 {
+    fn width(&self) -> i32 {
         self.weights.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn height(&self) -> u32 {
+    fn height(&self) -> i32 {
         self.weights.height()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the dimensions of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn dimensions(&self) -> UCoord {
+    fn dimensions(&self) -> ICoord {
         self.weights.dimensions()
     }
 
@@ -303,7 +323,25 @@ impl Map2dView for DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: UCoord) -> &Self::Type {
+    fn get_xy(&self, xy: ICoord) -> &Self::Type {
         self.weights.get_xy(xy)
+    }
+}
+
+impl Map2dViewMut for DijkstraMap {
+    type Type = Option<f32>;
+
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at an index.
+    //---------------------------------------------------------------------------------------------
+    fn get_mut(&mut self, index: usize) -> &mut Self::Type {
+        self.weights.get_mut(index)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Get mut ref to contents of the Map2dView at a coord.
+    //---------------------------------------------------------------------------------------------
+    fn get_xy_mut(&mut self, xy: ICoord) -> &mut Self::Type {
+        self.weights.get_xy_mut(xy)
     }
 }

@@ -7,7 +7,7 @@ use crate::zone::*;
 
 pub enum ClientRequest {
     Move(Direction),
-    Teleport(UCoord),
+    Teleport(ICoord),
     Wait,
 }
 
@@ -33,30 +33,35 @@ impl Server {
         Ok(())
     }
 
-    pub fn blit_zone<M>(&self, terminal: &mut M, src: &Rect, dst: UCoord)
+    pub fn blit_zone<M>(&self, terminal: &mut M, src: &Rect, dst: ICoord)
     where
         M: Map2d<Tile>,
     {
         let cells = self.zone.cell_map();
         let actors = self.zone.actor_map();
 
-        xy_iter!(x, y, src.width as u32, src.height as u32, {
-            let xy = (dst.0 + x, dst.1 + y);
+        xy_iter!(x, y, src.width as i32, src.height as i32, {
+            let src_xy = (src.x as i32 + x, src.y as i32 + y);
+            let dst_xy = (dst.0 + x, dst.1 + y);
 
-            if let Some(actor) = actors.0.get_xy(xy) {
+            if let Some(actor) = actors.0.get_xy(src_xy) {
                 // Actors take precedence.
-                *terminal.get_xy_mut(xy) = actor.thing.tile;
-            } else if let Some(thing) = cells.0.get_xy(xy).things.last() {
+                *terminal.get_xy_mut(dst_xy) = actor.thing.tile;
+            } else if let Some(thing) = cells.0.get_xy(src_xy).things.last() {
                 // Cells should always contain at least one thing.
-                *terminal.get_xy_mut(xy) = thing.tile;
+                *terminal.get_xy_mut(dst_xy) = thing.tile;
             } else {
                 // Set tile to default to communicate missing data.
-                *terminal.get_xy_mut(xy) = Tile::default();
+                *terminal.get_xy_mut(dst_xy) = Tile::default();
             }
         });
+
+        let tile = terminal.get_xy_mut(self.zone.player_xy().0);
+        tile.glyph = '@';
+        tile.foreground_color = TileColor::WHITE;
     }
 
-    pub fn player_xy(&self) -> UCoord {
+    pub fn player_xy(&self) -> ICoord {
         self.zone.player_xy().0
     }
 

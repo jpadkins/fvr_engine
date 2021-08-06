@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
-use std::f64;
+use std::f32;
 use std::fmt::{Display, Formatter};
 
 //-------------------------------------------------------------------------------------------------
@@ -141,8 +141,8 @@ impl Direction {
         //     return NULL_DIRECTION;
         // }
 
-        let angle = (dy as f64).atan2(dx as f64);
-        let mut degree = angle * (180.0 / f64::consts::PI);
+        let angle = (dy as f32).atan2(dx as f32);
+        let mut degree = angle * (180.0 / f32::consts::PI);
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
 
@@ -173,8 +173,8 @@ impl Direction {
         //     return NULL_DIRECTION;
         // }
 
-        let angle = (dy as f64).atan2(dx as f64);
-        let mut degree = angle * 180.0 / f64::consts::PI;
+        let angle = (dy as f32).atan2(dx as f32);
+        let mut degree = angle * 180.0 / f32::consts::PI;
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
 

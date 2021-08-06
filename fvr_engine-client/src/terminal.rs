@@ -25,7 +25,7 @@ impl Terminal {
     // Creates a new terminal.
     // (there should only ever be one, for now)
     //---------------------------------------------------------------------------------------------
-    pub(crate) fn new(dimensions: UCoord) -> Self {
+    pub(crate) fn new(dimensions: ICoord) -> Self {
         Self { tiles: GridMap::new(dimensions), opacity: 1.0 }
     }
 
@@ -81,7 +81,7 @@ impl Terminal {
     #[allow(clippy::too_many_arguments)]
     pub fn update_tile(
         &mut self,
-        xy: UCoord,
+        xy: ICoord,
         glyph: Option<char>,
         layout: Option<TileLayout>,
         style: Option<TileStyle>,
@@ -177,7 +177,7 @@ impl Terminal {
     //---------------------------------------------------------------------------------------------
     // Iterates the xy coords in the terminal and their corresponding tiles.
     //---------------------------------------------------------------------------------------------
-    pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = (UCoord, &Tile)> {
+    pub fn coords_and_tiles_iter(&self) -> impl Iterator<Item = (ICoord, &Tile)> {
         (0..self.width())
             .cartesian_product(0..self.height())
             .map(move |xy| (xy, self.tiles.get_xy(xy)))
@@ -209,21 +209,21 @@ impl Map2dView for Terminal {
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn width(&self) -> u32 {
+    fn width(&self) -> i32 {
         self.tiles.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn height(&self) -> u32 {
+    fn height(&self) -> i32 {
         self.tiles.height()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the dimensions of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn dimensions(&self) -> UCoord {
+    fn dimensions(&self) -> ICoord {
         self.tiles.dimensions()
     }
 
@@ -237,7 +237,7 @@ impl Map2dView for Terminal {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: UCoord) -> &Self::Type {
+    fn get_xy(&self, xy: ICoord) -> &Self::Type {
         self.tiles.get_xy(xy)
     }
 }
@@ -258,7 +258,7 @@ impl Map2dViewMut for Terminal {
     //---------------------------------------------------------------------------------------------
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type {
+    fn get_xy_mut(&mut self, xy: ICoord) -> &mut Self::Type {
         self.tiles.get_xy_mut(xy)
     }
 }

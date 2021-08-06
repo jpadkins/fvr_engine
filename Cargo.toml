@@ -12,3 +12,6 @@ members = [
 default-members = [
   "fvr_engine"
 ]
+
+[profile.release]
+debug = true

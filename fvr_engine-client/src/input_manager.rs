@@ -84,7 +84,7 @@ pub struct InputManager {
     // Current clicked (just pressed) state of left and right mouse buttons.
     mouse_clicked: (bool, bool),
     // Current coord of the mouse within the faux terminal (or none if it is out of bounds).
-    mouse_coord: Option<UCoord>,
+    mouse_coord: Option<ICoord>,
     // Whether the mouse changed coords.
     mouse_moved: bool,
     // Set of keys that are currently pressed.
@@ -190,7 +190,7 @@ impl InputManager {
         &mut self,
         keyboard_state: &KeyboardState,
         mouse_state: &MouseState,
-        mouse_coord: Option<UCoord>,
+        mouse_coord: Option<ICoord>,
     ) {
         // Update key states.
         //-----------------------------------------------------------------------------------------
@@ -305,7 +305,7 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     // Returns current mouse coord within the faux terminal (or none if out of bounds).
     //---------------------------------------------------------------------------------------------
-    pub fn mouse_coord(&self) -> Option<UCoord> {
+    pub fn mouse_coord(&self) -> Option<ICoord> {
         self.mouse_coord
     }
 

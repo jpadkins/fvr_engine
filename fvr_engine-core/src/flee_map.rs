@@ -23,7 +23,7 @@ use crate::misc::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const FLEE_MAP_MAGNITUDE: f64 = -1.2;
+const FLEE_MAP_MAGNITUDE: f32 = -1.2;
 
 //-------------------------------------------------------------------------------------------------
 // FleeMap describes a 2D map of weights for determining the optimal path to flee.
@@ -31,15 +31,15 @@ const FLEE_MAP_MAGNITUDE: f64 = -1.2;
 //-------------------------------------------------------------------------------------------------
 pub struct FleeMap {
     // Helper hash set for storing processed cooords.
-    processed: HashSet<UCoord>,
+    processed: HashSet<ICoord>,
     // Helper hash set for storing coords to process.
-    edges: HashSet<UCoord>,
+    edges: HashSet<ICoord>,
     // Helper vec for iterating edges.
-    edges_vec: Vec<UCoord>,
+    edges_vec: Vec<ICoord>,
     // Calculated weights of the flee map.
-    weights: GridMap<Option<f64>>,
+    weights: GridMap<Option<f32>>,
     // Priority queue used for calculating weights.
-    queue: PriorityQueue<UCoord, OrderedFloat<f64>>,
+    queue: PriorityQueue<ICoord, OrderedFloat<f32>>,
     // The distance method.
     distance: Distance,
 }
@@ -48,7 +48,7 @@ impl FleeMap {
     //---------------------------------------------------------------------------------------------
     // Creates a new flee map.
     //---------------------------------------------------------------------------------------------
-    pub fn new(dimensions: UCoord, distance: Distance) -> Self {
+    pub fn new(dimensions: ICoord, distance: Distance) -> Self {
         Self {
             processed: HashSet::new(),
             edges: HashSet::new(),
@@ -62,8 +62,8 @@ impl FleeMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the min weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn min_direction(&self, xy: UCoord) -> Direction {
-        let mut min_weight = f64::MAX;
+    pub fn min_direction(&self, xy: ICoord) -> Direction {
+        let mut min_weight = f32::MAX;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
@@ -74,7 +74,7 @@ impl FleeMap {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
+            if let Some(weight) = self.weights.get_xy(coord) {
                 if *weight < min_weight {
                     min_weight = *weight;
                     direction = *dir;
@@ -88,8 +88,8 @@ impl FleeMap {
     //---------------------------------------------------------------------------------------------
     // Returns the direction of the max weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn max_direction(&self, xy: UCoord) -> Direction {
-        let mut max_weight = f64::MIN;
+    pub fn max_direction(&self, xy: ICoord) -> Direction {
+        let mut max_weight = f32::MIN;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
@@ -100,7 +100,7 @@ impl FleeMap {
                 continue;
             }
 
-            if let Some(weight) = self.weights.get_xy(Misc::itou(coord)) {
+            if let Some(weight) = self.weights.get_xy(coord) {
                 if *weight > max_weight {
                     max_weight = *weight;
                     direction = *dir;
@@ -116,7 +116,7 @@ impl FleeMap {
     //---------------------------------------------------------------------------------------------
     pub fn combine<M>(&mut self, weights: &M)
     where
-        M: Map2dView<Type = Option<f64>>,
+        M: Map2dView<Type = Option<f32>>,
     {
         map2d_iter_index!(weights, x, y, item, {
             if let Some(weight) = self.weights.get_xy_mut((x, y)) {
@@ -153,12 +153,10 @@ impl FleeMap {
             self.processed.insert(next);
 
             // Iterate all neighboring coords around the next coord, populating the edge set.
-            for neighbor in adjacency.neighbors(Misc::utoi(next)) {
+            for neighbor in adjacency.neighbors(next) {
                 if neighbor.0 >= states.width() as i32 || neighbor.1 >= states.height() as i32 {
                     continue;
                 }
-
-                let neighbor = Misc::itou(neighbor);
 
                 if !self.processed.contains(&neighbor) && states.walkable().contains(&neighbor) {
                     self.edges.insert(neighbor);
@@ -174,8 +172,7 @@ impl FleeMap {
                     let current_weight = self.weights.get_xy(*edge).unwrap();
 
                     // Iterate all neighboring coords around the edge.
-                    let edge_coord = Misc::utoi(*edge);
-                    for neighbor in adjacency.neighbors(edge_coord) {
+                    for neighbor in adjacency.neighbors(*edge) {
                         // If the neighbor has been processed or is blocked, continue.
                         if neighbor.0 >= states.width() as i32
                             || neighbor.1 >= states.height() as i32
@@ -183,25 +180,22 @@ impl FleeMap {
                             continue;
                         }
 
-                        let neighbor_coord = Misc::itou(neighbor);
-
-                        if self.processed.contains(&neighbor_coord)
-                            || !states.walkable().contains(&neighbor_coord)
+                        if self.processed.contains(&neighbor)
+                            || !states.walkable().contains(&neighbor)
                         {
                             continue;
                         }
 
                         // Calculate the new weight for the neighbor (which will always be Some).
-                        let neighbor_weight = self.weights.get_xy(neighbor_coord).unwrap();
-                        let new_weight =
-                            current_weight + self.distance.calculate(edge_coord, neighbor);
+                        let neighbor_weight = self.weights.get_xy(neighbor).unwrap();
+                        let new_weight = current_weight + self.distance.calculate(*edge, neighbor);
 
                         // If the new weight is less (closer) than the previous weight, update and
                         // add the neighbor to the queue of edges to process.
                         if new_weight < neighbor_weight {
-                            *self.weights.get_xy_mut(neighbor_coord) = Some(new_weight);
-                            self.queue.change_priority(&neighbor_coord, OrderedFloat(new_weight));
-                            self.edges.insert(neighbor_coord);
+                            *self.weights.get_xy_mut(neighbor) = Some(new_weight);
+                            self.queue.change_priority(&neighbor, OrderedFloat(new_weight));
+                            self.edges.insert(neighbor);
                         }
                     }
 
@@ -221,26 +215,26 @@ impl FleeMap {
 // Impl Map2dView for FleeMap.
 //-------------------------------------------------------------------------------------------------
 impl Map2dView for FleeMap {
-    type Type = Option<f64>;
+    type Type = Option<f32>;
 
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn width(&self) -> u32 {
+    fn width(&self) -> i32 {
         self.weights.width()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn height(&self) -> u32 {
+    fn height(&self) -> i32 {
         self.weights.height()
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the dimensions of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn dimensions(&self) -> UCoord {
+    fn dimensions(&self) -> ICoord {
         self.weights.dimensions()
     }
 
@@ -254,7 +248,7 @@ impl Map2dView for FleeMap {
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: UCoord) -> &Self::Type {
+    fn get_xy(&self, xy: ICoord) -> &Self::Type {
         self.weights.get_xy(xy)
     }
 }

@@ -26,7 +26,7 @@ use crate::scene_stack::*;
 pub struct Scratch {
     scroll_log: ScrollLog,
     view: Rect,
-    path: Vec<UCoord>,
+    path: Vec<ICoord>,
     a_star: AStar,
 }
 
@@ -71,10 +71,6 @@ impl Scratch {
 
         server.blit_zone(terminal, &self.view, (0, 0));
 
-        let tile = terminal.get_xy_mut(server.player_xy());
-        tile.glyph = '@';
-        tile.foreground_color = TileColor::WHITE;
-
         Ok(())
     }
 
@@ -82,7 +78,7 @@ impl Scratch {
         &mut self,
         server: &mut Server,
         terminal: &mut Terminal,
-        xy: UCoord,
+        xy: ICoord,
     ) -> Result<()> {
         let response = server.request(ClientRequest::Teleport(xy))?;
 
@@ -101,14 +97,10 @@ impl Scratch {
 
         server.blit_zone(terminal, &self.view, (0, 0));
 
-        let tile = terminal.get_xy_mut(server.player_xy());
-        tile.glyph = '@';
-        tile.foreground_color = TileColor::WHITE;
-
         Ok(())
     }
 
-    fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: UCoord) {
+    fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
         server.blit_zone(terminal, &self.view, (0, 0));
         let player_xy = server.player_xy();
 
@@ -120,10 +112,6 @@ impl Scratch {
             tile.background_color = PaletteColor::Gold.const_into();
             tile.background_opacity = 0.25;
         }
-
-        let tile = terminal.get_xy_mut(server.player_xy());
-        tile.glyph = '@';
-        tile.foreground_color = TileColor::WHITE;
     }
 }
 
@@ -167,9 +155,6 @@ impl Scene for Scratch {
 
         server.reload()?;
         server.blit_zone(terminal, &self.view, (0, 0));
-        let tile = terminal.get_xy_mut(server.player_xy());
-        tile.glyph = '@';
-        tile.foreground_color = TileColor::WHITE;
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -211,9 +196,6 @@ impl Scene for Scratch {
         } else if input.action_just_pressed(InputAction::Accept) {
             let _ = server.request(ClientRequest::Wait);
             server.blit_zone(terminal, &self.view, (0, 0));
-            let tile = terminal.get_xy_mut(server.player_xy());
-            tile.glyph = '@';
-            tile.foreground_color = TileColor::WHITE;
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {

@@ -49,16 +49,16 @@ where
     fn translate(&self, index: usize) -> usize {
         let (x, y) = Misc::reverse_index_2d(index, self.width());
         Misc::index_2d(
-            (x + self.subsection.x as u32, y + self.subsection.y as u32),
-            self.subsection.width as u32,
+            (x + self.subsection.x as i32, y + self.subsection.y as i32),
+            self.subsection.width as i32,
         )
     }
 
     //---------------------------------------------------------------------------------------------
     // Helper function for translating subsection coord to base map coord.
     //---------------------------------------------------------------------------------------------
-    fn translate_xy(&self, (x, y): UCoord) -> UCoord {
-        (x + self.subsection.x as u32, y + self.subsection.y as u32)
+    fn translate_xy(&self, (x, y): ICoord) -> ICoord {
+        (x + self.subsection.x as i32, y + self.subsection.y as i32)
     }
 }
 
@@ -74,22 +74,22 @@ where
     //---------------------------------------------------------------------------------------------
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn width(&self) -> u32 {
-        self.subsection.width as u32
+    fn width(&self) -> i32 {
+        self.subsection.width as i32
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn height(&self) -> u32 {
-        self.subsection.height as u32
+    fn height(&self) -> i32 {
+        self.subsection.height as i32
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the dimensions of the Map2dView.
     //---------------------------------------------------------------------------------------------
-    fn dimensions(&self) -> UCoord {
-        Misc::itou(self.subsection.dimensions())
+    fn dimensions(&self) -> ICoord {
+        self.subsection.dimensions()
     }
 
     //---------------------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy(&self, xy: UCoord) -> &Self::Type {
+    fn get_xy(&self, xy: ICoord) -> &Self::Type {
         let xy = self.translate_xy(xy);
         self.base_map.get_xy(xy)
     }
@@ -127,7 +127,7 @@ where
     //---------------------------------------------------------------------------------------------
     // Get mut ref to contents of the Map2dView at a coord.
     //---------------------------------------------------------------------------------------------
-    fn get_xy_mut(&mut self, xy: UCoord) -> &mut Self::Type {
+    fn get_xy_mut(&mut self, xy: ICoord) -> &mut Self::Type {
         let xy = self.translate_xy(xy);
         self.base_map.get_xy_mut(xy)
     }

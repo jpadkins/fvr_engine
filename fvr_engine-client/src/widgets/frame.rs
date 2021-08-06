@@ -342,9 +342,9 @@ pub enum FrameStyle {
 //-------------------------------------------------------------------------------------------------
 pub struct Frame {
     // Origin of the frame when drawing.
-    pub origin: UCoord,
+    pub origin: ICoord,
     // Dimensions of the area inside the frame.
-    pub inner_dimensions: UCoord,
+    pub inner_dimensions: ICoord,
     // Style of the frame.
     pub style: FrameStyle,
     // Optional top-left text.
@@ -361,7 +361,7 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Creates a new frame.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: UCoord, inner_dimensions: UCoord, style: FrameStyle) -> Self {
+    pub fn new(origin: ICoord, inner_dimensions: ICoord, style: FrameStyle) -> Self {
         Self {
             origin,
             inner_dimensions,
@@ -376,28 +376,28 @@ impl Frame {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> UCoord {
+    pub fn origin(&self) -> ICoord {
         self.origin
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the width of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> i32 {
         self.inner_dimensions.0 + 1
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the height of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> i32 {
         self.inner_dimensions.1 + 1
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the inner dimensions of the frame.
     //---------------------------------------------------------------------------------------------
-    pub fn inner_dimensions(&self) -> UCoord {
+    pub fn inner_dimensions(&self) -> ICoord {
         self.inner_dimensions
     }
 
@@ -699,7 +699,7 @@ impl Frame {
             let stripped_len = RichTextWriter::stripped_len(top_right_text)?;
             RichTextWriter::write_plain_with_settings(
                 map,
-                (self.origin.0 + self.inner_dimensions.0 - stripped_len as u32, self.origin.1),
+                (self.origin.0 + self.inner_dimensions.0 - stripped_len as i32, self.origin.1),
                 top_right_text,
                 &TEXT_FORMAT_SETTINGS,
             );
@@ -721,7 +721,7 @@ impl Frame {
             RichTextWriter::write_plain_with_settings(
                 map,
                 (
-                    self.origin.0 + self.inner_dimensions.0 - stripped_len as u32,
+                    self.origin.0 + self.inner_dimensions.0 - stripped_len as i32,
                     self.origin.1 + self.inner_dimensions.1 + 1,
                 ),
                 bottom_right_text,

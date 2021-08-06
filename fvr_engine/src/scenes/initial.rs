@@ -120,7 +120,7 @@ impl Scene for Initial {
 
         // -1 y aligns the logo in the center.
         let logo_xy = (
-            (terminal.width() - logo_width as u32) / 2,
+            (terminal.width() - logo_width as i32) / 2,
             ((terminal.height() - logo_height) / 2) - 1,
         );
 

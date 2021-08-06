@@ -134,7 +134,7 @@ pub enum ButtonAction {
 //-------------------------------------------------------------------------------------------------
 pub struct Button {
     // Origin of the button.
-    pub origin: UCoord,
+    pub origin: ICoord,
     // Text of the button (plain only).
     pub text: String,
     // Layout of the button.
@@ -147,17 +147,17 @@ impl Button {
     //---------------------------------------------------------------------------------------------
     // Creates a new button.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: UCoord, text: String, layout: ButtonLayout) -> Self {
+    pub fn new(origin: ICoord, text: String, layout: ButtonLayout) -> Self {
         Self { origin, text, layout, state: State::Default }
     }
 
     //---------------------------------------------------------------------------------------------
     // Helper function to determine whether the button contains a coord.
     //---------------------------------------------------------------------------------------------
-    fn contains(&self, coord: &UCoord) -> bool {
+    fn contains(&self, coord: &ICoord) -> bool {
         coord.1 == self.origin.1
             && coord.0 >= self.origin.0
-            && coord.0 < self.origin.0 + self.text.chars().count() as u32
+            && coord.0 < self.origin.0 + self.text.chars().count() as i32
     }
 
     //---------------------------------------------------------------------------------------------

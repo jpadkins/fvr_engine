@@ -26,7 +26,7 @@ use crate::scenes::transitions::*;
 // Constants.
 //-------------------------------------------------------------------------------------------------
 const FADE_DURATION: Duration = Duration::from_millis(250);
-const TITLE_TOP_OFFSET: u32 = 2;
+const TITLE_TOP_OFFSET: i32 = 2;
 const TITLE_TEXT: &str = r#"
 888'Y88 Y8b Y88888P 888 88e      888'Y88 Y88b Y88   e88'Y88  888 Y88b Y88 888'Y88
 888 ,'Y  Y8b Y888P  888 888D     888 ,'Y  Y88b Y8  d888  'Y  888  Y88b Y8 888 ,'Y
@@ -34,7 +34,7 @@ const TITLE_TEXT: &str = r#"
 888 "      Y8b Y    888 b,       888 ",d 8b Y88b   Y888 888P 888 8b Y88b  888 ",d
 888         Y8P     888 88b,     888,d88 88b Y88b   "88 88"  888 88b Y88b 888,d88
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Y8P~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"#;
-const MENU_BUTTONS_OFFSET: u32 = 3;
+const MENU_BUTTONS_OFFSET: i32 = 3;
 const VERSION_TEXT: &str = "Alpha v0.0.1";
 const COPYRIGHT_TEXT: &str = "Copyright (c) 2021 Waco Paul (wacopaul@pm.me) All Rights Reserved.";
 
@@ -159,7 +159,7 @@ impl Scene for MainMenu {
         };
 
         // Draw the title text
-        let title_xy = ((terminal.width() - title_width as u32) / 2, TITLE_TOP_OFFSET);
+        let title_xy = ((terminal.width() - title_width as i32) / 2, TITLE_TOP_OFFSET);
         RichTextWriter::write_plain_with_settings(
             terminal,
             title_xy,
@@ -180,7 +180,7 @@ impl Scene for MainMenu {
 
         // Draw the version text.
         let version_xy =
-            ((terminal.width() - VERSION_TEXT.len() as u32) / 2, terminal.height() - 2);
+            ((terminal.width() - VERSION_TEXT.len() as i32) / 2, terminal.height() - 2);
         RichTextWriter::write_plain_with_settings(
             terminal,
             version_xy,
@@ -190,7 +190,7 @@ impl Scene for MainMenu {
 
         // Draw the copyright text.
         let copyright_xy =
-            ((terminal.width() - COPYRIGHT_TEXT.len() as u32) / 2, terminal.height() - 1);
+            ((terminal.width() - COPYRIGHT_TEXT.len() as i32) / 2, terminal.height() - 1);
         RichTextWriter::write_plain_with_settings(
             terminal,
             copyright_xy,
