@@ -233,23 +233,23 @@ impl Zone {
         let mut rng = thread_rng();
 
         // Chasing mobs.
-        // for _ in 0..50 {
-        //     let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
+        for _ in 0..100 {
+            let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
-        //     if xy == self.player_xy().0
-        //         || self.actor_map().0.get_xy(xy).is_some()
-        //         || !self.passable_map().0.get_xy(xy).passable()
-        //     {
-        //         continue;
-        //     }
+            if xy == self.player_xy().0
+                || self.actor_map().0.get_xy(xy).is_some()
+                || !self.passable_map().0.get_xy(xy).passable()
+            {
+                continue;
+            }
 
-        //     let entity = self.world.create_entity().with(HasXY(xy)).build();
-        //     let actor = Actor { thing: CHASING_MOB_THING, entity, stationary: false };
+            let entity = self.world.create_entity().with(HasXY(xy)).build();
+            let actor = Actor { thing: CHASING_MOB_THING, entity, stationary: false };
 
-        //     self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
-        //     self.world.write_component::<ChasingPlayer>().insert(entity, ChasingPlayer {})?;
-        //     *self.actor_map_mut().0.get_xy_mut(xy) = Some(actor);
-        // }
+            self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
+            self.world.write_component::<ChasingPlayer>().insert(entity, ChasingPlayer {})?;
+            *self.actor_map_mut().0.get_xy_mut(xy) = Some(actor);
+        }
 
         // Fleeing Mobs.
         for _ in 0..100 {
@@ -278,7 +278,8 @@ impl Zone {
             let mut passable = true;
 
             if let Some(actor) = self.actor_map().0.get_xy((x, y)) {
-                passable = actor.stationary;
+                // TODO: Is this correct?
+                passable = true; //actor.stationary;
             } else if !self.cell_map().0.get_xy((x, y)).passable() {
                 passable = false;
             }
