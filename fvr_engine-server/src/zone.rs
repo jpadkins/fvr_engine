@@ -225,15 +225,14 @@ impl Zone {
             }
         });
 
-        let dimensions = cell_map.dimensions();
-        cell_map.get_xy_mut((dimensions.0 / 2, dimensions.1 / 2)).things[0] = GRASS_THING;
+        cell_map.get_xy_mut((27, 16)).things[0] = GRASS_THING;
     }
 
     fn populate_mobs(&mut self) -> Result<()> {
         let mut rng = thread_rng();
 
         // Chasing mobs.
-        for _ in 0..100 {
+        for _ in 0..25 {
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
             if xy == self.player_xy().0
@@ -252,7 +251,7 @@ impl Zone {
         }
 
         // Fleeing Mobs.
-        for _ in 0..100 {
+        for _ in 0..25 {
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
             if xy == self.player_xy().0
@@ -347,7 +346,7 @@ impl Zone {
         world.insert(ActorMap(actor_map));
         world.insert(ChaseMap(chase_map));
         world.insert(FleeMap(flee_map));
-        world.insert(PlayerXY((dimensions.0 / 2, dimensions.1 / 2)));
+        world.insert(PlayerXY((27, 16)));
 
         let mut zone = Self { dimensions, world };
         zone.populate_mobs()?;
