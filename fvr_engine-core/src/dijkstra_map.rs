@@ -114,9 +114,9 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            let coord = (xy.0 as i32 + dir.dx(), xy.1 as i32 + dir.dy());
+            let coord = (xy.0 + dir.dx(), xy.1 + dir.dy());
 
-            if !self.weights.in_bounds_icoord(coord) {
+            if !self.weights.in_bounds(coord) {
                 continue;
             }
 
@@ -140,9 +140,9 @@ impl DijkstraMap {
         let adjacency = self.distance.adjacency();
 
         for dir in adjacency.iter() {
-            let coord = (xy.0 as i32 + dir.dx(), xy.1 as i32 + dir.dy());
+            let coord = (xy.0 + dir.dx(), xy.1 + dir.dy());
 
-            if !self.weights.in_bounds_icoord(coord) {
+            if !self.weights.in_bounds(coord) {
                 continue;
             }
 
@@ -178,7 +178,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     pub fn combine_xy(&mut self, xy: ICoord, modifier: f32) {
         if let Some(weight) = self.weights.get_xy_mut(xy) {
-            *weight = *weight + modifier;
+            *weight += modifier;
         }
     }
 
@@ -251,7 +251,7 @@ impl DijkstraMap {
                 // Iterate all neighboring coords around the edge.
                 for neighbor in adjacency.neighbors(*edge) {
                     // If the neighbor is out of bounds, has been processed or is blocked, continue.
-                    if !self.states.in_bounds_icoord(neighbor) {
+                    if !self.states.in_bounds(neighbor) {
                         continue;
                     }
 

@@ -40,8 +40,8 @@ impl Server {
         let cells = self.zone.cell_map();
         let actors = self.zone.actor_map();
 
-        xy_iter!(x, y, src.width as i32, src.height as i32, {
-            let src_xy = (src.x as i32 + x, src.y as i32 + y);
+        xy_iter!(x, y, src.width, src.height, {
+            let src_xy = (src.x + x, src.y + y);
             let dst_xy = (dst.0 + x, dst.1 + y);
 
             if let Some(actor) = actors.0.get_xy(src_xy) {

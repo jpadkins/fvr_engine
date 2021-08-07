@@ -4,7 +4,6 @@ mod cp437;
 mod dijkstra_map;
 mod direction;
 mod distance;
-mod flee_map;
 mod fov;
 mod grid_map;
 mod map2d;
@@ -24,7 +23,6 @@ pub mod prelude {
     pub use crate::dijkstra_map::*;
     pub use crate::direction::*;
     pub use crate::distance::*;
-    pub use crate::flee_map::*;
     pub use crate::fov::*;
     pub use crate::grid_map::*;
     pub use crate::map2d::*;

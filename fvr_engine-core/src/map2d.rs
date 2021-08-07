@@ -45,21 +45,14 @@ pub trait Map2dView {
     // Get ref to contents of the Map2dView at an xy coord in relation to a view.
     //---------------------------------------------------------------------------------------------
     fn get_view_xy(&self, xy: ICoord, view: &Rect) -> &Self::Type {
-        self.get_xy((xy.0 + view.x as i32, xy.1 + view.y as i32))
+        self.get_xy((xy.0 + view.x, xy.1 + view.y))
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns whether a coord is in bounds of the Map2d.
     //---------------------------------------------------------------------------------------------
     fn in_bounds(&self, xy: ICoord) -> bool {
-        xy.0 < self.width() && xy.1 < self.height()
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns whether a coord is in bounds of the Map2d.
-    //---------------------------------------------------------------------------------------------
-    fn in_bounds_icoord(&self, xy: ICoord) -> bool {
-        xy.0 >= 0 && xy.1 >= 0 && (xy.0 as i32) < self.width() && (xy.1 as i32) < self.height()
+        xy.0 >= 0 && xy.1 >= 0 && xy.0 < self.width() && xy.1 < self.height()
     }
 }
 
@@ -83,7 +76,7 @@ pub trait Map2dViewMut {
     // Get mut ref to contents of the Map2dView at an xy coord in relation to a view.
     //---------------------------------------------------------------------------------------------
     fn get_view_xy_mut(&mut self, xy: ICoord, view: &Rect) -> &mut Self::Type {
-        self.get_xy_mut((xy.0 + view.x as i32, xy.1 + view.y as i32))
+        self.get_xy_mut((xy.0 + view.x, xy.1 + view.y))
     }
 }
 

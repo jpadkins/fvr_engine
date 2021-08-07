@@ -124,8 +124,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
 
     // Initialize the rect packer.
     let config = rect_packer::Config {
-        width: OUTPUT_WIDTH as i32,
-        height: OUTPUT_HEIGHT as i32,
+        width: OUTPUT_WIDTH,
+        height: OUTPUT_HEIGHT,
         border_padding: 2,
         rectangle_padding: 2,
     };
@@ -141,7 +141,7 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
             metric.height as u32,
         );
         let rect = packer
-            .pack(metric.width as i32, metric.height as i32, false)
+            .pack(metric.width, metric.height, false)
             .ok_or(anyhow!("Failed to pack rect."))?;
 
         output_buffer
@@ -151,8 +151,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x: rect.x as i32,
-            y: rect.y as i32,
+            x: rect.x,
+            y: rect.y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -176,7 +176,7 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
             metric.height as u32,
         );
         let rect = packer
-            .pack(metric.width as i32, metric.height as i32, false)
+            .pack(metric.width, metric.height, false)
             .ok_or(anyhow!("Failed to pack rect."))?;
 
         output_buffer
@@ -186,8 +186,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x: rect.x as i32,
-            y: rect.y as i32,
+            x: rect.x,
+            y: rect.y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,

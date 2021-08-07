@@ -134,6 +134,7 @@ pub struct FleeingPlayer;
 struct ChasePlayerSystem;
 
 impl<'a> System<'a> for ChasePlayerSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         WriteExpect<'a, ActorMap>,
         ReadExpect<'a, ChaseMap>,
@@ -174,6 +175,7 @@ impl<'a> System<'a> for ChasePlayerSystem {
 struct FleePlayerSystem;
 
 impl<'a> System<'a> for FleePlayerSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         WriteExpect<'a, ActorMap>,
         ReadExpect<'a, FleeMap>,
@@ -406,9 +408,9 @@ impl Zone {
 
     pub fn move_player(&mut self, dir: Direction) -> Result<bool> {
         let player_xy = self.player_xy().0;
-        let new_xy = (player_xy.0 as i32 + dir.dx(), player_xy.1 as i32 + dir.dy());
+        let new_xy = (player_xy.0 + dir.dx(), player_xy.1 + dir.dy());
 
-        if !self.cell_map().0.in_bounds_icoord(new_xy) {
+        if !self.cell_map().0.in_bounds(new_xy) {
             return Ok(false);
         }
 

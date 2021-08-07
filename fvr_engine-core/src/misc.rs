@@ -39,7 +39,7 @@ impl Misc {
     // Approximation of atan2 that scales result to range [0.0..1.0].
     // Adapted from SquidLib.
     //---------------------------------------------------------------------------------------------
-    pub fn scaled_atan2(x: f32, y: f32) -> f32 {
+    pub fn scaled_atan2(x: f64, y: f64) -> f64 {
         // TODO: Why did Squidlib return 0.0 in this case?
         // if x == 0.0 || y == 0.0 {
         //     return 0.0;

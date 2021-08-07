@@ -48,17 +48,14 @@ where
     //---------------------------------------------------------------------------------------------
     fn translate(&self, index: usize) -> usize {
         let (x, y) = Misc::reverse_index_2d(index, self.width());
-        Misc::index_2d(
-            (x + self.subsection.x as i32, y + self.subsection.y as i32),
-            self.subsection.width as i32,
-        )
+        Misc::index_2d((x + self.subsection.x, y + self.subsection.y), self.subsection.width)
     }
 
     //---------------------------------------------------------------------------------------------
     // Helper function for translating subsection coord to base map coord.
     //---------------------------------------------------------------------------------------------
     fn translate_xy(&self, (x, y): ICoord) -> ICoord {
-        (x + self.subsection.x as i32, y + self.subsection.y as i32)
+        (x + self.subsection.x, y + self.subsection.y)
     }
 }
 
@@ -75,14 +72,14 @@ where
     // Return the width of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn width(&self) -> i32 {
-        self.subsection.width as i32
+        self.subsection.width
     }
 
     //---------------------------------------------------------------------------------------------
     // Return the height of the Map2dView.
     //---------------------------------------------------------------------------------------------
     fn height(&self) -> i32 {
-        self.subsection.height as i32
+        self.subsection.height
     }
 
     //---------------------------------------------------------------------------------------------
@@ -158,7 +155,7 @@ fn test_sub_map() {
     *grid_map.get_xy_mut((1, 0)) = 10;
     *grid_map.get_xy_mut((5, 5)) = 10;
 
-    let full_rect = Rect::new((0, 0), grid_map.width() as i32, grid_map.height() as i32);
+    let full_rect = Rect::new((0, 0), grid_map.width(), grid_map.height());
     let sub_map = SubMap::new(&mut grid_map, full_rect);
     assert_eq!(*sub_map.get_xy((1, 0)), 10);
     assert_eq!(*sub_map.get_xy((5, 5)), 10);

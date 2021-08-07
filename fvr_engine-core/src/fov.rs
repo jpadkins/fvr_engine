@@ -270,10 +270,10 @@ impl Fov {
                 let delta_radius = self.distance.calculate_slope(dx as f32, dy as f32);
                 let atan2 = (angle
                     - Misc::scaled_atan2(
-                        (current_x - origin.0 as i32) as f32,
-                        (current_y - origin.1 as i32) as f32,
-                    ))
-                .abs();
+                        (current_x - origin.0 as i32) as f64,
+                        (current_y - origin.1 as i32) as f64,
+                    ) as f32)
+                    .abs();
                 let current_coord = (current_x as i32, current_y as i32);
 
                 if delta_radius <= radius && (atan2 <= span * 0.5 || atan2 >= 1.0 - span * 0.5) {

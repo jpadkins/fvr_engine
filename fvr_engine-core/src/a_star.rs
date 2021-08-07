@@ -126,7 +126,7 @@ impl AStar {
     // Helper for quick distance comparison.
     //-------------------------------------------------------------------------------------------------
     fn distance_magnitude(p1: ICoord, p2: ICoord) -> f32 {
-        ((p2.0 as i32 - p1.0 as i32).pow(2) + (p2.1 as i32 - p1.1 as i32).pow(2)) as f32
+        ((p2.0 - p1.0).pow(2) + (p2.1 - p1.1).pow(2)) as f32
     }
 
     //-------------------------------------------------------------------------------------------------
@@ -280,7 +280,7 @@ impl AStar {
             // Process the node.
             for xy in adjacency.neighbors(node.0) {
                 // Continue if the neighbor is not valid.
-                if !states.in_bounds_icoord(xy) {
+                if !states.in_bounds(xy) {
                     continue;
                 }
 
