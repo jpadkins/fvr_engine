@@ -81,15 +81,16 @@ static FLEEING_MOB_THING: Thing = Thing {
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Thing {
-    pub tile: Tile,
     pub passable: bool,
+    pub tile: Tile,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Actor {
-    pub thing: Thing,
     pub entity: Entity,
-    pub stationary: bool,
+    pub last_weight: Option<f32>,
+    pub stationary: i32,
+    pub thing: Thing,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -113,7 +114,11 @@ pub struct PassableMap(pub GridMap<Passability>);
 pub struct ActorMap(pub GridMap<Option<Actor>>);
 pub struct ChaseMap(pub DijkstraMap);
 pub struct FleeMap(pub DijkstraMap);
-pub struct PlayerXY(pub ICoord);
+pub struct Player {
+    pub fov: Fov,
+    pub stationary: i32,
+    pub xy: ICoord,
+}
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -138,7 +143,7 @@ impl<'a> System<'a> for ChasePlayerSystem {
     type SystemData = (
         WriteExpect<'a, ActorMap>,
         ReadExpect<'a, ChaseMap>,
-        ReadExpect<'a, PlayerXY>,
+        ReadExpect<'a, Player>,
         ReadStorage<'a, ChasingPlayer>,
         ReadStorage<'a, IsActor>,
         WriteStorage<'a, HasXY>,
@@ -146,26 +151,25 @@ impl<'a> System<'a> for ChasePlayerSystem {
 
     fn run(
         &mut self,
-        (mut actor_map, chase_map, player_xy, chasing_player, is_actor, mut xy): Self::SystemData,
+        (mut actor_map, chase_map, player, chasing_player, is_actor, mut xy): Self::SystemData,
     ) {
         for (_, _, p) in (&chasing_player, &is_actor, &mut xy).join() {
-            let dir = chase_map.0.min_direction(p.0);
+            let new_position = chase_map.0.best_neighbor(p.0);
 
-            if dir == NULL_DIRECTION {
-                actor_map.0.get_xy_mut(p.0).unwrap().stationary = true;
+            if new_position.is_none() {
+                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
                 continue;
             }
 
-            let new_position =
-                ((p.0 .0 as i32 + dir.dx()) as i32, (p.0 .1 as i32 + dir.dy()) as i32);
+            let (new_position, _weight) = new_position.unwrap();
 
-            if new_position == player_xy.0 || actor_map.0.get_xy(new_position).is_some() {
-                actor_map.0.get_xy_mut(p.0).unwrap().stationary = true;
+            if new_position == player.xy || actor_map.0.get_xy(new_position).is_some() {
+                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
                 continue;
             }
 
             *actor_map.0.get_xy_mut(new_position) = actor_map.0.get_xy_mut(p.0).take();
-            actor_map.0.get_xy_mut(new_position).unwrap().stationary = false;
+            actor_map.0.get_xy_mut(new_position).as_mut().unwrap().stationary = 0;
 
             p.0 = new_position;
         }
@@ -179,7 +183,7 @@ impl<'a> System<'a> for FleePlayerSystem {
     type SystemData = (
         WriteExpect<'a, ActorMap>,
         ReadExpect<'a, FleeMap>,
-        ReadExpect<'a, PlayerXY>,
+        ReadExpect<'a, Player>,
         ReadStorage<'a, FleeingPlayer>,
         ReadStorage<'a, IsActor>,
         WriteStorage<'a, HasXY>,
@@ -187,26 +191,25 @@ impl<'a> System<'a> for FleePlayerSystem {
 
     fn run(
         &mut self,
-        (mut actor_map, flee_map, player_xy, fleeing_player, is_actor, mut xy): Self::SystemData,
+        (mut actor_map, flee_map, player, fleeing_player, is_actor, mut xy): Self::SystemData,
     ) {
         for (_, _, p) in (&fleeing_player, &is_actor, &mut xy).join() {
-            let dir = flee_map.0.min_direction(p.0);
+            let new_position = flee_map.0.best_neighbor(p.0);
 
-            if dir == NULL_DIRECTION {
-                actor_map.0.get_xy_mut(p.0).unwrap().stationary = true;
+            if new_position.is_none() {
+                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
                 continue;
             }
 
-            let new_position =
-                ((p.0 .0 as i32 + dir.dx()) as i32, (p.0 .1 as i32 + dir.dy()) as i32);
+            let (new_position, _weight) = new_position.unwrap();
 
-            if new_position == player_xy.0 || actor_map.0.get_xy(new_position).is_some() {
-                actor_map.0.get_xy_mut(p.0).unwrap().stationary = true;
+            if new_position == player.xy || actor_map.0.get_xy(new_position).is_some() {
+                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
                 continue;
             }
 
             *actor_map.0.get_xy_mut(new_position) = actor_map.0.get_xy_mut(p.0).take();
-            actor_map.0.get_xy_mut(new_position).unwrap().stationary = false;
+            actor_map.0.get_xy_mut(new_position).as_mut().unwrap().stationary = 0;
 
             p.0 = new_position;
         }
@@ -234,10 +237,10 @@ impl Zone {
         let mut rng = thread_rng();
 
         // Chasing mobs.
-        for _ in 0..25 {
+        for _ in 0..20 {
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
-            if xy == self.player_xy().0
+            if xy == self.player().xy
                 || self.actor_map().0.get_xy(xy).is_some()
                 || !self.passable_map().0.get_xy(xy).passable()
             {
@@ -245,7 +248,8 @@ impl Zone {
             }
 
             let entity = self.world.create_entity().with(HasXY(xy)).build();
-            let actor = Actor { thing: CHASING_MOB_THING, entity, stationary: false };
+            let actor =
+                Actor { thing: CHASING_MOB_THING, entity, stationary: 0, last_weight: None };
 
             self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
             self.world.write_component::<ChasingPlayer>().insert(entity, ChasingPlayer {})?;
@@ -253,10 +257,10 @@ impl Zone {
         }
 
         // Fleeing Mobs.
-        for _ in 0..25 {
+        for _ in 0..20 {
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
-            if xy == self.player_xy().0
+            if xy == self.player().xy
                 || self.actor_map().0.get_xy(xy).is_some()
                 || !self.passable_map().0.get_xy(xy).passable()
             {
@@ -264,7 +268,8 @@ impl Zone {
             }
 
             let entity = self.world.create_entity().with(HasXY(xy)).build();
-            let actor = Actor { thing: FLEEING_MOB_THING, entity, stationary: false };
+            let actor =
+                Actor { thing: FLEEING_MOB_THING, entity, stationary: 0, last_weight: None };
 
             self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
             self.world.write_component::<FleeingPlayer>().insert(entity, FleeingPlayer {})?;
@@ -274,55 +279,68 @@ impl Zone {
         Ok(())
     }
 
-    fn refresh_passable_map(&mut self) {
+    fn refresh_navigation_maps(&mut self) -> Result<()> {
+        // Refresh the passability map and states.
         xy_tuple_iter!(x, y, self.dimensions, {
-            let mut passable = true;
+            let passable;
 
+            // Treat actors who have not moved in two rounds as obstacles.
             if let Some(actor) = self.actor_map().0.get_xy((x, y)) {
-                // TODO: Is this correct?
-                passable = true; //actor.stationary;
-            } else if !self.cell_map().0.get_xy((x, y)).passable() {
-                passable = false;
+                passable = !(actor.stationary > 2);
+            } else {
+                passable = self.cell_map().0.get_xy((x, y)).passable();
             }
 
             *self.passable_map_mut().0.get_xy_mut((x, y)) = passable.into();
+            *self.chase_map_mut().0.states_mut().get_xy_mut((x, y)) = passable.into();
+            *self.flee_map_mut().0.states_mut().get_xy_mut((x, y)) = passable.into();
+            *self.player_mut().fov.states_mut().get_xy_mut((x, y)) = passable.into();
         });
 
-        *self.passable_map_mut().0.get_xy_mut(self.player_xy().0) = Passability::Blocked;
-    }
-
-    fn refresh_navigation_maps(&mut self) -> Result<()> {
-        xy_tuple_iter!(x, y, self.dimensions, {
-            let passability = *self.passable_map().0.get_xy((x, y));
-            *self.chase_map_mut().0.states_mut().get_xy_mut((x, y)) = passability.into();
-            *self.flee_map_mut().0.states_mut().get_xy_mut((x, y)) = passability.into();
-        });
-
-        let player_xy = self.player_xy().0;
+        let player_xy = self.player().xy;
+        *self.passable_map_mut().0.get_xy_mut(player_xy) = Passability::Passable;
 
         // Caluclate the chase map.
         *self.chase_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
         self.chase_map_mut().0.calculate();
 
         // Calculate the flee map using the max xy of the chase map.
-        let farthest_xy = self.chase_map().0.farthest_xy();
-        *self.flee_map_mut().0.states_mut().get_xy_mut(farthest_xy) = DIJKSTRA_DEFAULT_GOAL;
-        self.flee_map_mut().0.calculate();
+        let highest_xy = self.chase_map().0.highest_xy();
 
-        // Modulate the flee map by some coefficient of the chase map.
-        xy_tuple_iter!(x, y, self.dimensions, {
-            let chase_weight = {
-                if let Some(weight) = self.chase_map().0.get_xy((x, y)) {
-                    *weight
-                } else {
-                    continue;
-                }
-            };
+        if let Some(xy) = highest_xy {
+            // If a path exists to the player, use "intelligent" combined flee pathing.
+            *self.flee_map_mut().0.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
+            self.flee_map_mut().0.calculate();
 
-            self.flee_map_mut().0.combine_xy((x, y), chase_weight * -1.2);
-        });
+            // Modulate the flee map by some coefficient of the chase map.
+            let highest_weight = self.chase_map().0.get_xy(xy).unwrap();
+
+            xy_tuple_iter!(x, y, self.dimensions, {
+                let chase_weight = {
+                    if let Some(weight) = self.chase_map().0.get_xy((x, y)) {
+                        *weight
+                    } else {
+                        continue;
+                    }
+                };
+
+                self.flee_map_mut().0.combine_xy((x, y), highest_weight - chase_weight);
+            });
+        } else {
+            // Otherwise, use "dumb" inverse pathing.
+            *self.flee_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
+            self.flee_map_mut().0.calculate();
+            self.flee_map_mut().0.invert();
+        }
+
+        self.flee_map_mut().0.refresh_highest();
 
         Ok(())
+    }
+
+    fn refresh_player_fov(&mut self) {
+        let player_xy = self.player().xy;
+        self.player_mut().fov.calculate(player_xy, 30.0);
     }
 
     pub fn new(dimensions: ICoord) -> Result<Self> {
@@ -331,6 +349,7 @@ impl Zone {
         let actor_map = GridMap::new(dimensions);
         let chase_map = DijkstraMap::new(dimensions, Distance::Euclidean);
         let flee_map = DijkstraMap::new(dimensions, Distance::Euclidean);
+        let player_fov = Fov::new(dimensions, Distance::Euclidean);
 
         Self::generate_dummy_map(&mut cell_map, &mut passable_map);
 
@@ -348,11 +367,10 @@ impl Zone {
         world.insert(ActorMap(actor_map));
         world.insert(ChaseMap(chase_map));
         world.insert(FleeMap(flee_map));
-        world.insert(PlayerXY((27, 16)));
+        world.insert(Player { xy: (27, 16), stationary: 0, fov: player_fov });
 
         let mut zone = Self { dimensions, world };
         zone.populate_mobs()?;
-        zone.refresh_passable_map();
         zone.refresh_navigation_maps()?;
 
         Ok(zone)
@@ -398,16 +416,16 @@ impl Zone {
         self.world.write_resource::<FleeMap>()
     }
 
-    pub fn player_xy(&self) -> Fetch<PlayerXY> {
-        self.world.read_resource::<PlayerXY>()
+    pub fn player(&self) -> Fetch<Player> {
+        self.world.read_resource::<Player>()
     }
 
-    pub fn player_xy_mut(&mut self) -> FetchMut<PlayerXY> {
-        self.world.write_resource::<PlayerXY>()
+    pub fn player_mut(&mut self) -> FetchMut<Player> {
+        self.world.write_resource::<Player>()
     }
 
     pub fn move_player(&mut self, dir: Direction) -> Result<bool> {
-        let player_xy = self.player_xy().0;
+        let player_xy = self.player().xy;
         let new_xy = (player_xy.0 + dir.dx(), player_xy.1 + dir.dy());
 
         if !self.cell_map().0.in_bounds(new_xy) {
@@ -417,9 +435,8 @@ impl Zone {
         if self.actor_map().0.get_xy(new_xy).is_none()
             && self.cell_map().0.get_xy(new_xy).passable()
         {
-            self.player_xy_mut().0 = new_xy;
-            self.refresh_passable_map();
-            self.refresh_navigation_maps()?;
+            self.player_mut().xy = new_xy;
+            self.refresh_player_fov();
             Ok(true)
         } else {
             Ok(false)
@@ -432,9 +449,8 @@ impl Zone {
         }
 
         if self.actor_map().0.get_xy(xy).is_none() && self.cell_map().0.get_xy(xy).passable() {
-            self.player_xy_mut().0 = xy;
-            self.refresh_passable_map();
-            self.refresh_navigation_maps()?;
+            self.player_mut().xy = xy;
+            self.refresh_player_fov();
             Ok(true)
         } else {
             Ok(false)
@@ -449,7 +465,6 @@ impl Zone {
         flee_player_system.run_now(&self.world);
 
         self.world.maintain();
-        self.refresh_passable_map();
         self.refresh_navigation_maps()?;
 
         Ok(())

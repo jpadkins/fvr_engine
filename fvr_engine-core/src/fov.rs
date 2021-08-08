@@ -34,10 +34,9 @@ impl Default for Transparency {
 // Impl conversions between bool for convenience.
 impl From<bool> for Transparency {
     fn from(b: bool) -> Self {
-        if b {
-            Self::Transparent
-        } else {
-            Self::Opaque
+        match b {
+            true => Self::Transparent,
+            false => Self::Opaque,
         }
     }
 }

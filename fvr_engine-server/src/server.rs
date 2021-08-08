@@ -33,7 +33,7 @@ impl Server {
         Ok(())
     }
 
-    pub fn blit_zone<M>(&self, terminal: &mut M, src: &Rect, dst: ICoord)
+    pub fn blit_zone<M>(&self, terminal: &mut M, src: &Rect, dst: ICoord, fov: bool)
     where
         M: Map2d<Tile>,
     {
@@ -44,25 +44,31 @@ impl Server {
             let src_xy = (src.x + x, src.y + y);
             let dst_xy = (dst.0 + x, dst.1 + y);
 
+            let tile = terminal.get_xy_mut(dst_xy);
+
             if let Some(actor) = actors.0.get_xy(src_xy) {
                 // Actors take precedence.
-                *terminal.get_xy_mut(dst_xy) = actor.thing.tile;
+                *tile = actor.thing.tile;
             } else if let Some(thing) = cells.0.get_xy(src_xy).things.last() {
                 // Cells should always contain at least one thing.
-                *terminal.get_xy_mut(dst_xy) = thing.tile;
+                *tile = thing.tile;
             } else {
                 // Set tile to default to communicate missing data.
-                *terminal.get_xy_mut(dst_xy) = Tile::default();
+                *tile = Tile::default();
+            }
+
+            if fov {
+                tile.foreground_opacity = *self.zone.player().fov.get_xy(src_xy);
             }
         });
 
-        let tile = terminal.get_xy_mut(self.zone.player_xy().0);
+        let tile = terminal.get_xy_mut(self.zone.player().xy);
         tile.glyph = '@';
         tile.foreground_color = TileColor::WHITE;
     }
 
     pub fn player_xy(&self) -> ICoord {
-        self.zone.player_xy().0
+        self.zone.player().xy
     }
 
     pub fn passable_map(&self) -> Fetch<PassableMap> {
@@ -73,6 +79,7 @@ impl Server {
         match req {
             ClientRequest::Move(dir) => {
                 let result = self.zone.move_player(dir)?;
+                self.zone.player_mut().stationary = 0;
                 self.zone.dispatch()?;
 
                 if result {
@@ -83,6 +90,7 @@ impl Server {
             }
             ClientRequest::Teleport(xy) => {
                 let result = self.zone.teleport_player(xy)?;
+                self.zone.player_mut().stationary = 0;
                 self.zone.dispatch()?;
 
                 if result {
@@ -92,6 +100,7 @@ impl Server {
                 }
             }
             ClientRequest::Wait => {
+                self.zone.player_mut().stationary += 1;
                 self.zone.dispatch()?;
                 Ok(ServerResponse::Success(None))
             }

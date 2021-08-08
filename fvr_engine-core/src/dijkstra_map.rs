@@ -21,6 +21,7 @@ pub const DIJKSTRA_DEFAULT_GOAL: DijkstraState = DijkstraState::Goal(0);
 //-------------------------------------------------------------------------------------------------
 // Enumerates the possible input states for the underlying map.
 //-------------------------------------------------------------------------------------------------
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DijkstraState {
     // An impassable point in the map.
@@ -31,6 +32,29 @@ pub enum DijkstraState {
     Goal(i32),
 }
 
+impl DijkstraState {
+    pub fn passable(&self) -> bool {
+        self == &DijkstraState::Passable
+    }
+}
+
+// Impl conversion between bool for convenience.
+impl From<bool> for DijkstraState {
+    fn from(b: bool) -> Self {
+        match b {
+            true => DijkstraState::Passable,
+            false => DijkstraState::Blocked,
+        }
+    }
+}
+
+impl From<DijkstraState> for bool {
+    fn from(passability: DijkstraState) -> Self {
+        passability.passable()
+    }
+}
+
+// Passable bu default.
 impl Default for DijkstraState {
     fn default() -> Self {
         DijkstraState::Passable
@@ -55,7 +79,7 @@ pub struct DijkstraMap {
     // Stores the output weights.
     weights: GridMap<Option<f32>>,
     // Processed coord with the most weight.
-    farthest_xy: ICoord,
+    highest_xy: ICoord,
     // The distance method.
     distance: Distance,
 }
@@ -72,7 +96,7 @@ impl DijkstraMap {
             walkable: HashSet::new(),
             states: GridMap::new(dimensions),
             weights: GridMap::new(dimensions),
-            farthest_xy: INVALID_ICOORD,
+            highest_xy: INVALID_ICOORD,
             distance,
         }
     }
@@ -80,8 +104,12 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns the coord with the most weight. May be one of multiple equal weighted coords.
     //---------------------------------------------------------------------------------------------
-    pub fn farthest_xy(&self) -> ICoord {
-        self.farthest_xy
+    pub fn highest_xy(&self) -> Option<ICoord> {
+        if self.highest_xy != INVALID_ICOORD {
+            Some(self.highest_xy)
+        } else {
+            None
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -106,13 +134,91 @@ impl DijkstraMap {
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns the direction of the min weight relative to a coord.
+    // Returns the neighbor with the min weight relative to a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn min_direction(&self, xy: ICoord) -> Direction {
-        let mut min_weight = f32::MAX;
-        let mut direction = NULL_DIRECTION;
+    pub fn best_neighbor(&self, xy: ICoord) -> Option<(ICoord, f32)> {
+        // Return if no path to a goal exists.
+        if self.highest_xy == INVALID_ICOORD {
+            return None;
+        }
+
+        let mut set = false;
+        let mut neighbor = xy;
+        let adjacency = self.distance.adjacency();
+        let mut min_weight = self.weights.get_xy(self.highest_xy).unwrap();
+
+        // Find the best neighbor.
+        for n in adjacency.neighbors(xy) {
+            if !self.weights.in_bounds(n) {
+                continue;
+            }
+
+            if let Some(weight) = self.weights.get_xy(n) {
+                if *weight < min_weight {
+                    set = true;
+                    min_weight = *weight;
+                    neighbor = n;
+                }
+            }
+        }
+
+        if set {
+            Some((neighbor, min_weight))
+        } else {
+            None
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the neighbor with the min weight relative to a coord and less than some value.
+    //---------------------------------------------------------------------------------------------
+    pub fn best_neighbor_lt(&self, xy: ICoord, mut min_weight: f32) -> Option<(ICoord, f32)> {
+        // Return if no path to a goal exists.
+        if self.highest_xy == INVALID_ICOORD {
+            return None;
+        }
+
+        let mut set = false;
+        let mut neighbor = xy;
         let adjacency = self.distance.adjacency();
 
+        // Find the best neighbor.
+        for n in adjacency.neighbors(xy) {
+            if !self.weights.in_bounds(n) {
+                continue;
+            }
+
+            if let Some(weight) = self.weights.get_xy(n) {
+                if *weight < min_weight {
+                    set = true;
+                    min_weight = *weight;
+                    neighbor = n;
+                }
+            }
+        }
+
+        if set {
+            Some((neighbor, min_weight))
+        } else {
+            None
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the direction of the min weight relative to a coord
+    //---------------------------------------------------------------------------------------------
+    pub fn best_direction(&self, xy: ICoord) -> Option<(Direction, f32)> {
+        // Return if no path to a goal exists.
+        if self.highest_xy == INVALID_ICOORD {
+            return None;
+        }
+
+        let mut set = false;
+        let mut direction = NULL_DIRECTION;
+        let adjacency = self.distance.adjacency();
+        let mut min_weight = self.weights.get_xy(self.highest_xy).unwrap();
+
+        // Find the best direction.
         for dir in adjacency.iter() {
             let coord = (xy.0 + dir.dx(), xy.1 + dir.dy());
 
@@ -122,23 +228,34 @@ impl DijkstraMap {
 
             if let Some(weight) = self.weights.get_xy(coord) {
                 if *weight < min_weight {
+                    set = true;
                     min_weight = *weight;
                     direction = *dir;
                 }
             }
         }
 
-        direction
+        if set {
+            Some((direction, min_weight))
+        } else {
+            None
+        }
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns the direction of the max weight relative to a coord.
+    // Returns the direction of the min weight relative to a coord and less than some value.
     //---------------------------------------------------------------------------------------------
-    pub fn max_direction(&self, xy: ICoord) -> Direction {
-        let mut max_weight = f32::MIN;
+    pub fn best_direction_lt(&self, xy: ICoord, mut min_weight: f32) -> Option<(Direction, f32)> {
+        // Return if no path to a goal exists.
+        if self.highest_xy == INVALID_ICOORD {
+            return None;
+        }
+
+        let mut set = false;
         let mut direction = NULL_DIRECTION;
         let adjacency = self.distance.adjacency();
 
+        // Find the best direction.
         for dir in adjacency.iter() {
             let coord = (xy.0 + dir.dx(), xy.1 + dir.dy());
 
@@ -147,14 +264,19 @@ impl DijkstraMap {
             }
 
             if let Some(weight) = self.weights.get_xy(coord) {
-                if *weight > max_weight {
-                    max_weight = *weight;
+                if *weight < min_weight {
+                    set = true;
+                    min_weight = *weight;
                     direction = *dir;
                 }
             }
         }
 
-        direction
+        if set {
+            Some((direction, min_weight))
+        } else {
+            None
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -180,6 +302,34 @@ impl DijkstraMap {
         if let Some(weight) = self.weights.get_xy_mut(xy) {
             *weight += modifier;
         }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Invert all of the weights in the dijkstra map.
+    //---------------------------------------------------------------------------------------------
+    pub fn invert(&mut self) {
+        map2d_iter_mut!(self.weights, item, {
+            if let Some(weight) = item {
+                *weight *= -1.0;
+            }
+        });
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Refreshes the highest weight and xy value. Call when weights are manually adjusted.
+    //---------------------------------------------------------------------------------------------
+    pub fn refresh_highest(&mut self) {
+        self.highest_xy = INVALID_ICOORD;
+        let mut max_weight = f32::MIN;
+
+        map2d_iter_index!(self.weights, x, y, item, {
+            if let Some(weight) = item {
+                if *weight > max_weight {
+                    max_weight = *weight;
+                    self.highest_xy = (x, y);
+                }
+            }
+        });
     }
 
     //---------------------------------------------------------------------------------------------
@@ -236,7 +386,8 @@ impl DijkstraMap {
         }
 
         // Iterate the edges until all coords have been processed.
-        let mut max_weight = 0.0;
+        self.highest_xy = INVALID_ICOORD;
+        let mut max_weight = f32::MIN;
 
         self.edges_vec.clear();
 
@@ -250,12 +401,11 @@ impl DijkstraMap {
 
                 // Iterate all neighboring coords around the edge.
                 for neighbor in adjacency.neighbors(*edge) {
-                    // If the neighbor is out of bounds, has been processed or is blocked, continue.
-                    if !self.states.in_bounds(neighbor) {
-                        continue;
-                    }
-
-                    if *self.processed.get_xy(neighbor) || !self.walkable.contains(&neighbor) {
+                    // If neighbor is out of bounds, has been processed or is blocked, continue.
+                    if !self.states.in_bounds(neighbor)
+                        || *self.processed.get_xy(neighbor)
+                        || !self.states.get_xy(neighbor).passable()
+                    {
                         continue;
                     }
 
@@ -272,7 +422,7 @@ impl DijkstraMap {
 
                     if new_weight > max_weight {
                         max_weight = new_weight;
-                        self.farthest_xy = neighbor;
+                        self.highest_xy = neighbor;
                     }
                 }
 

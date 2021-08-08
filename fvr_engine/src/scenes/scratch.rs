@@ -69,7 +69,7 @@ impl Scratch {
             }
         }
 
-        server.blit_zone(terminal, &self.view, (0, 0));
+        server.blit_zone(terminal, &self.view, (0, 0), false);
 
         Ok(())
     }
@@ -95,13 +95,13 @@ impl Scratch {
             }
         }
 
-        server.blit_zone(terminal, &self.view, (0, 0));
+        server.blit_zone(terminal, &self.view, (0, 0), false);
 
         Ok(())
     }
 
     fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
-        server.blit_zone(terminal, &self.view, (0, 0));
+        server.blit_zone(terminal, &self.view, (0, 0), false);
         let player_xy = server.player_xy();
 
         self.path.clear();
@@ -154,7 +154,7 @@ impl Scene for Scratch {
         terminal.set_all_tiles_blank();
 
         server.reload()?;
-        server.blit_zone(terminal, &self.view, (0, 0));
+        server.blit_zone(terminal, &self.view, (0, 0), false);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -195,7 +195,7 @@ impl Scene for Scratch {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
             let _ = server.request(ClientRequest::Wait);
-            server.blit_zone(terminal, &self.view, (0, 0));
+            server.blit_zone(terminal, &self.view, (0, 0), false);
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {
