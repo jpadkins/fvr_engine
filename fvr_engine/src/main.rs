@@ -42,7 +42,8 @@ fn main() -> Result<()> {
     let mut update_dt = Duration::from_secs(0);
     let mut update_timer = Timer::new(UPDATE_INTERVAL);
 
-    let mut server = Server::new()?;
+    let zone = Zone::new((255, 255))?;
+    let mut server = Server::new(zone);
 
     let mut client = Client::new(
         WINDOW_TITLE,

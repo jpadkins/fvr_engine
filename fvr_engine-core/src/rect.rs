@@ -34,7 +34,7 @@ impl Rect {
     //---------------------------------------------------------------------------------------------
     // Create a new rect centered on a point.
     //---------------------------------------------------------------------------------------------
-    pub fn new_with_center(center: ICoord, width: i32, height: i32) -> Self {
+    pub fn with_center(center: ICoord, width: i32, height: i32) -> Self {
         Self { x: center.0 - (width / 2), y: center.1 - (height / 2), width, height }
     }
 
@@ -220,5 +220,22 @@ impl Rect {
         let height = max(self.y + self.height, other.y + other.height) - y;
 
         Rect { x, y, width, height }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Fits the rect into a bounding rect if possible.
+    //---------------------------------------------------------------------------------------------
+    pub fn fit_boundary(&mut self, other: &Rect) {
+        if self.x < other.x {
+            self.x = other.x;
+        } else if self.x + self.width > other.x + other.width {
+            self.x = (other.x + other.width) - self.width;
+        }
+
+        if self.y < other.y {
+            self.y = other.y;
+        } else if self.y + self.height > other.y + other.height {
+            self.y = (other.y + other.height) - self.height;
+        }
     }
 }

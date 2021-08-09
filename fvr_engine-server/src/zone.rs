@@ -11,6 +11,8 @@ use specs::{prelude::*, Component};
 //-------------------------------------------------------------------------------------------------
 use fvr_engine_core::{map2d_iter_index_mut, prelude::*, xy_tuple_iter};
 
+use crate::server::*;
+
 static TREE_THING: Thing = Thing {
     tile: Tile {
         glyph: 'T',
@@ -279,7 +281,7 @@ impl Zone {
         Ok(())
     }
 
-    fn refresh_navigation_maps(&mut self) -> Result<()> {
+    fn refresh_navigation_maps(&mut self) {
         // Refresh the passability map and states.
         xy_tuple_iter!(x, y, self.dimensions, {
             let passable;
@@ -327,15 +329,10 @@ impl Zone {
                 self.flee_map_mut().0.combine_xy((x, y), highest_weight - chase_weight);
             });
         } else {
-            // Otherwise, use "dumb" inverse pathing.
-            // *self.flee_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
             self.flee_map_mut().0.calculate();
-            // self.flee_map_mut().0.invert();
         }
 
-        // self.flee_map_mut().0.refresh_highest();
-
-        Ok(())
+        self.flee_map_mut().0.refresh_highest();
     }
 
     fn refresh_player_fov(&mut self) {
@@ -371,9 +368,21 @@ impl Zone {
 
         let mut zone = Self { dimensions, world };
         zone.populate_mobs()?;
-        zone.refresh_navigation_maps()?;
+        zone.refresh_navigation_maps();
 
         Ok(zone)
+    }
+
+    pub fn width(&self) -> i32 {
+        self.dimensions.0
+    }
+
+    pub fn height(&self) -> i32 {
+        self.dimensions.1
+    }
+
+    pub fn dimensions(&self) -> ICoord {
+        self.dimensions
     }
 
     pub fn cell_map(&self) -> Fetch<CellMap> {
@@ -424,12 +433,20 @@ impl Zone {
         self.world.write_resource::<Player>()
     }
 
-    pub fn move_player(&mut self, dir: Direction) -> Result<bool> {
+    pub fn relative_xy(&self, view: &Rect, xy: ICoord) -> Option<ICoord> {
+        if !view.contains(xy) {
+            return None;
+        }
+
+        Some((xy.0 - view.x, xy.1 - view.y))
+    }
+
+    pub fn move_player(&mut self, dir: Direction) -> Response {
         let player_xy = self.player().xy;
         let new_xy = (player_xy.0 + dir.dx(), player_xy.1 + dir.dy());
 
         if !self.cell_map().0.in_bounds(new_xy) {
-            return Ok(false);
+            return Response::Fail(Some(String::from("Blocked!")));
         }
 
         if self.actor_map().0.get_xy(new_xy).is_none()
@@ -437,27 +454,27 @@ impl Zone {
         {
             self.player_mut().xy = new_xy;
             self.refresh_player_fov();
-            Ok(true)
+            Response::Success(None)
         } else {
-            Ok(false)
+            Response::Fail(Some(String::from("Blocked!")))
         }
     }
 
-    pub fn teleport_player(&mut self, xy: ICoord) -> Result<bool> {
+    pub fn teleport_player(&mut self, xy: ICoord) -> Response {
         if !self.cell_map().0.in_bounds(xy) {
-            return Ok(false);
+            return Response::Fail(Some(String::from("Blocked!")));
         }
 
         if self.actor_map().0.get_xy(xy).is_none() && self.cell_map().0.get_xy(xy).passable() {
             self.player_mut().xy = xy;
             self.refresh_player_fov();
-            Ok(true)
+            Response::Success(None)
         } else {
-            Ok(false)
+            Response::Fail(Some(String::from("Blocked!")))
         }
     }
 
-    pub fn dispatch(&mut self) -> Result<()> {
+    pub fn dispatch(&mut self) {
         let mut chase_player_system = ChasePlayerSystem {};
         chase_player_system.run_now(&self.world);
 
@@ -465,8 +482,6 @@ impl Zone {
         flee_player_system.run_now(&self.world);
 
         self.world.maintain();
-        self.refresh_navigation_maps()?;
-
-        Ok(())
+        self.refresh_navigation_maps();
     }
 }

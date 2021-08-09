@@ -28,6 +28,7 @@ pub struct Scratch {
     view: Rect,
     path: Vec<ICoord>,
     a_star: AStar,
+    last_offset: ICoord,
 }
 
 impl Scratch {
@@ -45,6 +46,7 @@ impl Scratch {
             view: Rect::new((0, 0), 55, 33),
             path: Vec::new(),
             a_star: AStar::fast(Distance::Euclidean),
+            last_offset: (0, 0),
         }
     }
 
@@ -54,22 +56,22 @@ impl Scratch {
         terminal: &mut Terminal,
         direction: &Direction,
     ) -> Result<()> {
-        let response = server.request(ClientRequest::Move(*direction))?;
+        let response = server.handle(Request::Move(*direction));
 
         match response {
-            ServerResponse::Fail(resp) => {
+            Response::Fail(resp) => {
                 if let Some(msg) = resp {
                     self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
                 }
             }
-            ServerResponse::Success(resp) => {
+            Response::Success(resp) => {
                 if let Some(msg) = resp {
                     self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
                 }
             }
         }
 
-        server.blit_zone(terminal, &self.view, (0, 0), false);
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
 
         Ok(())
     }
@@ -80,32 +82,40 @@ impl Scratch {
         terminal: &mut Terminal,
         xy: ICoord,
     ) -> Result<()> {
-        let response = server.request(ClientRequest::Teleport(xy))?;
+        let zone_xy = (xy.0 + self.last_offset.0, xy.1 + self.last_offset.1);
+        // let response = server.handle(Request::Teleport(zone_xy));
 
-        match response {
-            ServerResponse::Fail(resp) => {
-                if let Some(msg) = resp {
-                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
-                }
-            }
-            ServerResponse::Success(resp) => {
-                if let Some(msg) = resp {
-                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
-                }
-            }
-        }
+        // match response {
+        //     Response::Fail(resp) => {
+        //         if let Some(msg) = resp {
+        //             self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
+        //         }
+        //     }
+        //     Response::Success(resp) => {
+        //         if let Some(msg) = resp {
+        //             self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
+        //         }
+        //     }
+        // }
 
-        server.blit_zone(terminal, &self.view, (0, 0), false);
+        // self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+        self.last_offset = server.blit_centered(terminal, zone_xy, (55, 33), (0, 0), false);
 
         Ok(())
     }
 
     fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
-        server.blit_zone(terminal, &self.view, (0, 0), false);
-        let player_xy = server.player_xy();
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+        let player_xy = server.zone().player().xy;
 
         self.path.clear();
-        self.a_star.push_path(player_xy, xy, &server.passable_map().0, None, &mut self.path);
+        self.a_star.push_path(
+            player_xy,
+            xy,
+            &server.zone().passable_map().0,
+            None,
+            &mut self.path,
+        );
 
         for coord in self.path.iter().rev().skip(1) {
             let tile = terminal.get_xy_mut(*coord);
@@ -153,8 +163,9 @@ impl Scene for Scratch {
         terminal.set_opaque();
         terminal.set_all_tiles_blank();
 
-        server.reload()?;
-        server.blit_zone(terminal, &self.view, (0, 0), false);
+        let zone = Zone::new((255, 255))?;
+        *server.zone_mut() = zone;
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -194,8 +205,8 @@ impl Scene for Scratch {
         if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
-            let _ = server.request(ClientRequest::Wait);
-            server.blit_zone(terminal, &self.view, (0, 0), false);
+            let _ = server.handle(Request::Wait);
+            self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {
@@ -204,13 +215,22 @@ impl Scene for Scratch {
             self.handle_move(server, terminal, &EAST_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::West) {
             self.handle_move(server, terminal, &WEST_DIRECTION)?;
+        } else if input.action_just_pressed(InputAction::Northeast) {
+            self.handle_move(server, terminal, &NORTHEAST_DIRECTION)?;
+        } else if input.action_just_pressed(InputAction::Southeast) {
+            self.handle_move(server, terminal, &SOUTHEAST_DIRECTION)?;
+        } else if input.action_just_pressed(InputAction::Southwest) {
+            self.handle_move(server, terminal, &SOUTHWEST_DIRECTION)?;
+        } else if input.action_just_pressed(InputAction::Northwest) {
+            self.handle_move(server, terminal, &NORTHWEST_DIRECTION)?;
         } else if scroll_log_action == ScrollLogAction::Interactable {
             input.set_cursor(Cursor::Hand);
         } else if input.mouse_moved() {
             if let Some(xy) = input.mouse_coord() {
                 // self.draw_path(server, terminal, xy);
-                self.handle_teleport(server, terminal, xy)?;
-                self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", xy))?;
+                // self.handle_teleport(server, terminal, xy)?;
+                let zone_xy = (self.last_offset.0 + xy.0, self.last_offset.1 + xy.1);
+                self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", zone_xy))?;
             }
         } else {
             input.set_cursor(Cursor::Arrow);
