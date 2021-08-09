@@ -337,7 +337,7 @@ impl Zone {
 
     fn refresh_player_fov(&mut self) {
         let player_xy = self.player().xy;
-        self.player_mut().fov.calculate(player_xy, 30.0);
+        self.player_mut().fov.calculate(player_xy, 33.0);
     }
 
     pub fn new(dimensions: ICoord) -> Result<Self> {

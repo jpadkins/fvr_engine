@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
+// Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashSet;
+use fnv::FnvHashSet;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -57,9 +57,9 @@ pub struct Fov {
     // Stores the calculated light values. > 0.0 means the coord is visible.
     light: GridMap<f32>,
     // Coords in the current fov.
-    current_fov: HashSet<ICoord>,
+    current_fov: FnvHashSet<(u8, u8)>,
     // Coords in the previous fov.
-    previous_fov: HashSet<ICoord>,
+    previous_fov: FnvHashSet<(u8, u8)>,
     // The distance method.
     distance: Distance,
 }
@@ -72,8 +72,8 @@ impl Fov {
         Self {
             states: GridMap::new(dimensions),
             light: GridMap::new(dimensions),
-            current_fov: HashSet::new(),
-            previous_fov: HashSet::new(),
+            current_fov: FnvHashSet::default(),
+            previous_fov: FnvHashSet::default(),
             distance,
         }
     }
@@ -142,18 +142,18 @@ impl Fov {
                 }
 
                 let delta_radius = self.distance.calculate_slope(dx as f32, dy as f32);
-                let current_coord = (current_x as i32, current_y as i32);
+                let coord = (current_x, current_y);
 
                 if delta_radius <= radius {
                     let brightness = 1.0 - decay * delta_radius;
-                    *self.light.get_xy_mut(current_coord) = brightness;
+                    *self.light.get_xy_mut(coord) = brightness;
 
                     if brightness > 0.0 {
-                        self.current_fov.insert(current_coord);
+                        self.current_fov.insert((coord.0 as u8, coord.1 as u8));
                     }
                 }
 
-                let opaque = !bool::from(*self.states.get_xy(current_coord));
+                let opaque = !bool::from(*self.states.get_xy(coord));
 
                 if blocked {
                     if opaque {
@@ -203,7 +203,7 @@ impl Fov {
 
         // Handle the origin coord.
         *self.light.get_xy_mut(origin) = 1.0;
-        self.current_fov.insert(origin);
+        self.current_fov.insert((origin.0 as u8, origin.1 as u8));
 
         // Begin shadowcasting.
         for dir in Adjacency::Diagonals.iter() {
@@ -270,18 +270,18 @@ impl Fov {
                         (current_y - origin.1 as i32) as f64,
                     ) as f32)
                     .abs();
-                let current_coord = (current_x as i32, current_y as i32);
+                let coord = (current_x, current_y);
 
                 if delta_radius <= radius && (atan2 <= span * 0.5 || atan2 >= 1.0 - span * 0.5) {
                     let brightness = 1.0 - decay * delta_radius;
-                    *self.light.get_xy_mut(current_coord) = brightness;
+                    *self.light.get_xy_mut(coord) = brightness;
 
                     if brightness > 0.0 {
-                        self.current_fov.insert(current_coord);
+                        self.current_fov.insert((coord.0 as u8, coord.1 as u8));
                     }
                 }
 
-                let opaque = !bool::from(*self.states.get_xy(current_coord));
+                let opaque = !bool::from(*self.states.get_xy(coord));
 
                 if blocked {
                     if opaque {
@@ -340,7 +340,7 @@ impl Fov {
 
         // Handle the origin coord.
         *self.light.get_xy_mut(origin) = 1.0;
-        self.current_fov.insert(origin);
+        self.current_fov.insert((origin.0 as u8, origin.1 as u8));
 
         // Perform shadowcasting.
         self.cast_shadow_limited(1, 1.0, 0.0, 0, 1, 1, 0, radius, origin, decay, angle, span);

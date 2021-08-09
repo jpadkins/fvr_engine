@@ -8,6 +8,7 @@ edition = "2018"
 fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 fvr_engine-parser = { path = "../fvr_engine-parser", version = "0.1.0" }
 anyhow = "1.0.42"
+fnv = "1.0.7"
 gl = "0.14.0"
 glam = "0.17.3"
 image = "0.23.14"

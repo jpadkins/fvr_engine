@@ -17,3 +17,10 @@ Gigantic Structure to Nowhere - name for randomized dungeon?
 Quest where crafter asks you to bring absurd amounts of materials to craft one pair of bracers.
 
 ## AI Design
+
+(Avg. FPS over 1 min fast exploration 255x255 map)
+
+Fx: 677.0
+AHash: 659
+Fnv: 652
+Hashbrown: 641

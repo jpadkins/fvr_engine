@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
+// Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::{HashMap, HashSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
@@ -88,19 +88,19 @@ pub struct InputManager {
     // Whether the mouse changed coords.
     mouse_moved: bool,
     // Set of keys that are currently pressed.
-    pressed_keys: HashSet<SdlKey>,
+    pressed_keys: FnvHashSet<SdlKey>,
     // Set of keys that have become pressed this frame.
-    just_pressed_keys: HashSet<SdlKey>,
+    just_pressed_keys: FnvHashSet<SdlKey>,
     // Set of keys that have been released.
-    released_keys: HashSet<SdlKey>,
+    released_keys: FnvHashSet<SdlKey>,
     // Set of actions that are currently pressed.
-    pressed_actions: HashSet<InputAction>,
+    pressed_actions: FnvHashSet<InputAction>,
     // Set of actions that have become pressed this frame.
-    just_pressed_actions: HashSet<InputAction>,
+    just_pressed_actions: FnvHashSet<InputAction>,
     // Set of actions that have been released.
-    released_actions: HashSet<InputAction>,
+    released_actions: FnvHashSet<InputAction>,
     // Map of input actions to their bound key combinations.
-    action_bindings: HashMap<InputAction, Vec<InputBinding>>,
+    action_bindings: FnvHashMap<InputAction, Vec<InputBinding>>,
     // Whether any key was pressed.
     pressed_any_key: bool,
     // Whether any action was pressed.

@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
+// Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashSet;
+use fnv::FnvHashSet;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -64,16 +64,17 @@ impl Default for DijkstraState {
 //-------------------------------------------------------------------------------------------------
 // DijkstraMap describes a 2D map of weights related to goals.
 // Adapted from http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps
+// NOTE: ONLY supports dimensions up to 255x255!
 //-------------------------------------------------------------------------------------------------
 pub struct DijkstraMap {
     // Stores processed state for coords.
     processed: GridMap<bool>,
     // Hash set for storing coords to process.
-    edges: HashSet<ICoord>,
+    edges: FnvHashSet<(u8, u8)>,
     // Vec for iterating edges.
-    edges_vec: Vec<ICoord>,
+    edges_vec: Vec<(u8, u8)>,
     // Set of walkable coords.
-    walkable: HashSet<ICoord>,
+    walkable: FnvHashSet<(u8, u8)>,
     // Stores the input states.
     states: GridMap<DijkstraState>,
     // Stores the output weights.
@@ -91,9 +92,9 @@ impl DijkstraMap {
     pub fn new(dimensions: ICoord, distance: Distance) -> Self {
         Self {
             processed: GridMap::new(dimensions),
-            edges: HashSet::new(),
+            edges: FnvHashSet::default(),
             edges_vec: Vec::new(),
-            walkable: HashSet::new(),
+            walkable: FnvHashSet::default(),
             states: GridMap::new(dimensions),
             weights: GridMap::new(dimensions),
             highest_xy: INVALID_ICOORD,
@@ -115,7 +116,7 @@ impl DijkstraMap {
     //---------------------------------------------------------------------------------------------
     // Returns a ref to the set of walkable coords of the dijkstra map.
     //---------------------------------------------------------------------------------------------
-    pub fn walkable(&self) -> &HashSet<ICoord> {
+    pub fn walkable(&self) -> &FnvHashSet<(u8, u8)> {
         &self.walkable
     }
 
@@ -346,7 +347,7 @@ impl DijkstraMap {
                     *self.weights.get_xy_mut((x, y)) = None;
                 }
                 _ => {
-                    self.walkable.insert((x, y));
+                    self.walkable.insert((x as u8, y as u8));
                 }
             }
         });
@@ -369,14 +370,16 @@ impl DijkstraMap {
 
         // Find and set the initial weights for passable and goal coords.
         for coord in self.walkable.iter() {
-            match self.states.get_xy(*coord) {
+            let icoord = (coord.0 as i32, coord.1 as i32);
+
+            match self.states.get_xy(icoord) {
                 DijkstraState::Passable => {
                     // Set all passable coords to the max weight.
-                    *self.weights.get_xy_mut(*coord) = Some(start_weight);
+                    *self.weights.get_xy_mut(icoord) = Some(start_weight);
                 }
                 &DijkstraState::Goal(weight) => {
                     // Set all goal coords to their weight and add them as edges.
-                    *self.weights.get_xy_mut(*coord) = Some(weight as f32);
+                    *self.weights.get_xy_mut(icoord) = Some(weight as f32);
                     self.edges.insert(*coord);
                 }
                 _ => {}
@@ -394,11 +397,13 @@ impl DijkstraMap {
             self.edges_vec.extend(self.edges.iter());
 
             for edge in self.edges_vec.iter() {
+                let iedge = (edge.0 as i32, edge.1 as i32);
+
                 // Find the current weight at the edge (which will always be Some).
-                let current_weight = self.weights.get_xy(*edge).unwrap();
+                let current_weight = self.weights.get_xy(iedge).unwrap();
 
                 // Iterate all neighboring coords around the edge.
-                for neighbor in adjacency.neighbors(*edge) {
+                for neighbor in adjacency.neighbors(iedge) {
                     // If neighbor is out of bounds, has been processed or is blocked, continue.
                     if !self.states.in_bounds(neighbor)
                         || *self.processed.get_xy(neighbor)
@@ -409,13 +414,15 @@ impl DijkstraMap {
 
                     // Calculate the new weight for the neighbor (which will always be Some).
                     let neighbor_weight = self.weights.get_xy(neighbor).unwrap();
-                    let new_weight = current_weight + self.distance.calculate(*edge, neighbor);
+                    let new_weight = current_weight + self.distance.calculate(iedge, neighbor);
 
                     // If the new weight is less (closer) than the previous weight, update and
                     // add the neighbor to the queue of edges to process.
                     if new_weight < neighbor_weight {
                         *self.weights.get_xy_mut(neighbor) = Some(new_weight);
-                        self.edges.insert(neighbor);
+
+                        let coord = (neighbor.0 as u8, neighbor.1 as u8);
+                        self.edges.insert(coord);
                     }
 
                     if new_weight > max_weight {
@@ -426,7 +433,7 @@ impl DijkstraMap {
 
                 // Set the edge as processed.
                 self.edges.remove(edge);
-                *self.processed.get_xy_mut(*edge) = true;
+                *self.processed.get_xy_mut(iedge) = true;
             }
 
             self.edges_vec.clear();

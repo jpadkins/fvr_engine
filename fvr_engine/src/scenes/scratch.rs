@@ -71,7 +71,7 @@ impl Scratch {
             }
         }
 
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
 
         Ok(())
     }
@@ -98,14 +98,14 @@ impl Scratch {
         //     }
         // }
 
-        // self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
-        self.last_offset = server.blit_centered(terminal, zone_xy, (55, 33), (0, 0), false);
+        // self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
+        self.last_offset = server.blit_centered(terminal, zone_xy, (55, 33), (0, 0), true);
 
         Ok(())
     }
 
     fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
         let player_xy = server.zone().player().xy;
 
         self.path.clear();
@@ -165,7 +165,7 @@ impl Scene for Scratch {
 
         let zone = Zone::new((255, 255))?;
         *server.zone_mut() = zone;
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -206,7 +206,7 @@ impl Scene for Scratch {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
             let _ = server.handle(Request::Wait);
-            self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), false);
+            self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {

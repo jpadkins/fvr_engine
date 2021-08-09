@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.42"
 bracket-geometry = "0.8.2"
+fnv = "1.0.7"
 itertools = "0.10.0"
 num = "0.4.0"
 num-traits = "0.2.14"

@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashMap;
+use fnv::FnvHashMap;
 use std::ffi::c_void;
 use std::path::Path;
 use std::{mem, ptr};
@@ -124,7 +124,7 @@ pub struct RendererV2 {
     // Length will equal TILE_STYLE_COUNT * 2.
     // The first half of the vec will contain maps for the non-outlined metrics.
     // The second half of the vec will contain maps for the outlined metrics.
-    metrics: Vec<HashMap<i32, GlyphMetric>>,
+    metrics: Vec<FnvHashMap<i32, GlyphMetric>>,
 }
 
 impl RendererV2 {
@@ -597,7 +597,7 @@ impl RendererV2 {
         // Load the glyph metrics.
         //-----------------------------------------------------------------------------------------
 
-        let mut metrics = vec![HashMap::new(); TILE_STYLE_COUNT * 2];
+        let mut metrics = vec![FnvHashMap::default(); TILE_STYLE_COUNT * 2];
 
         // Load the non-outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
