@@ -11,7 +11,6 @@ use crate::dijkstra_map::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d::*;
-use crate::map2d_iter_mut;
 use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -228,12 +227,8 @@ impl AStar {
         }
 
         // Clear the nodes map to None and the processed map to false.
-        map2d_iter_mut!(self.nodes, item, {
-            *item = None;
-        });
-        map2d_iter_mut!(self.processed, item, {
-            *item = false;
-        });
+        self.nodes.data_mut().fill(None);
+        self.processed.data_mut().fill(false);
 
         // Calculate the heuristics for the start node and push it into the queue.
         let start_node = self.nodes.get_xy_mut(start);

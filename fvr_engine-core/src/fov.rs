@@ -10,7 +10,6 @@ use crate::adjacency::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d::*;
-use crate::map2d_iter_mut;
 use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------
@@ -200,9 +199,7 @@ impl Fov {
         self.previous_fov.extend(self.current_fov.drain());
 
         // Reset the light map.
-        map2d_iter_mut!(self.light, item, {
-            *item = 0.0;
-        });
+        self.light.data_mut().fill(0.0);
 
         // Handle the origin coord.
         *self.light.get_xy_mut(origin) = 1.0;
@@ -339,9 +336,7 @@ impl Fov {
         self.previous_fov.extend(self.current_fov.drain());
 
         // Reset the light map.
-        map2d_iter_mut!(self.light, item, {
-            *item = 0.0;
-        });
+        self.light.data_mut().fill(0.0);
 
         // Handle the origin coord.
         *self.light.get_xy_mut(origin) = 1.0;

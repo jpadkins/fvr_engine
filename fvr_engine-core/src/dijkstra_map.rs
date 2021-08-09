@@ -10,8 +10,8 @@ use crate::direction::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d::*;
+use crate::map2d_iter_index;
 use crate::misc::*;
-use crate::{map2d_iter_index, map2d_iter_mut};
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -308,11 +308,11 @@ impl DijkstraMap {
     // Invert all of the weights in the dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn invert(&mut self) {
-        map2d_iter_mut!(self.weights, item, {
+        for item in self.weights.data_mut().iter_mut() {
             if let Some(weight) = item {
                 *weight *= -1.0;
             }
-        });
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -364,9 +364,7 @@ impl DijkstraMap {
         let start_weight = (self.states.width() * self.states.height()) as f32;
 
         // Clear the processed map and edges set.
-        map2d_iter_mut!(self.processed, item, {
-            *item = false;
-        });
+        self.processed.data_mut().fill(false);
         self.edges.clear();
 
         // Find and set the initial weights for passable and goal coords.

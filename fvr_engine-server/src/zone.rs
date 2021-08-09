@@ -328,12 +328,12 @@ impl Zone {
             });
         } else {
             // Otherwise, use "dumb" inverse pathing.
-            *self.flee_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
+            // *self.flee_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
             self.flee_map_mut().0.calculate();
-            self.flee_map_mut().0.invert();
+            // self.flee_map_mut().0.invert();
         }
 
-        self.flee_map_mut().0.refresh_highest();
+        // self.flee_map_mut().0.refresh_highest();
 
         Ok(())
     }

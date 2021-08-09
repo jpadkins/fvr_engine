@@ -8,7 +8,7 @@ use rand::Rng;
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
 //-------------------------------------------------------------------------------------------------
-use fvr_engine_core::{map2d_iter_mut, prelude::*};
+use fvr_engine_core::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Terminal contains the state of the faux terminal and exposes an API for updating it.
@@ -61,18 +61,14 @@ impl Terminal {
     // Sets all tiles to default.
     //---------------------------------------------------------------------------------------------
     pub fn set_all_tiles_default(&mut self) {
-        map2d_iter_mut!(self.tiles, tile, {
-            *tile = Default::default();
-        });
+        self.tiles.data_mut().fill(Default::default());
     }
 
     //---------------------------------------------------------------------------------------------
     // Sets all tiles to blank.
     //---------------------------------------------------------------------------------------------
     pub fn set_all_tiles_blank(&mut self) {
-        map2d_iter_mut!(self.tiles, tile, {
-            *tile = BLANK_TILE;
-        });
+        self.tiles.data_mut().fill(BLANK_TILE);
     }
 
     //---------------------------------------------------------------------------------------------
@@ -137,7 +133,7 @@ impl Terminal {
         foreground_opacity: Option<f32>,
         outline_opacity: Option<f32>,
     ) {
-        map2d_iter_mut!(self.tiles, tile, {
+        for tile in self.tiles.data_mut().iter_mut() {
             if let Some(glyph) = glyph {
                 tile.glyph = glyph;
             }
@@ -171,7 +167,7 @@ impl Terminal {
             if let Some(outline_opacity) = outline_opacity {
                 tile.outline_opacity = outline_opacity;
             }
-        });
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -189,14 +185,14 @@ impl Terminal {
     pub fn randomize(&mut self) {
         let mut rng = rand::thread_rng();
 
-        map2d_iter_mut!(self.tiles, tile, {
+        for tile in self.tiles.data_mut().iter_mut() {
             tile.glyph = *CP437_CHARS.choose(&mut rng).unwrap();
             tile.style = rng.gen();
             tile.outlined = rng.gen();
             tile.background_color = TileColor::TRANSPARENT;
             tile.foreground_color = rng.gen();
             tile.outline_color = rng.gen();
-        });
+        }
     }
 }
 
