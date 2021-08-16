@@ -369,6 +369,7 @@ impl Zone {
         let mut zone = Self { dimensions, world };
         zone.populate_mobs()?;
         zone.refresh_navigation_maps();
+        zone.refresh_player_fov();
 
         Ok(zone)
     }
