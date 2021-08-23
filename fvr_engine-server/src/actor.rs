@@ -16,7 +16,7 @@ use fvr_engine_core::prelude::*;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::components::*;
-use crate::zone_v2::*;
+use crate::zone::*;
 
 //-------------------------------------------------------------------------------------------------
 // Thing describes a thing in the game world.
@@ -115,7 +115,7 @@ impl Intention for BasicAvoidPlayerIntention {
     fn bored(&self, actor: &mut Actor, zone: &Zone, goals: &mut GoalsVec) {
         // Reset the actor state and push a goal.
         actor.navigation.prev_weight = None;
-        actor.navigation.stationary = 0;
+        // actor.navigation.stationary = 0;
         goals.push(Box::new(AvoidPlayerGoal {}));
     }
 }
@@ -132,7 +132,7 @@ impl Intention for BasicChasePlayerIntention {
     fn bored(&self, actor: &mut Actor, zone: &Zone, goals: &mut GoalsVec) {
         // Reset the actor state and push a goal.
         actor.navigation.prev_weight = None;
-        actor.navigation.stationary = 0;
+        // actor.navigation.stationary = 0;
         goals.push(Box::new(ChasePlayerGoal {}));
     }
 }
@@ -178,9 +178,10 @@ impl Goal for AvoidPlayerGoal {
         updater: &Read<LazyUpdate>,
     ) -> GoalState {
         // Complete if the actor has been stationary for more than one turn.
-        if actor.navigation.stationary > 1 {
-            return GoalState::Complete;
-        }
+        // if actor.navigation.stationary > 1 {
+        //     return GoalState::Complete;
+        // }
+        // TODO: Complete after distance from player?
 
         // Get the best avoid direction.
         let best_dir = zone.avoid_map.best_direction(actor.xy);
@@ -201,8 +202,8 @@ impl Goal for AvoidPlayerGoal {
         }
 
         // Flag the actor for moving.
-        let comp = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
-        updater.insert(actor.entity, comp);
+        let component = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
+        updater.insert(actor.entity, component);
 
         GoalState::InProgress
     }
@@ -223,8 +224,8 @@ impl Goal for ChasePlayerGoal {
         zone: &mut Zone,
         updater: &Read<LazyUpdate>,
     ) -> GoalState {
-        // Complete if the actor has been stationary for more than one turn.
-        if actor.navigation.stationary > 1 {
+        // Complete if the actor occupies a neighboring coord to the player.
+        if Adjacency::is_neighbor(actor.xy, zone.player_xy) {
             return GoalState::Complete;
         }
 
@@ -247,8 +248,8 @@ impl Goal for ChasePlayerGoal {
         }
 
         // Flag the actor for moving.
-        let comp = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
-        updater.insert(actor.entity, comp);
+        let component = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
+        updater.insert(actor.entity, component);
 
         GoalState::InProgress
     }

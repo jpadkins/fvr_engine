@@ -16,8 +16,8 @@ use fvr_engine_core::prelude::*;
 //-------------------------------------------------------------------------------------------------
 use crate::actor::*;
 use crate::components::*;
-use crate::server_v2::*;
-use crate::zone_v2::*;
+use crate::server::*;
+use crate::zone::*;
 
 pub struct GoalsSystem;
 

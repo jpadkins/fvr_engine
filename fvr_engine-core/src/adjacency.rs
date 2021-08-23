@@ -208,6 +208,14 @@ impl Adjacency {
     ) -> impl Iterator<Item = ICoord> {
         self.iter_from_rev(start).map(move |dir| (x + dir.dx(), y + dir.dy()))
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns whether a coord is in one of the neighboring eight-way coords of a target.
+    // TODO: Make method that takes into account agacency type.
+    //---------------------------------------------------------------------------------------------
+    pub fn is_neighbor(target: ICoord, neighbor: ICoord) -> bool {
+        (target.0 - neighbor.0).abs() <= 1 && (target.1 - neighbor.1).abs() <= 1
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -337,6 +345,23 @@ fn test_adjacency_neighbors_rev_eight_way() {
     let mut expected = vec![(1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1), (0, 0)];
     expected.reverse();
     assert_eq!(neighbors, expected);
+}
+
+#[test]
+fn test_is_neighbor() {
+    let target = (3, 3);
+    assert_eq!(Adjacency::is_neighbor(target, (3, 2)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (4, 2)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (4, 3)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (4, 4)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (3, 4)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (2, 4)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (2, 3)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (2, 2)), true);
+    assert_eq!(Adjacency::is_neighbor(target, (3, 1)), false);
+    assert_eq!(Adjacency::is_neighbor(target, (5, 3)), false);
+    assert_eq!(Adjacency::is_neighbor(target, (3, 5)), false);
+    assert_eq!(Adjacency::is_neighbor(target, (1, 3)), false);
 }
 
 // TODO: neighbors_from() tests.

@@ -95,7 +95,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn load(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -134,7 +134,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn unload(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -146,7 +146,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn focus(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -158,7 +158,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn unfocus(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -170,7 +170,7 @@ impl Scene for Initial {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         input: &InputManager,
         dt: &Duration,

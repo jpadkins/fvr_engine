@@ -57,7 +57,7 @@ impl Scratch {
 
     fn handle_move(
         &mut self,
-        server: &mut ServerV2,
+        server: &mut Server,
         terminal: &mut Terminal,
         direction: &Direction,
     ) -> Result<()> {
@@ -70,7 +70,7 @@ impl Scratch {
 
     fn handle_teleport(
         &mut self,
-        server: &mut ServerV2,
+        server: &mut Server,
         terminal: &mut Terminal,
         xy: ICoord,
     ) -> Result<()> {
@@ -96,7 +96,7 @@ impl Scratch {
         Ok(())
     }
 
-    fn draw_path(&mut self, server: &mut ServerV2, terminal: &mut Terminal, xy: ICoord) {
+    fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
         self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
         let rect = Rect::new(self.last_offset, 55, 33);
         let player_xy = server.zone().player_xy;
@@ -126,7 +126,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn load(
         &mut self,
-        server: &mut ServerV2,
+        server: &mut Server,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -139,7 +139,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn unload(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -151,14 +151,14 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn focus(
         &mut self,
-        server: &mut ServerV2,
+        server: &mut Server,
         terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
         terminal.set_opaque();
         terminal.set_all_tiles_blank();
 
-        *server = ServerV2::new()?;
+        *server = Server::new()?;
         self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
 
         let mut stats_frame =
@@ -177,7 +177,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn unfocus(
         &mut self,
-        _server: &mut ServerV2,
+        _server: &mut Server,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -189,7 +189,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        server: &mut ServerV2,
+        server: &mut Server,
         terminal: &mut Terminal,
         input: &InputManager,
         _dt: &Duration,

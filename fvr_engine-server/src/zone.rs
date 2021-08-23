@@ -2,6 +2,7 @@
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use rand::prelude::*;
 use specs::shred::{Fetch, FetchMut};
 use specs::{prelude::*, Component};
@@ -14,8 +15,15 @@ use fvr_engine_core::{map2d_iter_index_mut, prelude::*, xy_tuple_iter};
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
+use crate::actor::*;
+use crate::components::*;
 use crate::server::*;
 
+//-------------------------------------------------------------------------------------------------
+// Statics.
+//-------------------------------------------------------------------------------------------------
+
+// TODO: Remove.
 static TREE_THING: Thing = Thing {
     tile: Tile {
         glyph: 'T',
@@ -33,6 +41,7 @@ static TREE_THING: Thing = Thing {
     passable: false,
 };
 
+// TODO: Remove.
 static GRASS_THING: Thing = Thing {
     tile: Tile {
         glyph: '.',
@@ -50,24 +59,8 @@ static GRASS_THING: Thing = Thing {
     passable: true,
 };
 
-static CHASING_MOB_THING: Thing = Thing {
-    tile: Tile {
-        glyph: 'M',
-        layout: TileLayout::Center,
-        style: TileStyle::Regular,
-        size: TileSize::Normal,
-        outlined: false,
-        background_color: TileColor::TRANSPARENT,
-        foreground_color: PaletteColor::BrightRed.const_into(),
-        outline_color: TileColor::TRANSPARENT,
-        background_opacity: 1.0,
-        foreground_opacity: 1.0,
-        outline_opacity: 1.0,
-    },
-    passable: true,
-};
-
-static FLEEING_MOB_THING: Thing = Thing {
+// TODO: Remove.
+static AVOID_MOB_THING: Thing = Thing {
     tile: Tile {
         glyph: 'M',
         layout: TileLayout::Center,
@@ -84,408 +77,298 @@ static FLEEING_MOB_THING: Thing = Thing {
     passable: true,
 };
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Thing {
-    pub passable: bool,
-    pub tile: Tile,
-}
+// TODO: Remove.
+static CHASE_MOB_THING: Thing = Thing {
+    tile: Tile {
+        glyph: 'M',
+        layout: TileLayout::Center,
+        style: TileStyle::Regular,
+        size: TileSize::Normal,
+        outlined: false,
+        background_color: TileColor::TRANSPARENT,
+        foreground_color: PaletteColor::BrightRed.const_into(),
+        outline_color: TileColor::TRANSPARENT,
+        background_opacity: 1.0,
+        foreground_opacity: 1.0,
+        outline_opacity: 1.0,
+    },
+    passable: true,
+};
 
-#[derive(Copy, Clone, Debug)]
-pub struct Actor {
-    pub entity: Entity,
-    pub last_weight: Option<f32>,
-    pub stationary: i32,
-    pub thing: Thing,
-}
+// TODO: Remove.
+static PLAYER_THING: Thing = Thing {
+    tile: Tile {
+        glyph: '@',
+        layout: TileLayout::Center,
+        style: TileStyle::Regular,
+        size: TileSize::Normal,
+        outlined: false,
+        background_color: TileColor::TRANSPARENT,
+        foreground_color: PaletteColor::White.const_into(),
+        outline_color: TileColor::TRANSPARENT,
+        background_opacity: 1.0,
+        foreground_opacity: 1.0,
+        outline_opacity: 1.0,
+    },
+    passable: true,
+};
 
+//-------------------------------------------------------------------------------------------------
+// Cell describes a single discrete point in the game world.
+//-------------------------------------------------------------------------------------------------
 #[derive(Clone, Debug, Default)]
 pub struct Cell {
+    // The things in the cell.
     pub things: Vec<Thing>,
 }
 
 impl Cell {
+    //---------------------------------------------------------------------------------------------
+    // Determine if the cell is passable.
+    //---------------------------------------------------------------------------------------------
     pub fn passable(&self) -> bool {
         self.things.iter().all(|thing| thing.passable)
     }
 }
 
+//-------------------------------------------------------------------------------------------------
+// Zone describes a descrete chunk of the game world.
+//-------------------------------------------------------------------------------------------------
 pub struct Zone {
-    dimensions: ICoord,
-    world: World,
-}
-
-pub struct CellMap(pub GridMap<Cell>);
-pub struct PassableMap(pub GridMap<Passability>);
-pub struct ActorMap(pub GridMap<Option<Actor>>);
-pub struct ChaseMap(pub DijkstraMap);
-pub struct FleeMap(pub DijkstraMap);
-pub struct Player {
-    pub fov: Fov,
-    pub stationary: i32,
-    pub xy: ICoord,
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct HasXY(pub ICoord);
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct IsActor(pub Actor);
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct ChasingPlayer;
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct FleeingPlayer;
-
-struct ChasePlayerSystem;
-
-impl<'a> System<'a> for ChasePlayerSystem {
-    #[allow(clippy::type_complexity)]
-    type SystemData = (
-        WriteExpect<'a, ActorMap>,
-        ReadExpect<'a, ChaseMap>,
-        ReadExpect<'a, Player>,
-        ReadStorage<'a, ChasingPlayer>,
-        ReadStorage<'a, IsActor>,
-        WriteStorage<'a, HasXY>,
-    );
-
-    fn run(
-        &mut self,
-        (mut actor_map, chase_map, player, chasing_player, is_actor, mut xy): Self::SystemData,
-    ) {
-        for (_, _, p) in (&chasing_player, &is_actor, &mut xy).join() {
-            let new_position = chase_map.0.best_neighbor(p.0);
-
-            if new_position.is_none() {
-                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
-                continue;
-            }
-
-            let (new_position, _weight) = new_position.unwrap();
-
-            if new_position == player.xy || actor_map.0.get_xy(new_position).is_some() {
-                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
-                continue;
-            }
-
-            *actor_map.0.get_xy_mut(new_position) = actor_map.0.get_xy_mut(p.0).take();
-            actor_map.0.get_xy_mut(new_position).as_mut().unwrap().stationary = 0;
-
-            p.0 = new_position;
-        }
-    }
-}
-
-struct FleePlayerSystem;
-
-impl<'a> System<'a> for FleePlayerSystem {
-    #[allow(clippy::type_complexity)]
-    type SystemData = (
-        WriteExpect<'a, ActorMap>,
-        ReadExpect<'a, FleeMap>,
-        ReadExpect<'a, Player>,
-        ReadStorage<'a, FleeingPlayer>,
-        ReadStorage<'a, IsActor>,
-        WriteStorage<'a, HasXY>,
-    );
-
-    fn run(
-        &mut self,
-        (mut actor_map, flee_map, player, fleeing_player, is_actor, mut xy): Self::SystemData,
-    ) {
-        for (_, _, p) in (&fleeing_player, &is_actor, &mut xy).join() {
-            let new_position = flee_map.0.best_neighbor(p.0);
-
-            if new_position.is_none() {
-                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
-                continue;
-            }
-
-            let (new_position, _weight) = new_position.unwrap();
-
-            if new_position == player.xy || actor_map.0.get_xy(new_position).is_some() {
-                actor_map.0.get_xy_mut(p.0).as_mut().unwrap().stationary += 1;
-                continue;
-            }
-
-            *actor_map.0.get_xy_mut(new_position) = actor_map.0.get_xy_mut(p.0).take();
-            actor_map.0.get_xy_mut(new_position).as_mut().unwrap().stationary = 0;
-
-            p.0 = new_position;
-        }
-    }
+    // Dimensions of the zone.
+    pub dimensions: ICoord,
+    // Position of the player in the zone.
+    pub player_xy: ICoord,
+    // Entity of the player in the world.
+    pub player_entity: Entity,
+    // Fov of the player.
+    pub player_fov: Fov,
+    // Grid of the zone's cells.
+    pub cell_map: GridMap<Cell>,
+    // Grid of the zone's passability state.
+    pub passable_map: GridMap<Passability>,
+    // Grid of the zone's actors.
+    pub actor_map: GridMap<Option<Actor>>,
+    // Navigation map pointing away from the player.
+    pub avoid_map: DijkstraMap,
+    // Navigation map pointing towards the player.
+    pub chase_map: DijkstraMap,
 }
 
 impl Zone {
-    fn generate_dummy_map(cell_map: &mut GridMap<Cell>, passable_map: &mut GridMap<Passability>) {
+    // TODO: Remove.
+    pub fn generate_dummy_map(&mut self) {
         let mut rng = thread_rng();
+        const TREE_CHANCE: u8 = 5;
 
-        map2d_iter_index_mut!(cell_map, x, y, item, {
-            if rng.gen::<u8>() % 5 == 0 {
+        // Iterate over the map, setting each cell to either grass or a tree.
+        map2d_iter_index_mut!(self.cell_map, x, y, item, {
+            if rng.gen::<u8>() % TREE_CHANCE == 0 {
                 *item = Cell { things: vec![TREE_THING] };
-                *passable_map.get_xy_mut((x, y)) = Passability::Blocked;
             } else {
                 *item = Cell { things: vec![GRASS_THING] };
-                *passable_map.get_xy_mut((x, y)) = Passability::Passable;
             }
         });
 
-        cell_map.get_xy_mut((27, 16)).things[0] = GRASS_THING;
+        // Ensure the player's cell is passable.
+        *self.cell_map.get_xy_mut(self.player_xy) = Cell { things: vec![GRASS_THING] };
     }
 
-    fn populate_mobs(&mut self) -> Result<()> {
+    // TODO: Remove.
+    pub fn generate_dummy_mobs(&mut self, world: &mut World) -> Result<()> {
         let mut rng = thread_rng();
+        const AVOID_MOB_COUNT: u8 = 50;
+        const CHASE_MOB_COUNT: u8 = 20;
 
-        // Chasing mobs.
-        for _ in 0..20 {
+        // Populate map randomly with actors that avoid the player.
+        for _ in 0..AVOID_MOB_COUNT {
+            // Find a random coord.
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
-            if xy == self.player().xy
-                || self.actor_map().0.get_xy(xy).is_some()
-                || !self.passable_map().0.get_xy(xy).passable()
+            // Check if it is available.
+            if xy == self.player_xy
+                || self.actor_map.get_xy(xy).is_some()
+                || !self.passable_map.get_xy(xy).passable()
             {
                 continue;
             }
 
-            let entity = self.world.create_entity().with(HasXY(xy)).build();
-            let actor =
-                Actor { thing: CHASING_MOB_THING, entity, stationary: 0, last_weight: None };
+            // Create the avoid mob and insert it into the world and the actor map.
+            let entity = world.create_entity().build();
+            let actor = Actor {
+                entity,
+                thing: AVOID_MOB_THING,
+                xy,
+                navigation: ActorNavigation::default(),
+                stats: ActorStats::default(),
+                behavior: 0,
+                intention: BASIC_AVOID_PLAYER_INDEX,
+            };
 
-            self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
-            self.world.write_component::<ChasingPlayer>().insert(entity, ChasingPlayer {})?;
-            *self.actor_map_mut().0.get_xy_mut(xy) = Some(actor);
+            world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
+            world.write_component::<HasGoals>().insert(entity, HasGoals::default())?;
+            *self.actor_map.get_xy_mut(xy) = Some(actor);
         }
 
-        // Fleeing Mobs.
-        for _ in 0..20 {
+        // Populate map randomly with actors that chase the player.
+        for _ in 0..CHASE_MOB_COUNT {
+            // Find a random coord.
             let xy = (rng.gen_range(0..self.dimensions.0), rng.gen_range(0..self.dimensions.1));
 
-            if xy == self.player().xy
-                || self.actor_map().0.get_xy(xy).is_some()
-                || !self.passable_map().0.get_xy(xy).passable()
+            // Check if it is available.
+            if xy == self.player_xy
+                || self.actor_map.get_xy(xy).is_some()
+                || !self.passable_map.get_xy(xy).passable()
             {
                 continue;
             }
 
-            let entity = self.world.create_entity().with(HasXY(xy)).build();
-            let actor =
-                Actor { thing: FLEEING_MOB_THING, entity, stationary: 0, last_weight: None };
+            // Create the chase mob and insert it into the world and the actor map.
+            let entity = world.create_entity().build();
+            let actor = Actor {
+                entity,
+                thing: CHASE_MOB_THING,
+                xy,
+                navigation: ActorNavigation::default(),
+                stats: ActorStats::default(),
+                behavior: 0,
+                intention: BASIC_CHASE_PLAYER_INDEX,
+            };
 
-            self.world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
-            self.world.write_component::<FleeingPlayer>().insert(entity, FleeingPlayer {})?;
-            *self.actor_map_mut().0.get_xy_mut(xy) = Some(actor);
+            world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
+            world.write_component::<HasGoals>().insert(entity, HasGoals::default())?;
+            *self.actor_map.get_xy_mut(xy) = Some(actor);
         }
 
         Ok(())
     }
 
     fn refresh_navigation_maps(&mut self) {
-        // Refresh the passability map and states.
+        // Refresh passability map.
+        // TODO: FIND A WAY TO LET THESE SHARE ONE PASSABILITY MAP!
         xy_tuple_iter!(x, y, self.dimensions, {
             let passable;
 
             // Treat actors who have not moved in two rounds as obstacles.
-            if let Some(actor) = self.actor_map().0.get_xy((x, y)) {
-                passable = !(actor.stationary > 2);
+            if let Some(actor) = self.actor_map.get_xy((x, y)) {
+                passable = !(actor.navigation.stationary > 2);
             } else {
-                passable = self.cell_map().0.get_xy((x, y)).passable();
+                passable = self.cell_map.get_xy((x, y)).passable();
             }
 
-            *self.passable_map_mut().0.get_xy_mut((x, y)) = passable.into();
-            *self.chase_map_mut().0.states_mut().get_xy_mut((x, y)) = passable.into();
-            *self.flee_map_mut().0.states_mut().get_xy_mut((x, y)) = passable.into();
-            *self.player_mut().fov.states_mut().get_xy_mut((x, y)) = passable.into();
+            // Update all shared passability state.
+            *self.passable_map.get_xy_mut((x, y)) = passable.into();
+            *self.avoid_map.states_mut().get_xy_mut((x, y)) = passable.into();
+            *self.chase_map.states_mut().get_xy_mut((x, y)) = passable.into();
+            *self.player_fov.states_mut().get_xy_mut((x, y)) = passable.into();
         });
 
-        let player_xy = self.player().xy;
-        *self.passable_map_mut().0.get_xy_mut(player_xy) = Passability::Passable;
+        // Ensure player position is recognized as passable.
+        *self.passable_map.get_xy_mut(self.player_xy) = Passability::Passable;
 
         // Caluclate the chase map.
-        *self.chase_map_mut().0.states_mut().get_xy_mut(player_xy) = DIJKSTRA_DEFAULT_GOAL;
-        self.chase_map_mut().0.calculate();
+        *self.chase_map.states_mut().get_xy_mut(self.player_xy) = DIJKSTRA_DEFAULT_GOAL;
+        self.chase_map.calculate();
 
-        // Calculate the flee map using the max xy of the chase map.
-        let highest_xy = self.chase_map().0.highest_xy();
+        // Calculate the avoid map using the max xy of the chase map.
+        let highest_xy = self.chase_map.highest_xy();
 
         if let Some(xy) = highest_xy {
-            // If a path exists to the player, use "intelligent" combined flee pathing.
-            *self.flee_map_mut().0.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
-            self.flee_map_mut().0.calculate();
+            // If a path exists to the player then use combined flee pathing.
+            *self.avoid_map.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
 
-            // Modulate the flee map by some coefficient of the chase map.
-            let highest_weight = self.chase_map().0.get_xy(xy).unwrap();
+            // Calculate the flee map with the highest chase map xy as the goal.
+            self.avoid_map.calculate();
 
+            // Find the highest weight in the flee map.
+            let highest_weight = self.chase_map.get_xy(xy).unwrap();
+
+            // Modulate the entire flee map by some coefficient of the chase map.
             xy_tuple_iter!(x, y, self.dimensions, {
                 let chase_weight = {
-                    if let Some(weight) = self.chase_map().0.get_xy((x, y)) {
+                    if let Some(weight) = self.chase_map.get_xy((x, y)) {
                         *weight
                     } else {
                         continue;
                     }
                 };
 
-                self.flee_map_mut().0.combine_xy((x, y), highest_weight - chase_weight);
+                self.avoid_map.combine_xy((x, y), highest_weight - chase_weight);
             });
         } else {
-            self.flee_map_mut().0.calculate();
+            // Otherwise, reset the avoid map.
+            self.avoid_map.calculate();
         }
 
-        self.flee_map_mut().0.refresh_highest();
+        // Refresh the highest point in the avoid map.
+        self.avoid_map.refresh_highest();
     }
 
     fn refresh_player_fov(&mut self) {
-        let player_xy = self.player().xy;
-        self.player_mut().fov.calculate(player_xy, 33.0);
+        // TODO: Use a meaningful, dynamic value here.
+        const PLAYER_FOV_DISTANCE: f32 = 33.0;
+        self.player_fov.calculate(self.player_xy, PLAYER_FOV_DISTANCE);
     }
 
-    pub fn new(dimensions: ICoord) -> Result<Self> {
-        let mut cell_map = GridMap::new(dimensions);
-        let mut passable_map = GridMap::new(dimensions);
-        let actor_map = GridMap::new(dimensions);
-        let chase_map = DijkstraMap::new(dimensions, Distance::Euclidean);
-        let flee_map = DijkstraMap::new(dimensions, Distance::Euclidean);
-        let player_fov = Fov::new(dimensions, Distance::Euclidean);
+    pub fn dummy(dimensions: ICoord, world: &mut World) -> Result<Self> {
+        let mut actor_map = GridMap::new(dimensions);
 
-        Self::generate_dummy_map(&mut cell_map, &mut passable_map);
+        // Create and insert the player entity.
+        let mut rng = thread_rng();
+        let player_xy = (rng.gen_range(0..dimensions.0), rng.gen_range(0..dimensions.1));
+        let player_entity = world.create_entity().build();
+        let player_actor = Actor {
+            entity: player_entity,
+            thing: PLAYER_THING,
+            xy: player_xy,
+            navigation: ActorNavigation::default(),
+            stats: ActorStats::default(),
+            behavior: usize::MAX,
+            intention: usize::MAX,
+        };
+        world.write_component::<IsActor>().insert(player_entity, IsActor(player_actor))?;
+        *actor_map.get_xy_mut(player_xy) = Some(player_actor);
 
-        let mut world = World::new();
+        // Generate dummy data for the zone.
+        let mut zone = Self {
+            dimensions,
+            player_xy,
+            player_entity,
+            player_fov: Fov::new(dimensions, Distance::Euclidean),
+            cell_map: GridMap::new(dimensions),
+            passable_map: GridMap::new(dimensions),
+            actor_map,
+            avoid_map: DijkstraMap::new(dimensions, Distance::Euclidean),
+            chase_map: DijkstraMap::new(dimensions, Distance::Euclidean),
+        };
 
-        // Register components.
-        world.register::<HasXY>();
-        world.register::<IsActor>();
-        world.register::<ChasingPlayer>();
-        world.register::<FleeingPlayer>();
-
-        // Insert resources.
-        world.insert(CellMap(cell_map));
-        world.insert(PassableMap(passable_map));
-        world.insert(ActorMap(actor_map));
-        world.insert(ChaseMap(chase_map));
-        world.insert(FleeMap(flee_map));
-        world.insert(Player { xy: (27, 16), stationary: 0, fov: player_fov });
-
-        let mut zone = Self { dimensions, world };
-        zone.populate_mobs()?;
-        zone.refresh_navigation_maps();
-        zone.refresh_player_fov();
-
+        zone.generate_dummy_map();
+        zone.generate_dummy_mobs(world)?;
+        zone.refresh();
         Ok(zone)
     }
 
-    pub fn width(&self) -> i32 {
-        self.dimensions.0
-    }
-
-    pub fn height(&self) -> i32 {
-        self.dimensions.1
-    }
-
-    pub fn dimensions(&self) -> ICoord {
-        self.dimensions
-    }
-
-    pub fn cell_map(&self) -> Fetch<CellMap> {
-        self.world.read_resource::<CellMap>()
-    }
-
-    pub fn cell_map_mut(&mut self) -> FetchMut<CellMap> {
-        self.world.write_resource::<CellMap>()
-    }
-
-    pub fn passable_map(&self) -> Fetch<PassableMap> {
-        self.world.read_resource::<PassableMap>()
-    }
-
-    pub fn passable_map_mut(&self) -> FetchMut<PassableMap> {
-        self.world.write_resource::<PassableMap>()
-    }
-
-    pub fn actor_map(&self) -> Fetch<ActorMap> {
-        self.world.read_resource::<ActorMap>()
-    }
-
-    pub fn actor_map_mut(&mut self) -> FetchMut<ActorMap> {
-        self.world.write_resource::<ActorMap>()
-    }
-
-    pub fn chase_map(&self) -> Fetch<ChaseMap> {
-        self.world.read_resource::<ChaseMap>()
-    }
-
-    pub fn chase_map_mut(&mut self) -> FetchMut<ChaseMap> {
-        self.world.write_resource::<ChaseMap>()
-    }
-
-    pub fn flee_map(&self) -> Fetch<FleeMap> {
-        self.world.read_resource::<FleeMap>()
-    }
-
-    pub fn flee_map_mut(&mut self) -> FetchMut<FleeMap> {
-        self.world.write_resource::<FleeMap>()
-    }
-
-    pub fn player(&self) -> Fetch<Player> {
-        self.world.read_resource::<Player>()
-    }
-
-    pub fn player_mut(&mut self) -> FetchMut<Player> {
-        self.world.write_resource::<Player>()
-    }
-
-    pub fn relative_xy(&self, view: &Rect, xy: ICoord) -> Option<ICoord> {
-        if !view.contains(xy) {
-            return None;
-        }
-
-        Some((xy.0 - view.x, xy.1 - view.y))
-    }
-
-    pub fn move_player(&mut self, dir: Direction) -> Response {
-        let player_xy = self.player().xy;
-        let new_xy = (player_xy.0 + dir.dx(), player_xy.1 + dir.dy());
-
-        if !self.cell_map().0.in_bounds(new_xy) {
-            return Response::Fail(Some(String::from("Blocked!")));
-        }
-
-        if self.actor_map().0.get_xy(new_xy).is_none()
-            && self.cell_map().0.get_xy(new_xy).passable()
-        {
-            self.player_mut().xy = new_xy;
-            self.refresh_player_fov();
-            Response::Success(None)
-        } else {
-            Response::Fail(Some(String::from("Blocked!")))
-        }
-    }
-
-    pub fn teleport_player(&mut self, xy: ICoord) -> Response {
-        if !self.cell_map().0.in_bounds(xy) {
-            return Response::Fail(Some(String::from("Blocked!")));
-        }
-
-        if self.actor_map().0.get_xy(xy).is_none() && self.cell_map().0.get_xy(xy).passable() {
-            self.player_mut().xy = xy;
-            self.refresh_player_fov();
-            Response::Success(None)
-        } else {
-            Response::Fail(Some(String::from("Blocked!")))
-        }
-    }
-
-    pub fn dispatch(&mut self) {
-        let mut chase_player_system = ChasePlayerSystem {};
-        chase_player_system.run_now(&self.world);
-
-        let mut flee_player_system = FleePlayerSystem {};
-        flee_player_system.run_now(&self.world);
-
-        self.world.maintain();
+    pub fn refresh(&mut self) {
         self.refresh_navigation_maps();
+        self.refresh_player_fov();
+    }
+
+    pub fn is_blocked(&self, xy: ICoord) -> bool {
+        // Is the position in bounds?
+        if !self.cell_map.in_bounds(xy) {
+            return true;
+        }
+
+        // Is the position passable?
+        if !self.passable_map.get_xy(xy).passable() {
+            return true;
+        }
+
+        // Is the position occupied by an actor?
+        if self.actor_map.get_xy(xy).is_some() {
+            return true;
+        }
+
+        false
     }
 }

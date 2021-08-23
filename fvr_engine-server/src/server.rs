@@ -1,67 +1,122 @@
+//-------------------------------------------------------------------------------------------------
+// Extern crate includes.
+//-------------------------------------------------------------------------------------------------
+use anyhow::Result;
+use rand::prelude::*;
+use specs::shred::{Fetch, FetchMut};
+use specs::{prelude::*, Component};
+
+//-------------------------------------------------------------------------------------------------
+// Workspace includes.
+//-------------------------------------------------------------------------------------------------
 use fvr_engine_core::{prelude::*, xy_iter};
 
+//-------------------------------------------------------------------------------------------------
+// Local includes.
+//-------------------------------------------------------------------------------------------------
+use crate::actor::*;
+use crate::components::*;
+use crate::systems::*;
 use crate::zone::*;
 
-pub enum Request {
-    Move(Direction),
-    Teleport(ICoord),
-    Wait,
+//-------------------------------------------------------------------------------------------------
+// Constants.
+//-------------------------------------------------------------------------------------------------
+
+// TODO: Remove or find a way to populate dynamically.
+pub const BASIC_AVOID_PLAYER_INDEX: usize = 0;
+pub const BASIC_CHASE_PLAYER_INDEX: usize = 1;
+
+//-------------------------------------------------------------------------------------------------
+// Aliases for convenience.
+//-------------------------------------------------------------------------------------------------
+pub type BehaviorsVec = Vec<Box<dyn Behavior + Send + Sync>>;
+pub type IntentionsVec = Vec<Box<dyn Intention + Send + Sync>>;
+
+//-------------------------------------------------------------------------------------------------
+// Enumerates the possible results returned from server actions.
+//-------------------------------------------------------------------------------------------------
+pub enum ServerResult {
+    // The request failed.
+    Fail,
+    // The request succeeded.
+    Success,
 }
 
-pub enum Response {
-    Fail(Option<String>),
-    Success(Option<String>),
-}
-
+//-------------------------------------------------------------------------------------------------
+// Server encapsulates all internal game logic and exposes an API for querying/manipulating it.
+//-------------------------------------------------------------------------------------------------
 pub struct Server {
-    zone: Zone,
+    world: World,
 }
 
 impl Server {
-    pub fn new(zone: Zone) -> Self {
-        Self { zone }
+    pub fn new() -> Result<Self> {
+        // TODO: Remove - generate a dummy zone and insert it as a resource.
+        let mut world = World::new();
+        world.register::<IsActor>();
+        world.register::<HasGoals>();
+        world.register::<WantsToMove>();
+
+        let zone = Zone::dummy((255, 255), &mut world)?;
+        world.insert(zone);
+
+        // Populate behaviors and intention vecs and insert them as resources.
+        let behaviors: BehaviorsVec = vec![Box::new(BasicBehavior {})];
+
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        let intentions: IntentionsVec = vec![
+            Box::new(BasicAvoidPlayerIntention {}),
+            Box::new(BasicChasePlayerIntention {})
+        ];
+
+        world.insert(behaviors);
+        world.insert(intentions);
+
+        Ok(Self { world })
     }
 
-    pub fn zone(&self) -> &Zone {
-        &self.zone
+    pub fn zone(&self) -> Fetch<Zone> {
+        self.world.fetch::<Zone>()
     }
 
-    pub fn zone_mut(&mut self) -> &mut Zone {
-        &mut self.zone
-    }
-
-    pub fn blit<M>(&self, terminal: &mut M, src: &Rect, dst_origin: ICoord, fov: bool) -> ICoord
+    pub fn blit<M>(
+        &self,
+        terminal: &mut M,
+        src: &Rect,
+        dest_origin: ICoord,
+        show_fov: bool,
+    ) -> ICoord
     where
         M: Map2d<Tile>,
     {
-        let cells = self.zone.cell_map();
-        let actors = self.zone.actor_map();
+        let zone = self.world.fetch::<Zone>();
 
+        // Iterate through each of the visible tiles, updating them from the zone.
         xy_iter!(x, y, src.width, src.height, {
+            // Calculate the adjusted coord.
             let src_xy = (src.x + x, src.y + y);
-            let dst_xy = (dst_origin.0 + x, dst_origin.1 + y);
+            let dst_xy = (dest_origin.0 + x, dest_origin.1 + y);
 
+            // Get the tile to be updated.
             let tile = terminal.get_xy_mut(dst_xy);
 
-            if let Some(actor) = actors.0.get_xy(src_xy) {
+            // Update the tile either with an actor, a thing, or a default tile.
+            if let Some(actor) = zone.actor_map.get_xy(src_xy) {
                 *tile = actor.thing.tile;
-            } else if let Some(thing) = cells.0.get_xy(src_xy).things.last() {
+            } else if let Some(thing) = zone.cell_map.get_xy(src_xy).things.last() {
                 *tile = thing.tile;
             } else {
                 *tile = Tile::default();
             }
 
-            if fov {
-                tile.foreground_opacity = *self.zone.player().fov.get_xy(src_xy);
+            // Optionally adjust for Fov.
+            if show_fov {
+                tile.foreground_opacity = *zone.player_fov.get_xy(src_xy);
             }
         });
 
-        if let Some(relative_xy) = self.zone.relative_xy(src, self.zone.player().xy) {
-            let tile = terminal.get_xy_mut(relative_xy);
-            tile.foreground_color = TileColor::WHITE;
-            tile.glyph = '@';
-        }
-
+        // Return the visible offset from the origin of the zone.
         (src.x, src.y)
     }
 
@@ -70,74 +125,96 @@ impl Server {
         terminal: &mut M,
         center: ICoord,
         dimensions: ICoord,
-        dst_origin: ICoord,
-        fov: bool,
+        dest_origin: ICoord,
+        show_fov: bool,
     ) -> ICoord
     where
         M: Map2d<Tile>,
     {
-        let cells = self.zone.cell_map();
-        let actors = self.zone.actor_map();
+        let zone = self.world.fetch::<Zone>();
+
+        // Calculate the view rect.
         let mut rect = Rect::with_center(center, dimensions.0, dimensions.1);
-        rect.fit_boundary(&Rect::new((0, 0), self.zone.width(), self.zone.height()));
+        rect.fit_boundary(&Rect::new((0, 0), zone.dimensions.0, zone.dimensions.1));
 
+        // Iterate through each of the visible tiles, updating them from the zone.
         xy_iter!(x, y, rect.width, rect.height, {
+            // Calculate the adjusted coord.
             let src_xy = (rect.x + x, rect.y + y);
-            let dst_xy = (dst_origin.0 + x, dst_origin.1 + y);
+            let dst_xy = (dest_origin.0 + x, dest_origin.1 + y);
 
+            // Get the tile to be updated.
             let tile = terminal.get_xy_mut(dst_xy);
 
-            if let Some(actor) = actors.0.get_xy(src_xy) {
+            // Update the tile either with an actor, a thing, or a default tile.
+            if let Some(actor) = zone.actor_map.get_xy(src_xy) {
                 *tile = actor.thing.tile;
-            } else if let Some(thing) = cells.0.get_xy(src_xy).things.last() {
+            } else if let Some(thing) = zone.cell_map.get_xy(src_xy).things.last() {
                 *tile = thing.tile;
             } else {
                 *tile = Tile::default();
             }
 
-            if fov {
-                tile.foreground_opacity = *self.zone.player().fov.get_xy(src_xy);
+            // Optionally adjust for Fov.
+            if show_fov {
+                tile.foreground_opacity = *zone.player_fov.get_xy(src_xy);
             }
         });
 
-        if let Some(relative_xy) = self.zone.relative_xy(&rect, self.zone.player().xy) {
-            let tile = terminal.get_xy_mut(relative_xy);
-            tile.foreground_color = TileColor::WHITE;
-            tile.glyph = '@';
-        }
-
+        // Return the visible offset from the origin of the zone.
         (rect.x, rect.y)
     }
 
-    pub fn blit_player_centered<M>(
+    pub fn blit_centered_on_player<M>(
         &self,
         terminal: &mut M,
         dimensions: ICoord,
-        dst_origin: ICoord,
-        fov: bool,
+        dest_origin: ICoord,
+        show_fov: bool,
     ) -> ICoord
     where
         M: Map2d<Tile>,
     {
-        self.blit_centered(terminal, self.zone.player().xy, dimensions, dst_origin, fov)
+        let player_xy = self.world.fetch::<Zone>().player_xy;
+        self.blit_centered(terminal, player_xy, dimensions, dest_origin, show_fov)
     }
 
-    pub fn handle(&mut self, request: Request) -> Response {
-        match request {
-            Request::Move(dir) => {
-                let response = self.zone.move_player(dir);
-                self.zone.dispatch();
-                response
-            }
-            Request::Teleport(xy) => {
-                let response = self.zone.teleport_player(xy);
-                self.zone.dispatch();
-                response
-            }
-            Request::Wait => {
-                self.zone.dispatch();
-                Response::Success(None)
-            }
+    fn move_player_impl(&mut self, dir: Direction) -> Result<ServerResult> {
+        // Calculate the tentative new player position.
+        let zone = self.world.fetch::<Zone>();
+        let new_xy = (zone.player_xy.0 + dir.dx(), zone.player_xy.1 + dir.dy());
+
+        // Is the new position in bounds?
+        if zone.is_blocked(new_xy) {
+            return Ok(ServerResult::Fail);
         }
+
+        // Otherwise, flag the player for moving and dispatch.
+        let player_dex = zone.actor_map.get_xy(zone.player_xy).unwrap().stats.DEX;
+        let component = WantsToMove { direction: dir, weight: f32::MAX, priority: player_dex };
+        self.world.write_component::<WantsToMove>().insert(zone.player_entity, component)?;
+
+        Ok(ServerResult::Success)
+    }
+
+    pub fn move_player(&mut self, dir: Direction) -> Result<ServerResult> {
+        let result = self.move_player_impl(dir);
+        self.tick();
+        result
+    }
+
+    pub fn tick(&mut self) {
+        // Run the systems.
+        let mut goals_system = GoalsSystem {};
+        goals_system.run_now(&self.world);
+        self.world.maintain();
+
+        let mut wants_to_move_system = MoveSystem {};
+        wants_to_move_system.run_now(&self.world);
+        self.world.maintain();
+
+        // Refresh zone navigation maps and fov.
+        let mut zone = self.world.fetch_mut::<Zone>();
+        zone.refresh();
     }
 }
