@@ -121,6 +121,13 @@ impl DijkstraMap {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Returns a ref to the weights of the dijkstra map.
+    //---------------------------------------------------------------------------------------------
+    pub fn weights(&self) -> &GridMap<Option<f32>> {
+        &self.weights
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Returns a ref to the states of the dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn states(&self) -> &GridMap<DijkstraState> {
@@ -354,6 +361,20 @@ impl DijkstraMap {
 
         // Recalculate the weights.
         self.recalculate();
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Copies expensive initial state from another dijkstra map calculated from the same states.
+    // TODO: Why is this much slower than a complete calculate?
+    //---------------------------------------------------------------------------------------------
+    pub fn copy_setup(&mut self, other: &DijkstraMap) {
+        // Copy the weights.
+        self.weights.data_mut().clear();
+        self.weights.data_mut().extend(other.weights().data().iter());
+
+        // Copy the walkable set.
+        self.walkable.clear();
+        self.walkable.extend(other.walkable().iter());
     }
 
     //---------------------------------------------------------------------------------------------

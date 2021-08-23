@@ -177,7 +177,7 @@ impl Zone {
     // TODO: Remove.
     pub fn generate_dummy_mobs(&mut self, world: &mut World) -> Result<()> {
         let mut rng = thread_rng();
-        const AVOID_MOB_COUNT: u8 = 20;
+        const AVOID_MOB_COUNT: u8 = 50;
         const CHASE_MOB_COUNT: u8 = 10;
 
         // Populate map randomly with actors that avoid the player.

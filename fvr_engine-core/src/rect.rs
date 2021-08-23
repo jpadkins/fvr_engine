@@ -238,4 +238,22 @@ impl Rect {
             self.y = (other.y + other.height) - self.height;
         }
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Normalize a coord out of the rect.
+    //---------------------------------------------------------------------------------------------
+    pub fn extract_xy(&self, xy: ICoord) -> Option<ICoord> {
+        if !self.contains(xy) {
+            return None;
+        }
+
+        Some((xy.0 - self.x, xy.1 - self.y))
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Normalize a coord into the rect.
+    //---------------------------------------------------------------------------------------------
+    pub fn insert_xy(&self, xy: ICoord) -> ICoord {
+        (xy.0 + self.x, xy.1 + self.y)
+    }
 }

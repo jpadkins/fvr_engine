@@ -23,7 +23,7 @@ use crate::scene_stack::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const SHOW_FOV: bool = true;
+const SHOW_FOV: bool = false;
 
 //-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
@@ -98,22 +98,25 @@ impl Scratch {
 
     fn draw_path(&mut self, server: &mut ServerV2, terminal: &mut Terminal, xy: ICoord) {
         self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
-        // let player_xy = server.zone().player().xy;
+        let rect = Rect::new(self.last_offset, 55, 33);
+        let player_xy = server.zone().player_xy;
 
-        // self.path.clear();
-        // self.a_star.push_path(
-        //     player_xy,
-        //     xy,
-        //     &server.zone().passable_map().0,
-        //     None,
-        //     &mut self.path,
-        // );
+        self.path.clear();
+        self.a_star.push_path(
+            player_xy,
+            rect.insert_xy(xy),
+            &server.zone().passable_map,
+            None,
+            &mut self.path,
+        );
 
-        // for coord in self.path.iter().rev().skip(1) {
-        //     let tile = terminal.get_xy_mut(*coord);
-        //     tile.background_color = PaletteColor::Gold.const_into();
-        //     tile.background_opacity = 0.25;
-        // }
+        for coord in self.path.iter().rev().skip(1) {
+            if let Some(norm) = &Rect::new(self.last_offset, 55, 33).extract_xy(*coord) {
+                let tile = terminal.get_xy_mut(*norm);
+                tile.background_color = PaletteColor::Gold.const_into();
+                tile.background_opacity = 0.25;
+            }
+        }
     }
 }
 
@@ -219,8 +222,7 @@ impl Scene for Scratch {
             input.set_cursor(Cursor::Hand);
         } else if input.mouse_moved() {
             if let Some(xy) = input.mouse_coord() {
-                // self.draw_path(server, terminal, xy);
-                // self.handle_teleport(server, terminal, xy)?;
+                self.draw_path(server, terminal, xy);
                 let zone_xy = (self.last_offset.0 + xy.0, self.last_offset.1 + xy.1);
                 self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", zone_xy))?;
             }

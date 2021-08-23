@@ -76,6 +76,10 @@ impl ServerV2 {
         Ok(Self { world })
     }
 
+    pub fn zone(&self) -> Fetch<Zone> {
+        self.world.fetch::<Zone>()
+    }
+
     pub fn blit<M>(
         &self,
         terminal: &mut M,
