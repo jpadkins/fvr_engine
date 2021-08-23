@@ -98,7 +98,7 @@ pub fn compile_shader(src: &str, shader_type: GLenum) -> Result<GLuint> {
         }
 
         // Else return the error log.
-        let mut len = 0_i32;
+        let mut len = 0;
         gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
         let mut buffer = Vec::with_capacity(len as usize);
         buffer.set_len(len as usize - 1);
@@ -135,7 +135,7 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GL
         }
 
         // Else return the error log.
-        let mut len = 0_i32;
+        let mut len = 0;
         gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
         let mut buffer = Vec::with_capacity(len as usize);
         buffer.set_len(len as usize - 1);

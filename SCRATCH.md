@@ -24,3 +24,71 @@ Fx: 677.0
 AHash: 659
 Fnv: 652
 Hashbrown: 641
+
+"BIGT" - Behavior, Intention, Goal, Task
+
+1. !Goal
+2. Goal && !Task
+3. Task
+
+struct Actor {
+  // Navigation related.
+  xy: ICoord,
+  nav: {
+    prev_weight: f32,
+    stationary: bool,
+  },
+
+  // A.I. related.
+  behavior: Behavior,
+  intention: Intention,
+  goals: Vec<Goal>,
+  tasks: Vec<Task>,
+}
+
+struct Behavior {
+  faction: BitSet,
+}
+
+struct Intention {
+  fn push_goals(&mut Vec<Goal>);
+}
+
+enum Goal {
+  AvoidPlayer,
+  ChasePlayer,
+  Roam { radius: i32 },
+  Wait,
+}
+
+impl Goal {
+  finished() -> bool;
+  impossible() -> bool;
+  push_tasks(&mut Vec<Task>);
+}
+
+enum Task {
+  Move(Direction),
+  MoveTo(ICoord),
+  Wait,
+}
+
+impl Task {
+  execute() -> bool;
+}
+
+-----
+
+trait Intention {
+  fn push_goals(&mut Vec<Goal>);
+}
+
+struct DebugAvoidIntention;
+
+impl Intention for DebugAvoidIntention {
+
+}
+
+struct DebugChaseIntention;
+
+impl 

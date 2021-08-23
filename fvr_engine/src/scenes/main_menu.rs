@@ -100,7 +100,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     fn load(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -113,7 +113,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     fn unload(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -125,7 +125,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     fn focus(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -206,7 +206,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     fn unfocus(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -218,7 +218,7 @@ impl Scene for MainMenu {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
         _dt: &Duration,

@@ -49,7 +49,7 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     fn load(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()>;
@@ -59,7 +59,7 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     fn unload(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()>;
@@ -69,7 +69,7 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     fn focus(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()>;
@@ -79,7 +79,7 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     fn unfocus(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()>;
@@ -89,7 +89,7 @@ pub trait Scene {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
         dt: &Duration,
@@ -124,7 +124,7 @@ impl SceneStack {
     pub fn push(
         &mut self,
         scene: Box<dyn Scene>,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -154,7 +154,7 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     pub fn pop(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -185,7 +185,7 @@ impl SceneStack {
     pub fn swap(
         &mut self,
         scene: Box<dyn Scene>,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -216,7 +216,7 @@ impl SceneStack {
     //---------------------------------------------------------------------------------------------
     pub fn update(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
         dt: &Duration,

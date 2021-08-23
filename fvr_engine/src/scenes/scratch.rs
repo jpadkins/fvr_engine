@@ -21,6 +21,11 @@ use fvr_engine_server::prelude::*;
 use crate::scene_stack::*;
 
 //-------------------------------------------------------------------------------------------------
+// Constants.
+//-------------------------------------------------------------------------------------------------
+const SHOW_FOV: bool = true;
+
+//-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
 //-------------------------------------------------------------------------------------------------
 pub struct Scratch {
@@ -52,33 +57,20 @@ impl Scratch {
 
     fn handle_move(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         direction: &Direction,
     ) -> Result<()> {
-        let response = server.handle(Request::Move(*direction));
+        let _ = server.move_player(*direction);
 
-        match response {
-            Response::Fail(resp) => {
-                if let Some(msg) = resp {
-                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
-                }
-            }
-            Response::Success(resp) => {
-                if let Some(msg) = resp {
-                    self.scroll_log.append(&format!("\n<fc:y>> {}", msg))?;
-                }
-            }
-        }
-
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
+        self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
 
         Ok(())
     }
 
     fn handle_teleport(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         xy: ICoord,
     ) -> Result<()> {
@@ -99,29 +91,29 @@ impl Scratch {
         // }
 
         // self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
-        self.last_offset = server.blit_centered(terminal, zone_xy, (55, 33), (0, 0), true);
+        self.last_offset = server.blit_centered(terminal, zone_xy, (55, 33), (0, 0), SHOW_FOV);
 
         Ok(())
     }
 
-    fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
-        let player_xy = server.zone().player().xy;
+    fn draw_path(&mut self, server: &mut ServerV2, terminal: &mut Terminal, xy: ICoord) {
+        self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
+        // let player_xy = server.zone().player().xy;
 
-        self.path.clear();
-        self.a_star.push_path(
-            player_xy,
-            xy,
-            &server.zone().passable_map().0,
-            None,
-            &mut self.path,
-        );
+        // self.path.clear();
+        // self.a_star.push_path(
+        //     player_xy,
+        //     xy,
+        //     &server.zone().passable_map().0,
+        //     None,
+        //     &mut self.path,
+        // );
 
-        for coord in self.path.iter().rev().skip(1) {
-            let tile = terminal.get_xy_mut(*coord);
-            tile.background_color = PaletteColor::Gold.const_into();
-            tile.background_opacity = 0.25;
-        }
+        // for coord in self.path.iter().rev().skip(1) {
+        //     let tile = terminal.get_xy_mut(*coord);
+        //     tile.background_color = PaletteColor::Gold.const_into();
+        //     tile.background_opacity = 0.25;
+        // }
     }
 }
 
@@ -131,7 +123,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn load(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
     ) -> Result<()> {
@@ -144,7 +136,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn unload(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -156,16 +148,15 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn focus(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
         terminal.set_opaque();
         terminal.set_all_tiles_blank();
 
-        let zone = Zone::new((255, 255))?;
-        *server.zone_mut() = zone;
-        self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
+        *server = ServerV2::new()?;
+        self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
 
         let mut stats_frame =
             Frame::new((85 - 30, 0), (28, 33 - 11 - 1), FrameStyle::LineBlockCorner);
@@ -183,7 +174,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn unfocus(
         &mut self,
-        _server: &mut Server,
+        _server: &mut ServerV2,
         _terminal: &mut Terminal,
         _input: &InputManager,
     ) -> Result<()> {
@@ -195,7 +186,7 @@ impl Scene for Scratch {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        server: &mut Server,
+        server: &mut ServerV2,
         terminal: &mut Terminal,
         input: &InputManager,
         _dt: &Duration,
@@ -205,8 +196,9 @@ impl Scene for Scratch {
         if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
-            let _ = server.handle(Request::Wait);
-            self.last_offset = server.blit_player_centered(terminal, (55, 33), (0, 0), true);
+            let _ = server.tick();
+            self.last_offset =
+                server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
         } else if input.action_just_pressed(InputAction::North) {
             self.handle_move(server, terminal, &NORTH_DIRECTION)?;
         } else if input.action_just_pressed(InputAction::South) {

@@ -20,7 +20,7 @@ use crate::widgets::rich_text_writer::*;
 // Fancy border tiles.
 static FANCY_CORNER_TILE: Tile = Tile {
     glyph: '■',
-    layout: TileLayout::Center,
+    layout: TileLayout::Text,
     style: TileStyle::Bold,
     size: TileSize::Normal,
     outlined: false,
