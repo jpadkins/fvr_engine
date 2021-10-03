@@ -882,7 +882,7 @@ impl RendererV2 {
         let color = if outline_quad { tile.outline_color } else { tile.foreground_color };
 
         // Calculate the glyph offset for the tile's layout.
-        let offset = self.calculate_glyph_offset(&metric, tile.layout);
+        let offset = self.calculate_glyph_offset(metric, tile.layout);
 
         // Get the texel normalize values.
         let texel_normalize = &self.texel_normalize[index];

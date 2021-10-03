@@ -27,7 +27,7 @@ impl DebugGui {
         let mut imgui = ImguiContext::create();
         imgui.set_ini_filename(None);
 
-        let imgui_sdl2 = ImguiSdl2::new(&mut imgui, &window);
+        let imgui_sdl2 = ImguiSdl2::new(&mut imgui, window);
         let imgui_renderer = imgui_opengl_renderer::Renderer::new(&mut imgui, |s| {
             video_subsystem.gl_get_proc_address(s) as *const _
         });

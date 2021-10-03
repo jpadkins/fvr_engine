@@ -161,9 +161,9 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     fn binding_pressed(&self, binding: &InputBinding) -> bool {
         match binding {
-            InputBinding::SpecificKey(k) => self.pressed_keys.contains(&k),
+            InputBinding::SpecificKey(k) => self.pressed_keys.contains(k),
             InputBinding::ModifierKey(m) => self.modifier_pressed(m),
-            InputBinding::ExcludeSpecificKey(k) => !self.pressed_keys.contains(&k),
+            InputBinding::ExcludeSpecificKey(k) => !self.pressed_keys.contains(k),
             InputBinding::ExcludeModifierKey(m) => !self.modifier_pressed(m),
         }
     }

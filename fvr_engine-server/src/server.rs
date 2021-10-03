@@ -63,7 +63,7 @@ impl Server {
         // Populate behaviors and intention vecs and insert them as resources.
         let behaviors: BehaviorsVec = vec![Box::new(BasicBehavior {})];
 
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let intentions: IntentionsVec = vec![
             Box::new(BasicAvoidPlayerIntention {}),
             Box::new(BasicChasePlayerIntention {})
@@ -180,7 +180,7 @@ impl Server {
         self.blit_centered(terminal, player_xy, dimensions, dest_origin, show_fov)
     }
 
-    fn move_player_impl(&mut self, dir: Direction) -> Result<ServerResult> {
+    fn try_move_player(&mut self, dir: Direction) -> Result<ServerResult> {
         // Calculate the tentative new player position.
         let zone = self.world.fetch::<Zone>();
         let new_xy = (zone.player_xy.0 + dir.dx(), zone.player_xy.1 + dir.dy());
@@ -200,7 +200,7 @@ impl Server {
     }
 
     pub fn move_player(&mut self, dir: Direction) -> Result<ServerResult> {
-        let result = self.move_player_impl(dir);
+        let result = self.try_move_player(dir);
         self.tick();
         result
     }

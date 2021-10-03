@@ -123,7 +123,7 @@ impl Intention for BasicAvoidPlayerIntention {
     //---------------------------------------------------------------------------------------------
     // Called when when the actor has no goals.
     //---------------------------------------------------------------------------------------------
-    fn bored(&self, actor: &mut Actor, zone: &Zone, goals: &mut GoalsVec) {
+    fn bored(&self, actor: &mut Actor, _zone: &Zone, goals: &mut GoalsVec) {
         // Reset the actor state and push a goal.
         actor.navigation.prev_weight = None;
         // actor.navigation.stationary = 0;
@@ -140,7 +140,7 @@ impl Intention for BasicChasePlayerIntention {
     //---------------------------------------------------------------------------------------------
     // Called when when the actor has no goals.
     //---------------------------------------------------------------------------------------------
-    fn bored(&self, actor: &mut Actor, zone: &Zone, goals: &mut GoalsVec) {
+    fn bored(&self, actor: &mut Actor, _zone: &Zone, goals: &mut GoalsVec) {
         // Reset the actor state and push a goal.
         actor.navigation.prev_weight = None;
         // actor.navigation.stationary = 0;
@@ -275,7 +275,7 @@ pub struct IdleGoal {
 }
 
 impl IdleGoal {
-    fn new(turns: i32) -> Self {
+    pub fn new(turns: i32) -> Self {
         Self { turns }
     }
 }
@@ -286,9 +286,9 @@ impl Goal for IdleGoal {
     //---------------------------------------------------------------------------------------------
     fn update(
         &mut self,
-        actor: &mut Actor,
-        zone: &mut Zone,
-        updater: &Read<LazyUpdate>,
+        _actor: &mut Actor,
+        _zone: &mut Zone,
+        _updater: &Read<LazyUpdate>,
     ) -> GoalState {
         // Check if the goal is complete.
         if self.turns == 0 {
@@ -306,9 +306,9 @@ impl Goal for IdleGoal {
 //-------------------------------------------------------------------------------------------------
 pub struct MoveToGoal {
     // Target coord.
-    xy: ICoord,
+    pub xy: ICoord,
     // Path cache.
-    path: Vec<ICoord>,
+    pub path: Vec<ICoord>,
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -316,7 +316,7 @@ pub struct MoveToGoal {
 //-------------------------------------------------------------------------------------------------
 pub struct RoamGoal {
     // Number of turns to roam.
-    turns: i32,
+    pub turns: i32,
     // Boundary radius.
-    radius: i32,
+    pub radius: i32,
 }

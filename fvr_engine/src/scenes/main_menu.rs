@@ -185,7 +185,7 @@ impl Scene for MainMenu {
             terminal,
             version_xy,
             VERSION_TEXT,
-            &&format_settings,
+            &format_settings,
         );
 
         // Draw the copyright text.
@@ -195,7 +195,7 @@ impl Scene for MainMenu {
             terminal,
             copyright_xy,
             COPYRIGHT_TEXT,
-            &&format_settings,
+            &format_settings,
         );
 
         Ok(())

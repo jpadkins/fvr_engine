@@ -95,6 +95,7 @@ pub struct Fov {
 //-------------------------------------------------------------------------------------------------
 macro_rules! cast_shadow_impl {
     (
+        // Arguments for the cast shadow method.
         $self:expr,
         $row:expr,
         $start:expr,
@@ -107,8 +108,10 @@ macro_rules! cast_shadow_impl {
         $origin:expr,
         $decay:expr,
         $states:expr,
+        // Extra necessary identifiers.
         $d:ident,
         $slope_left:ident,
+        // The recursive method call.
         $recur:expr,
     ) => {
         if $start < $end {
@@ -184,6 +187,7 @@ macro_rules! cast_shadow_impl {
 //---------------------------------------------------------------------------------------------
 macro_rules! cast_shadow_limited_impl {
     (
+        // Arguments for the cast shadow method.
         $self:expr,
         $row:expr,
         $start:expr,
@@ -198,8 +202,10 @@ macro_rules! cast_shadow_limited_impl {
         $angle:expr,
         $span:expr,
         $states:expr,
+        // Extra necessary identifiers.
         $d:ident,
         $slope_left:ident,
+        // The recursive method call.
         $recur:expr,
     ) => {
         if $start < $end {
