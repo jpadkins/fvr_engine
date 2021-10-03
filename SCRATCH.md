@@ -92,3 +92,6 @@ impl Intention for DebugAvoidIntention {
 struct DebugChaseIntention;
 
 impl 
+
+
+6e7a6f

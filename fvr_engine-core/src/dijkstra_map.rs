@@ -41,16 +41,17 @@ impl DijkstraState {
 // Impl conversion between bool for convenience.
 impl From<bool> for DijkstraState {
     fn from(b: bool) -> Self {
-        match b {
-            true => DijkstraState::Passable,
-            false => DijkstraState::Blocked,
+        if b {
+            DijkstraState::Passable
+        } else {
+            DijkstraState::Blocked
         }
     }
 }
 
 impl From<DijkstraState> for bool {
-    fn from(passability: DijkstraState) -> Self {
-        passability.passable()
+    fn from(dijkstra_state: DijkstraState) -> Self {
+        dijkstra_state.passable()
     }
 }
 
@@ -65,6 +66,10 @@ impl Default for DijkstraState {
 // DijkstraMap describes a 2D map of weights related to goals.
 // Adapted from http://www.roguebasin.com/index.php?title=The_Incredible_Power_of_Dijkstra_Maps
 // NOTE: ONLY supports dimensions up to 255x255!
+// NOTE: An alternative constructor and re/calculate methods are provided for a "thin" dijkstrap
+//  map in which no internal state grid map is managed. This allows for cutting down on memory
+//  usage in the case where multiple structs share the same state (since the grid map's internal
+//  data vec would not need to be allocated).
 //-------------------------------------------------------------------------------------------------
 pub struct DijkstraMap {
     // Stores processed state for coords.
@@ -76,13 +81,100 @@ pub struct DijkstraMap {
     // Set of walkable coords.
     walkable: FnvHashSet<(u8, u8)>,
     // Stores the input states.
-    states: GridMap<DijkstraState>,
+    states: Option<GridMap<DijkstraState>>,
     // Stores the output weights.
     weights: GridMap<Option<f32>>,
     // Processed coord with the most weight.
     highest_xy: ICoord,
     // The distance method.
     distance: Distance,
+}
+
+//-------------------------------------------------------------------------------------------------
+// Implementation for both recalculate and recalculate_thin methods below to avoid duplication.
+//-------------------------------------------------------------------------------------------------
+macro_rules! recalculate_impl {
+    ($self:ident, $states:ident) => {
+        // Find the adjacency method and max weight value.
+        let adjacency = $self.distance.adjacency();
+        let start_weight = ($states.width() * $states.height()) as f32;
+
+        // Clear the processed map and edges set.
+        $self.processed.data_mut().fill(false);
+        $self.edges.clear();
+
+        // Find and set the initial weights for passable and goal coords.
+        for coord in $self.walkable.iter() {
+            let icoord = (coord.0 as i32, coord.1 as i32);
+
+            match $states.get_xy(icoord).clone().into() {
+                DijkstraState::Passable => {
+                    // Set all passable coords to the max weight.
+                    *$self.weights.get_xy_mut(icoord) = Some(start_weight);
+                }
+                DijkstraState::Goal(weight) => {
+                    // Set all goal coords to their weight and add them as edges.
+                    *$self.weights.get_xy_mut(icoord) = Some(weight as f32);
+                    $self.edges.insert(*coord);
+                }
+                _ => {}
+            }
+        }
+
+        // Iterate the edges until all coords have been processed.
+        $self.highest_xy = INVALID_ICOORD;
+        let mut max_weight = f32::MIN;
+
+        $self.edges_vec.clear();
+
+        while !$self.edges.is_empty() {
+            // Copy the edges into a vec so we can mutate the set inside the loop.
+            $self.edges_vec.extend($self.edges.iter());
+
+            for edge in $self.edges_vec.iter() {
+                let iedge = (edge.0 as i32, edge.1 as i32);
+
+                // Find the current weight at the edge (which will always be Some).
+                let current_weight = $self.weights.get_xy(iedge).unwrap();
+
+                // Iterate all neighboring coords around the edge.
+                for neighbor in adjacency.neighbors(iedge) {
+                    // If neighbor is out of bounds, has been processed or is blocked, continue.
+                    if !$states.in_bounds(neighbor)
+                        || *$self.processed.get_xy(neighbor)
+                        || !Into::<DijkstraState>::into($states.get_xy(neighbor).clone())
+                            .passable()
+                    {
+                        continue;
+                    }
+
+                    // Calculate the new weight for the neighbor (which will always be Some).
+                    let neighbor_weight = $self.weights.get_xy(neighbor).unwrap();
+                    let new_weight = current_weight + $self.distance.calculate(iedge, neighbor);
+
+                    // If the new weight is less (closer) than the previous weight, update and
+                    // add the neighbor to the queue of edges to process.
+                    if new_weight < neighbor_weight {
+                        *$self.weights.get_xy_mut(neighbor) = Some(new_weight);
+
+                        let coord = (neighbor.0 as u8, neighbor.1 as u8);
+                        $self.edges.insert(coord);
+                    }
+
+                    if new_weight > max_weight {
+                        max_weight = new_weight;
+                        $self.highest_xy = neighbor;
+                    }
+                }
+
+                // Set the edge as processed.
+                $self.edges.remove(edge);
+                *$self.processed.get_xy_mut(iedge) = true;
+            }
+
+            $self.edges_vec.clear();
+        }
+    };
 }
 
 impl DijkstraMap {
@@ -95,7 +187,23 @@ impl DijkstraMap {
             edges: FnvHashSet::default(),
             edges_vec: Vec::new(),
             walkable: FnvHashSet::default(),
-            states: GridMap::new(dimensions),
+            states: Some(GridMap::new(dimensions)),
+            weights: GridMap::new(dimensions),
+            highest_xy: INVALID_ICOORD,
+            distance,
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Creates a new dijkstra map that does not track states.
+    //---------------------------------------------------------------------------------------------
+    pub fn new_thin(dimensions: ICoord, distance: Distance) -> Self {
+        Self {
+            processed: GridMap::new(dimensions),
+            edges: FnvHashSet::default(),
+            edges_vec: Vec::new(),
+            walkable: FnvHashSet::default(),
+            states: None,
             weights: GridMap::new(dimensions),
             highest_xy: INVALID_ICOORD,
             distance,
@@ -129,16 +237,18 @@ impl DijkstraMap {
 
     //---------------------------------------------------------------------------------------------
     // Returns a ref to the states of the dijkstra map.
+    // NOTE: Panics if called on a thin dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn states(&self) -> &GridMap<DijkstraState> {
-        &self.states
+        self.states.as_ref().unwrap()
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns a mut ref to the states of the dijkstra map.
+    // NOTE: Panics if called on a thin dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn states_mut(&mut self) -> &mut GridMap<DijkstraState> {
-        &mut self.states
+        self.states.as_mut().unwrap()
     }
 
     //---------------------------------------------------------------------------------------------
@@ -342,13 +452,20 @@ impl DijkstraMap {
 
     //---------------------------------------------------------------------------------------------
     // Calculates the output weights.
-    // Must be called once whenever any blocked state changes.
+    // NOTE: Must be called once whenever any blocked state changes.
+    // NOTE: Panics if called on a thin dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn calculate(&mut self) {
+        // Aquire reference to states.
+        if self.states.is_none() {
+            panic!("calculate called on thin dijkstra map!");
+        }
+        let states = self.states.as_ref().unwrap();
+
         // Recreate the set of walkable coords.
         self.walkable.clear();
 
-        map2d_iter_index!(self.states, x, y, state, {
+        map2d_iter_index!(states, x, y, state, {
             match state {
                 DijkstraState::Blocked => {
                     *self.weights.get_xy_mut((x, y)) = None;
@@ -364,10 +481,40 @@ impl DijkstraMap {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Calculates the output weights given a grid map of dijkstra state.
+    // Must be called once whenever any blocked state changes.
+    // Intended for usage with thin dijkstra maps.
+    //---------------------------------------------------------------------------------------------
+    pub fn calculate_thin<M, T>(&mut self, states: &M)
+    where
+        M: Map2d<T>,
+        T: Map2dType + Into<DijkstraState>,
+    {
+        // Recreate the set of walkable coords.
+        self.walkable.clear();
+
+        map2d_iter_index!(states, x, y, state, {
+            match state.clone().into() {
+                DijkstraState::Blocked => {
+                    *self.weights.get_xy_mut((x, y)) = None;
+                }
+                _ => {
+                    self.walkable.insert((x as u8, y as u8));
+                }
+            }
+        });
+
+        // Recalculate the weights.
+        self.recalculate_thin(states);
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Copies expensive initial state from another dijkstra map calculated from the same states.
-    // TODO: Why is this much slower than a complete calculate?
     //---------------------------------------------------------------------------------------------
     pub fn copy_setup(&mut self, other: &DijkstraMap) {
+        // TODO: Why is this much slower than a complete calculate?
+        assert!(false, "Don't use this! It's slow.");
+
         // Copy the weights.
         self.weights.data_mut().clear();
         self.weights.data_mut().extend(other.weights().data().iter());
@@ -379,86 +526,30 @@ impl DijkstraMap {
 
     //---------------------------------------------------------------------------------------------
     // Recalculates the output weights faster, but if only the passable/goals states change.
+    // NOTE: Panics if called on a thin dijkstra map.
     //---------------------------------------------------------------------------------------------
     pub fn recalculate(&mut self) {
-        // Find the adjacency method and max weight value.
-        let adjacency = self.distance.adjacency();
-        let start_weight = (self.states.width() * self.states.height()) as f32;
-
-        // Clear the processed map and edges set.
-        self.processed.data_mut().fill(false);
-        self.edges.clear();
-
-        // Find and set the initial weights for passable and goal coords.
-        for coord in self.walkable.iter() {
-            let icoord = (coord.0 as i32, coord.1 as i32);
-
-            match self.states.get_xy(icoord) {
-                DijkstraState::Passable => {
-                    // Set all passable coords to the max weight.
-                    *self.weights.get_xy_mut(icoord) = Some(start_weight);
-                }
-                &DijkstraState::Goal(weight) => {
-                    // Set all goal coords to their weight and add them as edges.
-                    *self.weights.get_xy_mut(icoord) = Some(weight as f32);
-                    self.edges.insert(*coord);
-                }
-                _ => {}
-            }
+        // Aquire reference to states.
+        if self.states.is_none() {
+            panic!("recalculate called on thin dijkstra map!");
         }
+        let states = self.states.as_ref().unwrap();
 
-        // Iterate the edges until all coords have been processed.
-        self.highest_xy = INVALID_ICOORD;
-        let mut max_weight = f32::MIN;
+        // See macro above for details.
+        recalculate_impl!(self, states);
+    }
 
-        self.edges_vec.clear();
-
-        while !self.edges.is_empty() {
-            // Copy the edges into a vec so we can mutate the set inside the loop.
-            self.edges_vec.extend(self.edges.iter());
-
-            for edge in self.edges_vec.iter() {
-                let iedge = (edge.0 as i32, edge.1 as i32);
-
-                // Find the current weight at the edge (which will always be Some).
-                let current_weight = self.weights.get_xy(iedge).unwrap();
-
-                // Iterate all neighboring coords around the edge.
-                for neighbor in adjacency.neighbors(iedge) {
-                    // If neighbor is out of bounds, has been processed or is blocked, continue.
-                    if !self.states.in_bounds(neighbor)
-                        || *self.processed.get_xy(neighbor)
-                        || !self.states.get_xy(neighbor).passable()
-                    {
-                        continue;
-                    }
-
-                    // Calculate the new weight for the neighbor (which will always be Some).
-                    let neighbor_weight = self.weights.get_xy(neighbor).unwrap();
-                    let new_weight = current_weight + self.distance.calculate(iedge, neighbor);
-
-                    // If the new weight is less (closer) than the previous weight, update and
-                    // add the neighbor to the queue of edges to process.
-                    if new_weight < neighbor_weight {
-                        *self.weights.get_xy_mut(neighbor) = Some(new_weight);
-
-                        let coord = (neighbor.0 as u8, neighbor.1 as u8);
-                        self.edges.insert(coord);
-                    }
-
-                    if new_weight > max_weight {
-                        max_weight = new_weight;
-                        self.highest_xy = neighbor;
-                    }
-                }
-
-                // Set the edge as processed.
-                self.edges.remove(edge);
-                *self.processed.get_xy_mut(iedge) = true;
-            }
-
-            self.edges_vec.clear();
-        }
+    //---------------------------------------------------------------------------------------------
+    // Recalculates the output weights faster, but if only the passable/goals states change.
+    // Intended for usage with thin dijkstra maps.
+    //---------------------------------------------------------------------------------------------
+    pub fn recalculate_thin<M, T>(&mut self, states: &M)
+    where
+        M: Map2d<T>,
+        T: Map2dType + Into<DijkstraState>,
+    {
+        // See macro above for details.
+        recalculate_impl!(self, states);
     }
 }
 

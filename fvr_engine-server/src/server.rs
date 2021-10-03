@@ -2,9 +2,8 @@
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
-use rand::prelude::*;
-use specs::shred::{Fetch, FetchMut};
-use specs::{prelude::*, Component};
+use specs::prelude::*;
+use specs::shred::Fetch;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -103,6 +102,7 @@ impl Server {
 
             // Update the tile either with an actor, a thing, or a default tile.
             if let Some(actor) = zone.actor_map.get_xy(src_xy) {
+                let actor = actor.as_ref().lock().unwrap();
                 *tile = actor.thing.tile;
             } else if let Some(thing) = zone.cell_map.get_xy(src_xy).things.last() {
                 *tile = thing.tile;
@@ -148,6 +148,7 @@ impl Server {
 
             // Update the tile either with an actor, a thing, or a default tile.
             if let Some(actor) = zone.actor_map.get_xy(src_xy) {
+                let actor = actor.as_ref().lock().unwrap();
                 *tile = actor.thing.tile;
             } else if let Some(thing) = zone.cell_map.get_xy(src_xy).things.last() {
                 *tile = thing.tile;
@@ -190,7 +191,8 @@ impl Server {
         }
 
         // Otherwise, flag the player for moving and dispatch.
-        let player_dex = zone.actor_map.get_xy(zone.player_xy).unwrap().stats.DEX;
+        let player_dex =
+            zone.actor_map.get_xy(zone.player_xy).as_ref().unwrap().lock().unwrap().stats.DEX;
         let component = WantsToMove { direction: dir, weight: f32::MAX, priority: player_dex };
         self.world.write_component::<WantsToMove>().insert(zone.player_entity, component)?;
 

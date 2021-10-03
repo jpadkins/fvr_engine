@@ -183,7 +183,7 @@ impl AStar {
     //-------------------------------------------------------------------------------------------------
     // Calculates the shortest path between two points and pushes it into a vec.
     //-------------------------------------------------------------------------------------------------
-    pub fn push_path<M>(
+    pub fn push_path<M, T>(
         &mut self,
         start: ICoord,
         end: ICoord,
@@ -191,13 +191,14 @@ impl AStar {
         weights: Option<&GridMap<f32>>,
         points: &mut Vec<ICoord>,
     ) where
-        M: Map2d<Passability>,
+        M: Map2d<T>,
+        T: Map2dType + Into<Passability>,
     {
         // If the start and end coords are equal, or either are not passable, return.
         if start == end
             // TODO: Should we always assume the starting coord is passable?
             // || *states.get_xy(start) == Passability::Blocked
-            || *states.get_xy(end) == Passability::Blocked
+            || states.get_xy(end).clone().into() == Passability::Blocked
         {
             return;
         }
@@ -280,7 +281,7 @@ impl AStar {
                 }
 
                 // Continue if the neighbor is not passable.
-                if *states.get_xy(xy) == Passability::Blocked {
+                if states.get_xy(xy).clone().into() == Passability::Blocked {
                     continue;
                 }
 

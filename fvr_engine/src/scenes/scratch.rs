@@ -34,6 +34,7 @@ pub struct Scratch {
     path: Vec<ICoord>,
     a_star: AStar,
     last_offset: ICoord,
+    show_path: bool,
 }
 
 impl Scratch {
@@ -52,6 +53,7 @@ impl Scratch {
             path: Vec::new(),
             a_star: AStar::fast(Distance::Euclidean),
             last_offset: (0, 0),
+            show_path: false,
         }
     }
 
@@ -97,6 +99,10 @@ impl Scratch {
     }
 
     fn draw_path(&mut self, server: &mut Server, terminal: &mut Terminal, xy: ICoord) {
+        if !self.show_path {
+            return;
+        }
+
         self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
         let rect = Rect::new(self.last_offset, 55, 33);
         let player_xy = server.zone().player_xy;
@@ -105,7 +111,7 @@ impl Scratch {
         self.a_star.push_path(
             player_xy,
             rect.insert_xy(xy),
-            &server.zone().passable_map,
+            &server.zone().pathing,
             None,
             &mut self.path,
         );

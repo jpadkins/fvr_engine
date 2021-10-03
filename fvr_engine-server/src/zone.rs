@@ -1,11 +1,14 @@
 //-------------------------------------------------------------------------------------------------
+// STD includes.
+//-------------------------------------------------------------------------------------------------
+use std::sync::{Arc, Mutex};
+
+//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use rand::prelude::*;
-use specs::shred::{Fetch, FetchMut};
-use specs::{prelude::*, Component};
+use specs::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -132,6 +135,53 @@ impl Cell {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Helper struct to store pathing related state for a cell.
+//-------------------------------------------------------------------------------------------------
+#[derive(Clone, Debug, Default)]
+pub struct PathingProperties {
+    pub dijkstra_state: DijkstraState,
+    pub transparency: Transparency,
+}
+
+impl PathingProperties {
+    pub fn passable(&self) -> bool {
+        self.dijkstra_state.passable()
+    }
+
+    pub fn update_passable(&mut self, passable: bool) {
+        if passable {
+            self.dijkstra_state = DijkstraState::Passable;
+            self.transparency = Transparency::Transparent;
+        } else {
+            self.dijkstra_state = DijkstraState::Blocked;
+            self.transparency = Transparency::Opaque;
+        }
+    }
+
+    pub fn set_state(&mut self, dijkstra_state: DijkstraState) {
+        self.dijkstra_state = dijkstra_state;
+        self.transparency = dijkstra_state.into();
+    }
+}
+
+// From impls to allow pathing properties to be used by different struct APIs.
+impl From<PathingProperties> for DijkstraState {
+    fn from(pathing: PathingProperties) -> Self {
+        pathing.dijkstra_state
+    }
+}
+impl From<PathingProperties> for Passability {
+    fn from(pathing: PathingProperties) -> Self {
+        pathing.dijkstra_state.into()
+    }
+}
+impl From<PathingProperties> for Transparency {
+    fn from(pathing: PathingProperties) -> Self {
+        pathing.transparency
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
 // Zone describes a descrete chunk of the game world.
 //-------------------------------------------------------------------------------------------------
 pub struct Zone {
@@ -145,14 +195,14 @@ pub struct Zone {
     pub player_fov: Fov,
     // Grid of the zone's cells.
     pub cell_map: GridMap<Cell>,
-    // Grid of the zone's passability state.
-    pub passable_map: GridMap<Passability>,
     // Grid of the zone's actors.
-    pub actor_map: GridMap<Option<Actor>>,
+    pub actor_map: GridMap<Option<SharedActor>>,
     // Navigation map pointing away from the player.
     pub avoid_map: DijkstraMap,
     // Navigation map pointing towards the player.
     pub chase_map: DijkstraMap,
+    // Shared pathing propertie.
+    pub pathing: GridMap<PathingProperties>,
 }
 
 impl Zone {
@@ -188,14 +238,14 @@ impl Zone {
             // Check if it is available.
             if xy == self.player_xy
                 || self.actor_map.get_xy(xy).is_some()
-                || !self.passable_map.get_xy(xy).passable()
+                || !self.pathing.get_xy(xy).passable()
             {
                 continue;
             }
 
             // Create the avoid mob and insert it into the world and the actor map.
             let entity = world.create_entity().build();
-            let actor = Actor {
+            let actor = Arc::new(Mutex::new(Actor {
                 entity,
                 thing: AVOID_MOB_THING,
                 xy,
@@ -203,9 +253,9 @@ impl Zone {
                 stats: ActorStats::default(),
                 behavior: 0,
                 intention: BASIC_AVOID_PLAYER_INDEX,
-            };
+            }));
 
-            world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
+            world.write_component::<IsActor>().insert(entity, IsActor(actor.clone()))?;
             world.write_component::<HasGoals>().insert(entity, HasGoals::default())?;
             *self.actor_map.get_xy_mut(xy) = Some(actor);
         }
@@ -218,14 +268,14 @@ impl Zone {
             // Check if it is available.
             if xy == self.player_xy
                 || self.actor_map.get_xy(xy).is_some()
-                || !self.passable_map.get_xy(xy).passable()
+                || !self.pathing.get_xy(xy).passable()
             {
                 continue;
             }
 
             // Create the chase mob and insert it into the world and the actor map.
             let entity = world.create_entity().build();
-            let actor = Actor {
+            let actor = Arc::new(Mutex::new(Actor {
                 entity,
                 thing: CHASE_MOB_THING,
                 xy,
@@ -233,9 +283,9 @@ impl Zone {
                 stats: ActorStats::default(),
                 behavior: 0,
                 intention: BASIC_CHASE_PLAYER_INDEX,
-            };
+            }));
 
-            world.write_component::<IsActor>().insert(entity, IsActor(actor))?;
+            world.write_component::<IsActor>().insert(entity, IsActor(actor.clone()))?;
             world.write_component::<HasGoals>().insert(entity, HasGoals::default())?;
             *self.actor_map.get_xy_mut(xy) = Some(actor);
         }
@@ -251,36 +301,36 @@ impl Zone {
 
             // Treat actors who have not moved in two rounds as obstacles.
             if let Some(actor) = self.actor_map.get_xy((x, y)) {
-                passable = !(actor.navigation.stationary > 2);
+                let actor = actor.as_ref().lock().unwrap();
+                passable = actor.navigation.stationary < 2;
             } else {
                 passable = self.cell_map.get_xy((x, y)).passable();
             }
 
             // Update all shared passability state.
-            *self.passable_map.get_xy_mut((x, y)) = passable.into();
-            *self.avoid_map.states_mut().get_xy_mut((x, y)) = passable.into();
-            *self.chase_map.states_mut().get_xy_mut((x, y)) = passable.into();
-            *self.player_fov.states_mut().get_xy_mut((x, y)) = passable.into();
+            self.pathing.get_xy_mut((x, y)).update_passable(passable);
         });
 
-        // Ensure player position is recognized as passable.
-        *self.passable_map.get_xy_mut(self.player_xy) = Passability::Passable;
+        // Set player position as th current goal.
+        self.pathing.get_xy_mut(self.player_xy).set_state(DIJKSTRA_DEFAULT_GOAL);
 
         // Caluclate the chase map.
-        *self.chase_map.states_mut().get_xy_mut(self.player_xy) = DIJKSTRA_DEFAULT_GOAL;
-        self.chase_map.calculate();
+        self.chase_map.calculate_thin(&self.pathing);
 
         // Calculate the avoid map using the max xy of the chase map.
         let highest_xy = self.chase_map.highest_xy();
 
+        // Clear the goal.
+        self.pathing.get_xy_mut(self.player_xy).set_state(DijkstraState::Passable);
+
         if let Some(xy) = highest_xy {
             // If a path exists to the player then use combined flee pathing.
-            *self.avoid_map.states_mut().get_xy_mut(xy) = DIJKSTRA_DEFAULT_GOAL;
+            self.pathing.get_xy_mut(xy).set_state(DIJKSTRA_DEFAULT_GOAL);
 
             // Calculate the flee map with the highest chase map xy as the goal.
-            self.avoid_map.calculate();
+            self.avoid_map.calculate_thin(&self.pathing);
 
-            // Find the highest weight in the flee map.
+            // Find the highest weight in the chase map.
             let highest_weight = self.chase_map.get_xy(xy).unwrap();
 
             // Modulate the entire flee map by some coefficient of the chase map.
@@ -297,7 +347,7 @@ impl Zone {
             });
         } else {
             // Otherwise, reset the avoid map.
-            self.avoid_map.calculate();
+            self.avoid_map.calculate_thin(&self.pathing);
         }
 
         // Refresh the highest point in the avoid map.
@@ -307,7 +357,7 @@ impl Zone {
     fn refresh_player_fov(&mut self) {
         // TODO: Use a meaningful, dynamic value here.
         const PLAYER_FOV_DISTANCE: f32 = 33.0;
-        self.player_fov.calculate(self.player_xy, PLAYER_FOV_DISTANCE);
+        self.player_fov.calculate_thin(self.player_xy, PLAYER_FOV_DISTANCE, &self.pathing);
     }
 
     pub fn dummy(dimensions: ICoord, world: &mut World) -> Result<Self> {
@@ -317,7 +367,7 @@ impl Zone {
         let mut rng = thread_rng();
         let player_xy = (rng.gen_range(0..dimensions.0), rng.gen_range(0..dimensions.1));
         let player_entity = world.create_entity().build();
-        let player_actor = Actor {
+        let player_actor = Arc::new(Mutex::new(Actor {
             entity: player_entity,
             thing: PLAYER_THING,
             xy: player_xy,
@@ -325,8 +375,8 @@ impl Zone {
             stats: ActorStats::default(),
             behavior: usize::MAX,
             intention: usize::MAX,
-        };
-        world.write_component::<IsActor>().insert(player_entity, IsActor(player_actor))?;
+        }));
+        world.write_component::<IsActor>().insert(player_entity, IsActor(player_actor.clone()))?;
         *actor_map.get_xy_mut(player_xy) = Some(player_actor);
 
         // Generate dummy data for the zone.
@@ -334,12 +384,12 @@ impl Zone {
             dimensions,
             player_xy,
             player_entity,
-            player_fov: Fov::new(dimensions, Distance::Euclidean),
+            player_fov: Fov::new_thin(dimensions, Distance::Euclidean),
             cell_map: GridMap::new(dimensions),
-            passable_map: GridMap::new(dimensions),
             actor_map,
-            avoid_map: DijkstraMap::new(dimensions, Distance::Euclidean),
-            chase_map: DijkstraMap::new(dimensions, Distance::Euclidean),
+            avoid_map: DijkstraMap::new_thin(dimensions, Distance::Euclidean),
+            chase_map: DijkstraMap::new_thin(dimensions, Distance::Euclidean),
+            pathing: GridMap::new(dimensions),
         };
 
         zone.generate_dummy_map();
@@ -360,7 +410,7 @@ impl Zone {
         }
 
         // Is the position passable?
-        if !self.passable_map.get_xy(xy).passable() {
+        if !self.pathing.get_xy(xy).passable() {
             return true;
         }
 

@@ -1,11 +1,9 @@
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use anyhow::Result;
-use once_cell::sync::Lazy;
+use rand::distributions::{Distribution, Standard};
 use rand::prelude::*;
-use specs::shred::{Fetch, FetchMut};
-use specs::{prelude::*, Component};
+use specs::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -56,6 +54,19 @@ pub struct ActorStats {
     pub INT: u8,
     // Charisma.
     pub CHA: u8,
+}
+
+impl Distribution<ActorStats> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ActorStats {
+        ActorStats {
+            STR: rng.gen_range(0..=18),
+            DEX: rng.gen_range(0..=18),
+            CON: rng.gen_range(0..=18),
+            WIS: rng.gen_range(0..=18),
+            INT: rng.gen_range(0..=18),
+            CHA: rng.gen_range(0..=18),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -194,12 +205,12 @@ impl Goal for AvoidPlayerGoal {
         let (dir, weight) = best_dir.unwrap();
 
         // If the weight is not less than the previous weight, stay put.
-        if let Some(prev_weight) = actor.navigation.prev_weight {
-            if prev_weight < weight {
-                actor.navigation.stationary += 1;
-                return GoalState::InProgress;
-            }
-        }
+        // if let Some(prev_weight) = actor.navigation.prev_weight {
+        //     if prev_weight < weight {
+        //         actor.navigation.stationary += 1;
+        //         return GoalState::InProgress;
+        //     }
+        // }
 
         // Flag the actor for moving.
         let component = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
@@ -225,11 +236,11 @@ impl Goal for ChasePlayerGoal {
         updater: &Read<LazyUpdate>,
     ) -> GoalState {
         // Complete if the actor occupies a neighboring coord to the player.
-        if Adjacency::is_neighbor(actor.xy, zone.player_xy) {
-            return GoalState::Complete;
-        }
+        // if Adjacency::is_neighbor(actor.xy, zone.player_xy) {
+        //     return GoalState::Complete;
+        // }
 
-        // Get the best avoid direction.
+        // Get the best chase direction.
         let best_dir = zone.chase_map.best_direction(actor.xy);
 
         if best_dir.is_none() {
@@ -240,12 +251,12 @@ impl Goal for ChasePlayerGoal {
         let (dir, weight) = best_dir.unwrap();
 
         // If the weight is not less than the previous weight, stay put.
-        if let Some(prev_weight) = actor.navigation.prev_weight {
-            if prev_weight < weight {
-                actor.navigation.stationary += 1;
-                return GoalState::InProgress;
-            }
-        }
+        // if let Some(prev_weight) = actor.navigation.prev_weight {
+        //     if prev_weight < weight {
+        //         actor.navigation.stationary += 1;
+        //         return GoalState::InProgress;
+        //     }
+        // }
 
         // Flag the actor for moving.
         let component = WantsToMove { direction: dir, weight, priority: actor.stats.DEX };
