@@ -351,7 +351,9 @@ impl Fov {
             self.states.as_ref().unwrap(),
             d,
             slope_left,
-            { self.cast_shadow(d + 1, start, slope_left, xx, xy, yx, yy, radius, origin, decay,) },
+            {
+                self.cast_shadow(d + 1, start, slope_left, xx, xy, yx, yy, radius, origin, decay);
+            },
         );
     }
 

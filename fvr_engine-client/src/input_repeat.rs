@@ -29,8 +29,8 @@ enum State {
 // Represents either a key or an input action.
 //-------------------------------------------------------------------------------------------------
 enum InputKeyOrAction {
-    // An SdlKey.
-    Key(SdlKey),
+    // An InputKey.
+    Key(InputKey),
     // An InputAction.
     Action(InputAction),
 }
@@ -55,7 +55,7 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     // Creates a new input repeat for a key.
     //-----------------------------------------------------------------------------------------------
-    pub fn for_key(key: SdlKey, held_step: Duration, initial_step: Option<Duration>) -> Self {
+    pub fn for_key(key: InputKey, held_step: Duration, initial_step: Option<Duration>) -> Self {
         // Set timer initially to either the initial step (if populated) or the held step.
         let timer = match initial_step {
             Some(initial_step) => Timer::new(initial_step),
@@ -97,7 +97,7 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     // Sets the input repeat to track a key.
     //-----------------------------------------------------------------------------------------------
-    pub fn set_key(&mut self, key: SdlKey) {
+    pub fn set_key(&mut self, key: InputKey) {
         self.key_or_action = InputKeyOrAction::Key(key);
     }
 

@@ -7,8 +7,6 @@ use std::time::Duration;
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -61,8 +59,8 @@ fn main() -> Result<()> {
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
-                Event::Quit { .. } => break 'main,
-                Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                InputEvent::Quit { .. } => break 'main,
+                InputEvent::KeyDown { keycode: Some(InputKey::Space), .. } => {
                     client.toggle_debug();
                 }
                 _ => {}

@@ -202,7 +202,8 @@ impl Scene for Scratch {
     ) -> Result<SceneAction> {
         let scroll_log_action = self.scroll_log.update(input, terminal)?;
 
-        if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(SdlKey::Escape) {
+        if input.action_just_pressed(InputAction::Quit) || input.key_just_pressed(InputKey::Escape)
+        {
             return Ok(SceneAction::Pop);
         } else if input.action_just_pressed(InputAction::Accept) {
             let _ = server.tick();

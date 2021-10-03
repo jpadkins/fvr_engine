@@ -1,10 +1,10 @@
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
 use clap::{App, AppSettings, SubCommand};
-use hashbrown::HashSet;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageBuffer, Rgba};
 use rect_packer::Packer;
 use xml::reader::{EventReader, XmlEvent};

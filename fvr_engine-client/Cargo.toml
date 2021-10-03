@@ -7,22 +7,29 @@ edition = "2018"
 [dependencies]
 fvr_engine-core = { path = "../fvr_engine-core", version = "0.1.0" }
 fvr_engine-parser = { path = "../fvr_engine-parser", version = "0.1.0" }
-anyhow = "1.0.42"
+anyhow = "1.0.44"
 fnv = "1.0.7"
 gl = "0.14.0"
-glam = "0.17.3"
+glam = "0.18.0"
 image = "0.23.14"
-imgui = "0.7.0"
-imgui-opengl-renderer = "0.11.0"
-imgui-sdl2 = "0.14.0"
+imgui = "0.8.0"
+
+# TODO: Remove once upstream is updated for imgui 0.8.0.
+# imgui-opengl-renderer = "0.11.0"
+imgui-opengl-renderer = { git = "https://github.com/eliaperantoni/rust-imgui-opengl-renderer" }
+
+# TODO: Remove once upstream is updated for imgui 0.8.0.
+# imgui-sdl2 = "0.14.0"
+imgui-sdl2 = { git = "https://github.com/jpadkins/rust-imgui-sdl2" }
+
 itertools = "0.10.1"
-rand = "0.8.3"
+rand = "0.8.4"
 stopwatch = "0.0.7"
 strum = "0.21.0"
 strum_macros = "0.21.1"
 toml = "0.5.8"
 
 [dependencies.sdl2]
-version = "0.34.2"
+version = "0.34.5"
 default-features = false
 features = ["unsafe_textures"]

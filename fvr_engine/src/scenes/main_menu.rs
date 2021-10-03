@@ -231,12 +231,12 @@ impl Scene for MainMenu {
             }
             State::WaitForInput => {
                 if input.action_just_pressed(InputAction::Quit)
-                    || input.key_just_pressed(SdlKey::Escape)
+                    || input.key_just_pressed(InputKey::Escape)
                 {
                     return Ok(SceneAction::Pop);
                 } else if input.action_just_pressed(InputAction::Accept) {
                     terminal.randomize();
-                } else if input.key_just_pressed(SdlKey::S) {
+                } else if input.key_just_pressed(InputKey::S) {
                     self.next_scene = Some(SceneAction::Push(Box::new(Scratch::new())));
                     self.state = State::FadeOut;
                 } else {

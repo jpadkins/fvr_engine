@@ -7,8 +7,9 @@ use fnv::{FnvHashMap, FnvHashSet};
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::{anyhow, Result};
+pub use sdl2::event::Event as InputEvent;
 use sdl2::keyboard::KeyboardState;
-pub use sdl2::keyboard::Keycode as SdlKey;
+pub use sdl2::keyboard::Keycode as InputKey;
 use sdl2::mouse::{Cursor as SdlCursor, MouseState, SystemCursor};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -54,9 +55,9 @@ pub enum ModifierKey {
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InputBinding {
-    SpecificKey(SdlKey),
+    SpecificKey(InputKey),
     ModifierKey(ModifierKey),
-    ExcludeSpecificKey(SdlKey),
+    ExcludeSpecificKey(InputKey),
     ExcludeModifierKey(ModifierKey),
 }
 
@@ -88,11 +89,11 @@ pub struct InputManager {
     // Whether the mouse changed coords.
     mouse_moved: bool,
     // Set of keys that are currently pressed.
-    pressed_keys: FnvHashSet<SdlKey>,
+    pressed_keys: FnvHashSet<InputKey>,
     // Set of keys that have become pressed this frame.
-    just_pressed_keys: FnvHashSet<SdlKey>,
+    just_pressed_keys: FnvHashSet<InputKey>,
     // Set of keys that have been released.
-    released_keys: FnvHashSet<SdlKey>,
+    released_keys: FnvHashSet<InputKey>,
     // Set of actions that are currently pressed.
     pressed_actions: FnvHashSet<InputAction>,
     // Set of actions that have become pressed this frame.
@@ -134,23 +135,23 @@ impl InputManager {
         let mut this = Self::new()?;
 
         // TODO: load these from config.
-        this.bind_action(InputAction::Accept, &[InputBinding::SpecificKey(SdlKey::Return)]);
+        this.bind_action(InputAction::Accept, &[InputBinding::SpecificKey(InputKey::Return)]);
         this.bind_action(
             InputAction::Decline,
             &[
-                InputBinding::SpecificKey(SdlKey::Tab),
+                InputBinding::SpecificKey(InputKey::Tab),
                 InputBinding::ExcludeModifierKey(ModifierKey::Alt),
             ],
         );
-        this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(SdlKey::Escape)]);
-        this.bind_action(InputAction::North, &[InputBinding::SpecificKey(SdlKey::K)]);
-        this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(SdlKey::U)]);
-        this.bind_action(InputAction::East, &[InputBinding::SpecificKey(SdlKey::L)]);
-        this.bind_action(InputAction::Southeast, &[InputBinding::SpecificKey(SdlKey::N)]);
-        this.bind_action(InputAction::South, &[InputBinding::SpecificKey(SdlKey::J)]);
-        this.bind_action(InputAction::Southwest, &[InputBinding::SpecificKey(SdlKey::B)]);
-        this.bind_action(InputAction::West, &[InputBinding::SpecificKey(SdlKey::H)]);
-        this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(SdlKey::Y)]);
+        this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(InputKey::Escape)]);
+        this.bind_action(InputAction::North, &[InputBinding::SpecificKey(InputKey::K)]);
+        this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(InputKey::U)]);
+        this.bind_action(InputAction::East, &[InputBinding::SpecificKey(InputKey::L)]);
+        this.bind_action(InputAction::Southeast, &[InputBinding::SpecificKey(InputKey::N)]);
+        this.bind_action(InputAction::South, &[InputBinding::SpecificKey(InputKey::J)]);
+        this.bind_action(InputAction::Southwest, &[InputBinding::SpecificKey(InputKey::B)]);
+        this.bind_action(InputAction::West, &[InputBinding::SpecificKey(InputKey::H)]);
+        this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(InputKey::Y)]);
 
         Ok(this)
     }
@@ -170,16 +171,16 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     // Helper function that returns whether a keycode is one of: Alt, Ctrl, Shift, Gui, App.
     //---------------------------------------------------------------------------------------------
-    fn is_modifier(keycode: SdlKey) -> bool {
-        keycode == SdlKey::LAlt
-            || keycode == SdlKey::RAlt
-            || keycode == SdlKey::LCtrl
-            || keycode == SdlKey::RCtrl
-            || keycode == SdlKey::LShift
-            || keycode == SdlKey::RShift
-            || keycode == SdlKey::LGui
-            || keycode == SdlKey::RGui
-            || keycode == SdlKey::Application
+    fn is_modifier(keycode: InputKey) -> bool {
+        keycode == InputKey::LAlt
+            || keycode == InputKey::RAlt
+            || keycode == InputKey::LCtrl
+            || keycode == InputKey::RCtrl
+            || keycode == InputKey::LShift
+            || keycode == InputKey::RShift
+            || keycode == InputKey::LGui
+            || keycode == InputKey::RGui
+            || keycode == InputKey::Application
     }
 
     //---------------------------------------------------------------------------------------------
@@ -197,7 +198,7 @@ impl InputManager {
 
         // Iterate over all keys.
         for (scancode, pressed) in keyboard_state.scancodes() {
-            if let Some(keycode) = SdlKey::from_scancode(scancode) {
+            if let Some(keycode) = InputKey::from_scancode(scancode) {
                 // If pressed:
                 // - insert into the pressed key set.
                 // - insert into the just pressed key set if the key had previously been released.
@@ -206,7 +207,7 @@ impl InputManager {
 
                     // Ignore modifier keys and alt-tab when updating pressed_any_key.
                     if !Self::is_modifier(keycode)
-                        || (keycode == SdlKey::Tab && !self.modifier_pressed(&ModifierKey::Alt))
+                        || (keycode == InputKey::Tab && !self.modifier_pressed(&ModifierKey::Alt))
                     {
                         self.pressed_any_key = true;
                     }
@@ -322,16 +323,16 @@ impl InputManager {
     pub fn modifier_pressed(&self, modifier: &ModifierKey) -> bool {
         match modifier {
             ModifierKey::Alt => {
-                self.pressed_keys.contains(&SdlKey::LAlt)
-                    || self.pressed_keys.contains(&SdlKey::RAlt)
+                self.pressed_keys.contains(&InputKey::LAlt)
+                    || self.pressed_keys.contains(&InputKey::RAlt)
             }
             ModifierKey::Ctrl => {
-                self.pressed_keys.contains(&SdlKey::LCtrl)
-                    || self.pressed_keys.contains(&SdlKey::RCtrl)
+                self.pressed_keys.contains(&InputKey::LCtrl)
+                    || self.pressed_keys.contains(&InputKey::RCtrl)
             }
             ModifierKey::Shift => {
-                self.pressed_keys.contains(&SdlKey::LShift)
-                    || self.pressed_keys.contains(&SdlKey::RShift)
+                self.pressed_keys.contains(&InputKey::LShift)
+                    || self.pressed_keys.contains(&InputKey::RShift)
             }
         }
     }
@@ -339,14 +340,14 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     // Checks whether a key is pressed.
     //---------------------------------------------------------------------------------------------
-    pub fn key_pressed(&self, key: SdlKey) -> bool {
+    pub fn key_pressed(&self, key: InputKey) -> bool {
         self.pressed_keys.contains(&key)
     }
 
     //---------------------------------------------------------------------------------------------
     // Checks whether a key was just pressed this frame.
     //---------------------------------------------------------------------------------------------
-    pub fn key_just_pressed(&self, key: SdlKey) -> bool {
+    pub fn key_just_pressed(&self, key: InputKey) -> bool {
         self.just_pressed_keys.contains(&key)
     }
 
