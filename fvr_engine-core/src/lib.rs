@@ -6,6 +6,7 @@ mod direction;
 mod distance;
 mod fov;
 mod grid_map;
+mod lines;
 mod map2d;
 mod misc;
 mod palette_color;
@@ -25,6 +26,7 @@ pub mod prelude {
     pub use crate::distance::*;
     pub use crate::fov::*;
     pub use crate::grid_map::*;
+    pub use crate::lines::*;
     pub use crate::map2d::*;
     pub use crate::misc::*;
     pub use crate::palette_color::*;

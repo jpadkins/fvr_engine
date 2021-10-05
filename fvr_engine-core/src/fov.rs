@@ -629,8 +629,8 @@ impl Fov {
         let decay = 1.0 / (radius + 1.0);
 
         // Normalize the angle and span as % of a circle.
-        *angle = (*angle % 360.0) * (1.0 / 360.0);
-        *span *= 1.0 / 360.0;
+        *angle = (*angle % 360.0) * DEGREE_PER_RADIAN;
+        *span *= DEGREE_PER_RADIAN;
 
         // Reset the fov hash sets.
         self.previous_fov.clear();

@@ -356,7 +356,7 @@ impl Zone {
 
     fn refresh_player_fov(&mut self) {
         // TODO: Use a meaningful, dynamic value here.
-        const PLAYER_FOV_DISTANCE: f32 = 33.0;
+        const PLAYER_FOV_DISTANCE: f32 = 30.0;
         self.player_fov.calculate_thin(self.player_xy, PLAYER_FOV_DISTANCE, &self.pathing);
     }
 

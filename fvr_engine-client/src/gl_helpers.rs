@@ -266,6 +266,9 @@ where
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
         gl_error_unwrap!("Failed to set TEXTURE_MAG_FILTER parameter.");
 
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, 4 as GLint);
+        // gl_error_unwrap!("Failed to set TEXTURE_MAX_LEVEL parameter.");
+
         // Upload the texture data.
         gl::TexImage2D(
             // Target.
@@ -290,8 +293,8 @@ where
         gl_error_unwrap!("Failed to upload texture data.");
 
         // Generate Mipmaps. TODO: Do we need to do this?
-        gl::GenerateMipmap(gl::TEXTURE_2D);
-        gl_error_unwrap!("Failed to generate mipmaps.");
+        // gl::GenerateMipmap(gl::TEXTURE_2D);
+        // gl_error_unwrap!("Failed to generate mipmaps.");
     }
 
     Ok(texture_dimensions)

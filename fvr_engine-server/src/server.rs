@@ -113,6 +113,7 @@ impl Server {
             // Optionally adjust for Fov.
             if show_fov {
                 tile.foreground_opacity = *zone.player_fov.get_xy(src_xy);
+                tile.outline_opacity = tile.foreground_opacity;
             }
         });
 
@@ -159,6 +160,7 @@ impl Server {
             // Optionally adjust for Fov.
             if show_fov {
                 tile.foreground_opacity = *zone.player_fov.get_xy(src_xy);
+                tile.outline_opacity = tile.foreground_opacity;
             }
         });
 

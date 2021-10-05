@@ -23,7 +23,7 @@ use crate::scene_stack::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const SHOW_FOV: bool = false;
+const SHOW_FOV: bool = true;
 
 //-------------------------------------------------------------------------------------------------
 // An empty scene used for testing and other development tasks.
@@ -53,7 +53,7 @@ impl Scratch {
             path: Vec::new(),
             a_star: AStar::fast(Distance::Euclidean),
             last_offset: (0, 0),
-            show_path: false,
+            show_path: true,
         }
     }
 
@@ -108,19 +108,21 @@ impl Scratch {
         let player_xy = server.zone().player_xy;
 
         self.path.clear();
-        self.a_star.push_path(
-            player_xy,
-            rect.insert_xy(xy),
-            &server.zone().pathing,
-            None,
-            &mut self.path,
-        );
+        // self.a_star.push_path(
+        //     player_xy,
+        //     rect.insert_xy(xy),
+        //     &server.zone().pathing,
+        //     None,
+        //     &mut self.path,
+        // );
+        Lines::push_dda(player_xy, rect.insert_xy(xy), &mut self.path);
+        // println!("{:?}", self.path);
 
-        for coord in self.path.iter().rev().skip(1) {
+        for coord in self.path.iter().rev() {
             if let Some(norm) = &Rect::new(self.last_offset, 55, 33).extract_xy(*coord) {
                 let tile = terminal.get_xy_mut(*norm);
-                tile.background_color = PaletteColor::Gold.const_into();
-                tile.background_opacity = 0.25;
+                tile.background_color = PaletteColor::White.const_into();
+                tile.background_opacity = 0.15;
             }
         }
     }
