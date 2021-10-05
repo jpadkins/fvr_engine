@@ -32,7 +32,7 @@ const WINDOW_TITLE: &str = "FVR_ENGINE";
 const WINDOW_DIMENSIONS: ICoord = (1280, 720);
 const TERMINAL_DIMENSIONS: ICoord = (85, 33);
 const TILE_DIMENSIONS: ICoord = (48, 64);
-const FONT_NAME: &str = "fantasque_sans_mono";
+const FONT_NAME: &str = "deja_vu_sans_mono";
 const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
 
 fn main() -> Result<()> {

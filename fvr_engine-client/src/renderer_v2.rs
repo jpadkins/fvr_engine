@@ -528,11 +528,9 @@ impl RendererV2 {
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
             // Get the texture path string.
-            let path_string = if USE_SDF_FONTS {
-                [FONTS_PATH, font_name.as_ref(), "_sdf/", TILE_STYLE_NAMES[i], ".png"].concat()
-            } else {
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".png"].concat()
-            };
+            let extension = if USE_SDF_FONTS { "_sdf.png" } else { ".png" };
+            let path_string =
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
             let dimensions =
                 load_texture(Path::new(&path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
@@ -549,12 +547,9 @@ impl RendererV2 {
         #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
             // Get the outline texture path string.
-            let path_string = if USE_SDF_FONTS {
-                [FONTS_PATH, font_name.as_ref(), "_sdf/", TILE_STYLE_NAMES[i], "_outline.png"]
-                    .concat()
-            } else {
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.png"].concat()
-            };
+            let extension = if USE_SDF_FONTS { "_outline_sdf.png" } else { "_outline.png" };
+            let path_string =
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
             // Offset the index for outlined textures.
             let index = i + TILE_STYLE_COUNT;
@@ -610,11 +605,8 @@ impl RendererV2 {
         // Load the non-outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the font metrics.
-            let path_string = if USE_SDF_FONTS {
-                [FONTS_PATH, font_name.as_ref(), "_sdf/", TILE_STYLE_NAMES[i], ".toml"].concat()
-            } else {
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat()
-            };
+            let path_string =
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat();
             let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
@@ -633,13 +625,9 @@ impl RendererV2 {
         // Load the outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the outline font metrics.
-            let path_string = if USE_SDF_FONTS {
-                [FONTS_PATH, font_name.as_ref(), "_sdf/", TILE_STYLE_NAMES[i], "_outline.toml"]
-                    .concat()
-            } else {
+            let path_string =
                 [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.toml"]
-                    .concat()
-            };
+                    .concat();
             let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
