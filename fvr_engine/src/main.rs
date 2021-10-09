@@ -36,12 +36,11 @@ const FONT_NAME: &str = "deja_vu_sans_mono";
 const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
 
 fn main() -> Result<()> {
+    // Initialize everything.
     let mut render_dt;
     let mut update_dt = Duration::from_secs(0);
     let mut update_timer = Timer::new(UPDATE_INTERVAL);
-
     let mut server = Server::new()?;
-
     let mut client = Client::new(
         WINDOW_TITLE,
         WINDOW_DIMENSIONS,
@@ -49,17 +48,19 @@ fn main() -> Result<()> {
         TILE_DIMENSIONS,
         FONT_NAME,
     )?;
-
     let mut terminal = client.create_terminal();
     let mut input = InputManager::with_default_bindings()?;
-
     let mut scene_stack = SceneStack::new();
     scene_stack.push(Box::new(Initial::new()), &mut server, &mut terminal, &input)?;
 
+    // Begin the game loop.
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
+                // Break immediately if quit event is received.
                 InputEvent::Quit { .. } => break 'main,
+                // Toggle the debug gui on space.
+                // TODO: Change this, obviously.
                 InputEvent::KeyDown { keycode: Some(InputKey::Space), .. } => {
                     client.toggle_debug();
                 }
@@ -67,9 +68,11 @@ fn main() -> Result<()> {
             }
         }
 
+        // Update the frame time counters.
         render_dt = client.update_input(&mut input);
         update_dt += render_dt;
 
+        // If enough time has passed, update the game state.
         if update_timer.update(&render_dt) {
             if !scene_stack.update(&mut server, &mut terminal, &input, &update_dt)? {
                 break 'main;
@@ -79,8 +82,8 @@ fn main() -> Result<()> {
             update_dt -= UPDATE_INTERVAL;
         }
 
+        // Always render the frame.
         scene_stack.render(&mut terminal, &render_dt)?;
-
         let _ = client.render_frame(&terminal)?;
     }
 

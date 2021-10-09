@@ -16,7 +16,7 @@ use fvr_engine_core::prelude::*;
 const DEFAULT_FONT: &str = "deja_vu_sans_mono";
 
 // Directory to save generated atlases.
-const OUTPUT_DIR: &str = "./resources/fonts";
+const OUTPUT_DIR: &str = "./assets/fonts";
 
 // Directory of input bmfont files.
 const FONTS_DIR: &str = "./fvr_engine-atlas/fonts";

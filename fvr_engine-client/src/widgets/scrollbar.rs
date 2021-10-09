@@ -331,7 +331,12 @@ impl Scrollbar {
         // Determine the response.
         if top_action == ButtonAction::Triggered {
             // If the top button was triggered, scroll up the bar.
-            let lines = cmp::min(self.track_ratio, self.current_line);
+            let lines = cmp::min(
+                // self.track_ratio,
+                // ^ This scrolls too quickly.
+                1,
+                self.current_line,
+            );
             action = ScrollbarAction::ScrollUp(lines);
             self.current_line -= lines;
             self.dirty = true;
@@ -342,7 +347,9 @@ impl Scrollbar {
             // Else if the bottom button was triggered, scroll down the bar, ensuring the content
             // is not overscrolled.
             let lines = cmp::min(
-                self.track_ratio,
+                // self.track_ratio,
+                // ^ This scrolls too quickly.
+                1,
                 (self.content_height - self.height) - self.current_line,
             );
             action = ScrollbarAction::ScrollDown(lines);

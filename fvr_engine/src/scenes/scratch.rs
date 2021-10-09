@@ -246,6 +246,7 @@ impl Scene for Scratch {
                 self.draw_path(server, terminal, xy);
                 let zone_xy = (self.last_offset.0 + xy.0, self.last_offset.1 + xy.1);
                 self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", zone_xy))?;
+                self.scroll_log.scroll_to_bottom();
             }
         }
 
