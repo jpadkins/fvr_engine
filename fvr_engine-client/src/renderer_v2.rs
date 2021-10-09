@@ -39,7 +39,7 @@ const FONTS_PATH: &str = "./resources/fonts/";
 const USE_DOUBLE_BUFFERS: bool = true;
 
 // Whether to use signed distance field font rendering.
-const USE_SDF_FONTS: bool = false;
+const USE_SDF_RENDERING: bool = false;
 
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
@@ -186,7 +186,7 @@ impl RendererV2 {
         gl_error_unwrap!("Failed to generate background vertex arrays.");
 
         // Generate the foreground program (compile shaders and link).
-        let foreground_program = if USE_SDF_FONTS {
+        let foreground_program = if USE_SDF_RENDERING {
             link_program_from_sources(
                 FOREGROUND_VERTEX_SHADER_SOURCE,
                 FOREGROUND_FRAGMENT_SHADER_SDF_SOURCE,
@@ -528,7 +528,7 @@ impl RendererV2 {
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
             // Get the texture path string.
-            let extension = if USE_SDF_FONTS { "_sdf.png" } else { ".png" };
+            let extension = if USE_SDF_RENDERING { "_sdf.png" } else { ".png" };
             let path_string =
                 [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
@@ -547,7 +547,7 @@ impl RendererV2 {
         #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
             // Get the outline texture path string.
-            let extension = if USE_SDF_FONTS { "_outline_sdf.png" } else { "_outline.png" };
+            let extension = if USE_SDF_RENDERING { "_outline_sdf.png" } else { "_outline.png" };
             let path_string =
                 [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 

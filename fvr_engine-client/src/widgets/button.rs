@@ -192,7 +192,7 @@ impl Button {
                         self.state = State::Default;
                         self.redraw(map);
                         return ButtonAction::Noop;
-                    } else if input.mouse_clicked().0 {
+                    } else if input.mouse_clicked(InputMouse::Left) {
                         self.state = State::Pressed;
                         self.redraw(map);
                         return ButtonAction::Interactable;
@@ -208,7 +208,7 @@ impl Button {
                         self.state = State::Default;
                         self.redraw(map);
                         return ButtonAction::Noop;
-                    } else if !input.mouse_pressed().0 {
+                    } else if !input.mouse_pressed(InputMouse::Left) {
                         self.state = State::Focused;
                         self.redraw(map);
                         return ButtonAction::Triggered;

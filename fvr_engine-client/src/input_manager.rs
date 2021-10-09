@@ -51,6 +51,16 @@ pub enum ModifierKey {
 }
 
 //-------------------------------------------------------------------------------------------------
+// InputMouse enumerates the buttons on a mouse.
+//-------------------------------------------------------------------------------------------------
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum InputMouse {
+    Left,
+    Right,
+}
+
+//-------------------------------------------------------------------------------------------------
 // Describes an entry in the keybindings for an input action - either a specific key or a modifier.
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -290,16 +300,36 @@ impl InputManager {
     }
 
     //---------------------------------------------------------------------------------------------
+    // Returns the pressed state of a mouse button.
+    //---------------------------------------------------------------------------------------------
+    pub fn mouse_pressed(&self, button: InputMouse) -> bool {
+        match button {
+            InputMouse::Left => self.mouse_pressed.0,
+            InputMouse::Right => self.mouse_pressed.1,
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
     // Returns current pressed state of the mouse buttons
     //---------------------------------------------------------------------------------------------
-    pub fn mouse_pressed(&self) -> (bool, bool) {
+    pub fn mouse_pressed_state(&self) -> (bool, bool) {
         self.mouse_pressed
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Returns the clicked state of a mouse button.
+    //---------------------------------------------------------------------------------------------
+    pub fn mouse_clicked(&self, button: InputMouse) -> bool {
+        match button {
+            InputMouse::Left => self.mouse_clicked.0,
+            InputMouse::Right => self.mouse_clicked.1,
+        }
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns current clicked state of the mouse buttons
     //---------------------------------------------------------------------------------------------
-    pub fn mouse_clicked(&self) -> (bool, bool) {
+    pub fn mouse_clicked_state(&self) -> (bool, bool) {
         self.mouse_clicked
     }
 

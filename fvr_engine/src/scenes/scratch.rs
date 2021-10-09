@@ -35,6 +35,8 @@ pub struct Scratch {
     a_star: AStar,
     last_offset: ICoord,
     show_path: bool,
+    repeat: InputRepeat,
+    moved_with_mouse: bool,
 }
 
 impl Scratch {
@@ -54,6 +56,8 @@ impl Scratch {
             a_star: AStar::fast(Distance::Euclidean),
             last_offset: (0, 0),
             show_path: true,
+            repeat: InputRepeat::for_mouse(InputMouse::Left, Duration::from_millis(300), None),
+            moved_with_mouse: false,
         }
     }
 
@@ -118,9 +122,14 @@ impl Scratch {
         Lines::push_dda(player_xy, rect.insert_xy(xy), &mut self.path);
         // println!("{:?}", self.path);
 
-        for coord in self.path.iter().rev() {
+        for coord in self.path.iter().skip(1) {
             if let Some(norm) = &Rect::new(self.last_offset, 55, 33).extract_xy(*coord) {
                 let tile = terminal.get_xy_mut(*norm);
+
+                if server.zone().is_blocked(*coord) || tile.foreground_opacity == 0.0 {
+                    break;
+                }
+
                 tile.background_color = PaletteColor::White.const_into();
                 tile.background_opacity = 0.15;
             }
@@ -200,7 +209,7 @@ impl Scene for Scratch {
         server: &mut Server,
         terminal: &mut Terminal,
         input: &InputManager,
-        _dt: &Duration,
+        dt: &Duration,
     ) -> Result<SceneAction> {
         let scroll_log_action = self.scroll_log.update(input, terminal)?;
 
@@ -229,14 +238,35 @@ impl Scene for Scratch {
             self.handle_move(server, terminal, &NORTHWEST_DIRECTION)?;
         } else if scroll_log_action == ScrollLogAction::Interactable {
             input.set_cursor(Cursor::Hand);
-        } else if input.mouse_moved() {
-            if let Some(xy) = input.mouse_coord() {
+        } else {
+            input.set_cursor(Cursor::Arrow);
+        }
+
+        let mouse_coord = input.mouse_coord();
+
+        if self.moved_with_mouse || input.mouse_moved() {
+            self.moved_with_mouse = false;
+            if let Some(xy) = mouse_coord {
                 self.draw_path(server, terminal, xy);
                 let zone_xy = (self.last_offset.0 + xy.0, self.last_offset.1 + xy.1);
                 self.scroll_log.append(&format!("\n<fc:y>> mouse: <fc:$>{:?}", zone_xy))?;
             }
-        } else {
-            input.set_cursor(Cursor::Arrow);
+        }
+
+        if self.repeat.update(dt, input) {
+            if let Some(xy) = mouse_coord {
+                let rect = Rect::new(self.last_offset, 55, 33);
+                let player_xy = server.zone().player_xy;
+
+                if self.view.contains(xy) {
+                    self.moved_with_mouse = true;
+                    self.handle_move(
+                        server,
+                        terminal,
+                        &Direction::closest_direction(player_xy, rect.insert_xy(xy)),
+                    )?;
+                }
+            }
         }
 
         Ok(SceneAction::Noop)

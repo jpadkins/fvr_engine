@@ -209,7 +209,7 @@ impl Zone {
     // TODO: Remove.
     pub fn generate_dummy_map(&mut self) {
         let mut rng = thread_rng();
-        const TREE_CHANCE: u8 = 5;
+        const TREE_CHANCE: u8 = 15;
 
         // Iterate over the map, setting each cell to either grass or a tree.
         map2d_iter_index_mut!(self.cell_map, x, y, item, {
