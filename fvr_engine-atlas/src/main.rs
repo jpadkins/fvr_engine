@@ -201,11 +201,12 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
 
     output_buffer.save(output_atlas_path).context("Failed to save output atlas.")?;
 
-    let output_metrics_path = format!("{}/{}/{}.toml", OUTPUT_DIR, name, font_name);
-    let toml = toml::to_string(&output_metrics).context("Failed to serialize output metrics.")?;
+    let output_metrics_path = format!("{}/{}/{}.json", OUTPUT_DIR, name, font_name);
+    let json =
+        serde_json::to_string(&output_metrics).context("Failed to serialize output metrics.")?;
     let mut output_metrics_file =
         File::create(output_metrics_path).context("Failed to create output metrics file.")?;
-    output_metrics_file.write_all(toml.as_bytes()).context("Failed to save output metrics.")?;
+    output_metrics_file.write_all(json.as_bytes()).context("Failed to save output metrics.")?;
 
     Ok(())
 }

@@ -35,14 +35,14 @@ const COLOR_NORMALIZE_8BIT: GLfloat = 1.0 / 255.0;
 // Relative path to the fonts directory.
 const FONTS_PATH: &str = "./assets/fonts/";
 
-// Whether to alternate drawing/updating between two sets of array buffers and vertex arrays.
-const USE_DOUBLE_BUFFERS: bool = true;
+// Whether to alternate drawing/updating between two vertex buffers.
+const USE_ALTERNATING_VBOS: bool = true;
 
 // Whether to use signed distance field font rendering.
-const USE_SDF_RENDERING: bool = false;
+const USE_SDF_FONTS: bool = false;
 
 // Whether to render the screen vignette.
-const RENDER_VIGNETTE: bool = true;
+const ENABLE_VIGNETTE: bool = true;
 
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
@@ -189,7 +189,7 @@ impl RendererV2 {
         gl_error_unwrap!("Failed to generate background vertex arrays.");
 
         // Generate the foreground program (compile shaders and link).
-        let foreground_program = if USE_SDF_RENDERING {
+        let foreground_program = if USE_SDF_FONTS {
             link_program_from_sources(
                 FOREGROUND_VERTEX_SHADER_SOURCE,
                 FOREGROUND_FRAGMENT_SHADER_SDF_SOURCE,
@@ -531,7 +531,7 @@ impl RendererV2 {
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
             // Get the texture path string.
-            let extension = if USE_SDF_RENDERING { "_sdf.png" } else { ".png" };
+            let extension = if USE_SDF_FONTS { "_sdf.png" } else { ".png" };
             let path_string =
                 [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
@@ -550,7 +550,7 @@ impl RendererV2 {
         #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
             // Get the outline texture path string.
-            let extension = if USE_SDF_RENDERING { "_outline_sdf.png" } else { "_outline.png" };
+            let extension = if USE_SDF_FONTS { "_outline_sdf.png" } else { "_outline.png" };
             let path_string =
                 [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
@@ -609,15 +609,15 @@ impl RendererV2 {
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the font metrics.
             let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat();
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".json"].concat();
             let path = Path::new(&path_string);
 
-            // Read in the data from the metrics file and parse it as TOML.
-            let metrics_toml = std::fs::read_to_string(&path)
+            // Read in the data from the metrics file and parse it as JSON.
+            let metrics_json = std::fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read contents of file {}.", path.display()))?;
 
             let font_metrics: FontMetricsV2 =
-                toml::from_str(&metrics_toml).context("Failed to parse font metrics TOML.")?;
+                serde_json::from_str(&metrics_json).context("Failed to parse font metrics.")?;
 
             // Populate hash maps with non-outlined metrics for easy access.
             for metric in font_metrics.metrics {
@@ -629,16 +629,16 @@ impl RendererV2 {
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the outline font metrics.
             let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.toml"]
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.json"]
                     .concat();
             let path = Path::new(&path_string);
 
-            // Read in the data from the metrics file and parse it as TOML.
-            let metrics_toml = std::fs::read_to_string(&path)
+            // Read in the data from the metrics file and parse it as JSON.
+            let metrics_json = std::fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read contents of file {}.", path.display()))?;
 
             let font_metrics: FontMetricsV2 =
-                toml::from_str(&metrics_toml).context("Failed to parse font metrics TOML.")?;
+                serde_json::from_str(&metrics_json).context("Failed to parse font metrics.")?;
 
             // Populate hash maps with outlined metrics for easy access.
             // (remembering to offset the index for outlined metrics)
@@ -982,7 +982,7 @@ impl RendererV2 {
 
         // Determine index for the current vertex buffer and vertex arrays.
         let noncurrent_index =
-            if USE_DOUBLE_BUFFERS { !self.target_backbuffer } else { self.target_backbuffer }
+            if USE_ALTERNATING_VBOS { !self.target_backbuffer } else { self.target_backbuffer }
                 as usize;
 
         // Bind the vertex buffer not currently being rendered.
@@ -1120,7 +1120,7 @@ impl RendererV2 {
         }
 
         // Draw the vignette.
-        if RENDER_VIGNETTE {
+        if ENABLE_VIGNETTE {
             unsafe {
                 // Enable the vignette shader program and vertex array.
                 gl::UseProgram(self.vignette_program);
@@ -1136,7 +1136,7 @@ impl RendererV2 {
         }
 
         // Flip the targeted buffer / vertex arrays.
-        if USE_DOUBLE_BUFFERS {
+        if USE_ALTERNATING_VBOS {
             self.target_backbuffer = !self.target_backbuffer;
         }
 

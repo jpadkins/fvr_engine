@@ -1,0 +1,8 @@
+{
+  "gamplay": {},
+  "renderer": {
+    "use_alternating_vbos": false,
+    "use_sdf_fonts": false,
+    "enable_vignette": true
+  }
+}

@@ -2,6 +2,7 @@
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use fnv::{FnvHashMap, FnvHashSet};
+use serde_derive::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
@@ -20,11 +21,16 @@ use strum_macros::EnumIter;
 use fvr_engine_core::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
+// Constants.
+//-------------------------------------------------------------------------------------------------
+const KEYBINDINGS_PATH: &str = "./config/keybindings.json";
+
+//-------------------------------------------------------------------------------------------------
 // InputAction enumerates the kinds of input the user can make.
 // These actions are meant to be composite and remappable and used alongside individual key inputs.
 //-------------------------------------------------------------------------------------------------
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, EnumIter, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, PartialEq, Hash, Serialize)]
 pub enum InputAction {
     Accept,
     Decline,
@@ -40,10 +46,15 @@ pub enum InputAction {
 }
 
 //-------------------------------------------------------------------------------------------------
+// TODO: Perhaps use SDL's keycode enum once serde can derive it de/serialization?
+//-------------------------------------------------------------------------------------------------
+pub type InputKeycode = i32;
+
+//-------------------------------------------------------------------------------------------------
 // ModifierKey enumerates the types of modifier keys that might be pressed.
 //-------------------------------------------------------------------------------------------------
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum ModifierKey {
     Alt,
     Ctrl,
@@ -54,7 +65,7 @@ pub enum ModifierKey {
 // InputMouse enumerates the buttons on a mouse.
 //-------------------------------------------------------------------------------------------------
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum InputMouse {
     Left,
     Right,
@@ -63,11 +74,11 @@ pub enum InputMouse {
 //-------------------------------------------------------------------------------------------------
 // Describes an entry in the keybindings for an input action - either a specific key or a modifier.
 //-------------------------------------------------------------------------------------------------
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum InputBinding {
-    SpecificKey(InputKey),
+    SpecificKey(InputKeycode),
     ModifierKey(ModifierKey),
-    ExcludeSpecificKey(InputKey),
+    ExcludeSpecificKey(InputKeycode),
     ExcludeModifierKey(ModifierKey),
 }
 
@@ -145,23 +156,26 @@ impl InputManager {
         let mut this = Self::new()?;
 
         // TODO: load these from config.
-        this.bind_action(InputAction::Accept, &[InputBinding::SpecificKey(InputKey::Return)]);
+        this.bind_action(
+            InputAction::Accept,
+            &[InputBinding::SpecificKey(InputKey::Return as i32)],
+        );
         this.bind_action(
             InputAction::Decline,
             &[
-                InputBinding::SpecificKey(InputKey::Tab),
+                InputBinding::SpecificKey(InputKey::Tab as i32),
                 InputBinding::ExcludeModifierKey(ModifierKey::Alt),
             ],
         );
-        this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(InputKey::Escape)]);
-        this.bind_action(InputAction::North, &[InputBinding::SpecificKey(InputKey::K)]);
-        this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(InputKey::U)]);
-        this.bind_action(InputAction::East, &[InputBinding::SpecificKey(InputKey::L)]);
-        this.bind_action(InputAction::Southeast, &[InputBinding::SpecificKey(InputKey::N)]);
-        this.bind_action(InputAction::South, &[InputBinding::SpecificKey(InputKey::J)]);
-        this.bind_action(InputAction::Southwest, &[InputBinding::SpecificKey(InputKey::B)]);
-        this.bind_action(InputAction::West, &[InputBinding::SpecificKey(InputKey::H)]);
-        this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(InputKey::Y)]);
+        this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(InputKey::Escape as i32)]);
+        this.bind_action(InputAction::North, &[InputBinding::SpecificKey(InputKey::K as i32)]);
+        this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(InputKey::U as i32)]);
+        this.bind_action(InputAction::East, &[InputBinding::SpecificKey(InputKey::L as i32)]);
+        this.bind_action(InputAction::Southeast, &[InputBinding::SpecificKey(InputKey::N as i32)]);
+        this.bind_action(InputAction::South, &[InputBinding::SpecificKey(InputKey::J as i32)]);
+        this.bind_action(InputAction::Southwest, &[InputBinding::SpecificKey(InputKey::B as i32)]);
+        this.bind_action(InputAction::West, &[InputBinding::SpecificKey(InputKey::H as i32)]);
+        this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(InputKey::Y as i32)]);
 
         Ok(this)
     }
@@ -171,9 +185,13 @@ impl InputManager {
     //---------------------------------------------------------------------------------------------
     fn binding_pressed(&self, binding: &InputBinding) -> bool {
         match binding {
-            InputBinding::SpecificKey(k) => self.pressed_keys.contains(k),
+            InputBinding::SpecificKey(k) => {
+                self.pressed_keys.contains(&InputKey::from_i32(*k).expect("Invalid keycode."))
+            }
             InputBinding::ModifierKey(m) => self.modifier_pressed(m),
-            InputBinding::ExcludeSpecificKey(k) => !self.pressed_keys.contains(k),
+            InputBinding::ExcludeSpecificKey(k) => {
+                !self.pressed_keys.contains(&InputKey::from_i32(*k).expect("Invalid keycode."))
+            }
             InputBinding::ExcludeModifierKey(m) => !self.modifier_pressed(m),
         }
     }
