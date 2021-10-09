@@ -13,8 +13,9 @@ use fvr_engine_core::{prelude::*, xy_iter};
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
-use crate::actor::*;
+use crate::behavior::*;
 use crate::components::*;
+use crate::intentions::*;
 use crate::systems::*;
 use crate::zone::*;
 
@@ -25,12 +26,6 @@ use crate::zone::*;
 // TODO: Remove or find a way to populate dynamically.
 pub const BASIC_AVOID_PLAYER_INDEX: usize = 0;
 pub const BASIC_CHASE_PLAYER_INDEX: usize = 1;
-
-//-------------------------------------------------------------------------------------------------
-// Aliases for convenience.
-//-------------------------------------------------------------------------------------------------
-pub type BehaviorsVec = Vec<Box<dyn Behavior + Send + Sync>>;
-pub type IntentionsVec = Vec<Box<dyn Intention + Send + Sync>>;
 
 //-------------------------------------------------------------------------------------------------
 // Enumerates the possible results returned from server actions.
@@ -46,10 +41,14 @@ pub enum ServerResult {
 // Server encapsulates all internal game logic and exposes an API for querying/manipulating it.
 //-------------------------------------------------------------------------------------------------
 pub struct Server {
+    // The specs world.
     world: World,
 }
 
 impl Server {
+    //---------------------------------------------------------------------------------------------
+    // Creates a new server. There should only ever be one.
+    //---------------------------------------------------------------------------------------------
     pub fn new() -> Result<Self> {
         // TODO: Remove - generate a dummy zone and insert it as a resource.
         let mut world = World::new();
@@ -61,10 +60,10 @@ impl Server {
         world.insert(zone);
 
         // Populate behaviors and intention vecs and insert them as resources.
-        let behaviors: BehaviorsVec = vec![Box::new(BasicBehavior {})];
+        let behaviors: Behaviors = vec![Box::new(BasicBehavior {})];
 
         #[rustfmt::skip]
-        let intentions: IntentionsVec = vec![
+        let intentions: Intentions = vec![
             Box::new(BasicAvoidPlayerIntention {}),
             Box::new(BasicChasePlayerIntention {})
         ];
@@ -75,10 +74,17 @@ impl Server {
         Ok(Self { world })
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Returns a ref to the current zone.
+    //---------------------------------------------------------------------------------------------
     pub fn zone(&self) -> Fetch<Zone> {
         self.world.fetch::<Zone>()
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Copies a section the visual state of current zone into a map2d.
+    // Returns the offset from the origin of the zone of the blit.
+    //---------------------------------------------------------------------------------------------
     pub fn blit<M>(
         &self,
         terminal: &mut M,
@@ -121,6 +127,10 @@ impl Server {
         (src.x, src.y)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Copies a section the visual state of current zone, centered on a coord, into a map2d.
+    // Returns the offset from the origin of the zone of the blit.
+    //---------------------------------------------------------------------------------------------
     pub fn blit_centered<M>(
         &self,
         terminal: &mut M,
@@ -168,6 +178,10 @@ impl Server {
         (rect.x, rect.y)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Copies a section the visual state of current zone, centered on the player, into a map2d.
+    // Returns the offset from the origin of the zone of the blit.
+    //---------------------------------------------------------------------------------------------
     pub fn blit_centered_on_player<M>(
         &self,
         terminal: &mut M,
@@ -182,6 +196,9 @@ impl Server {
         self.blit_centered(terminal, player_xy, dimensions, dest_origin, show_fov)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Tries to move the player in a direction. Returns the result.
+    //---------------------------------------------------------------------------------------------
     fn try_move_player(&mut self, dir: Direction) -> Result<ServerResult> {
         // Calculate the tentative new player position.
         let zone = self.world.fetch::<Zone>();
@@ -201,12 +218,18 @@ impl Server {
         Ok(ServerResult::Success)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Tries to move the player to a particular coord. Returns the result.
+    //---------------------------------------------------------------------------------------------
     pub fn move_player(&mut self, dir: Direction) -> Result<ServerResult> {
         let result = self.try_move_player(dir);
         self.tick();
         result
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Allow one "tick", or turn, to pass in the server.
+    //---------------------------------------------------------------------------------------------
     pub fn tick(&mut self) {
         // Run the systems.
         let mut goals_system = GoalsSystem {};
@@ -218,7 +241,6 @@ impl Server {
         self.world.maintain();
 
         // Refresh zone navigation maps and fov.
-        let mut zone = self.world.fetch_mut::<Zone>();
-        zone.refresh();
+        self.world.fetch_mut::<Zone>().refresh();
     }
 }

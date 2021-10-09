@@ -17,6 +17,7 @@ use fvr_engine_core::prelude::*;
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::actor::*;
+use crate::goals::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
@@ -28,7 +29,7 @@ pub const GOALS_SIZE: usize = 8;
 //-------------------------------------------------------------------------------------------------
 // Aliases for convenience.
 //-------------------------------------------------------------------------------------------------
-pub type GoalsVec = Vec<Box<dyn Goal + Send + Sync>>;
+pub type GoalStack = Vec<Box<dyn Goal + Send + Sync>>;
 pub type SharedActor = Arc<Mutex<Actor>>;
 
 //-------------------------------------------------------------------------------------------------
@@ -45,7 +46,7 @@ pub struct IsActor(pub SharedActor);
 #[storage(VecStorage)]
 pub struct HasGoals {
     // Stack of goals.
-    pub goals: GoalsVec,
+    pub goals: GoalStack,
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -19,8 +19,10 @@ use fvr_engine_core::{map2d_iter_index_mut, prelude::*, xy_tuple_iter};
 // Local includes.
 //-------------------------------------------------------------------------------------------------
 use crate::actor::*;
+use crate::cell::*;
 use crate::components::*;
 use crate::server::*;
+use crate::thing::*;
 
 //-------------------------------------------------------------------------------------------------
 // Statics.
@@ -29,7 +31,7 @@ use crate::server::*;
 // TODO: Remove.
 static TREE_THING: Thing = Thing {
     tile: Tile {
-        glyph: 'T',
+        glyph: '♣',
         layout: TileLayout::Center,
         style: TileStyle::Regular,
         size: TileSize::Normal,
@@ -41,7 +43,8 @@ static TREE_THING: Thing = Thing {
         foreground_opacity: 1.0,
         outline_opacity: 1.0,
     },
-    passable: false,
+    passability: Passability::Blocked,
+    transparency: Transparency::Opaque,
 };
 
 // TODO: Remove.
@@ -59,7 +62,8 @@ static GRASS_THING: Thing = Thing {
         foreground_opacity: 1.0,
         outline_opacity: 1.0,
     },
-    passable: true,
+    passability: Passability::Passable,
+    transparency: Transparency::Transparent,
 };
 
 // TODO: Remove.
@@ -77,7 +81,8 @@ static AVOID_MOB_THING: Thing = Thing {
         foreground_opacity: 1.0,
         outline_opacity: 1.0,
     },
-    passable: true,
+    passability: Passability::Blocked,
+    transparency: Transparency::Transparent,
 };
 
 // TODO: Remove.
@@ -95,7 +100,8 @@ static CHASE_MOB_THING: Thing = Thing {
         foreground_opacity: 1.0,
         outline_opacity: 1.0,
     },
-    passable: true,
+    passability: Passability::Blocked,
+    transparency: Transparency::Transparent,
 };
 
 // TODO: Remove.
@@ -113,26 +119,9 @@ static PLAYER_THING: Thing = Thing {
         foreground_opacity: 1.0,
         outline_opacity: 1.0,
     },
-    passable: true,
+    passability: Passability::Blocked,
+    transparency: Transparency::Transparent,
 };
-
-//-------------------------------------------------------------------------------------------------
-// Cell describes a single discrete point in the game world.
-//-------------------------------------------------------------------------------------------------
-#[derive(Clone, Debug, Default)]
-pub struct Cell {
-    // The things in the cell.
-    pub things: Vec<Thing>,
-}
-
-impl Cell {
-    //---------------------------------------------------------------------------------------------
-    // Determine if the cell is passable.
-    //---------------------------------------------------------------------------------------------
-    pub fn passable(&self) -> bool {
-        self.things.iter().all(|thing| thing.passable)
-    }
-}
 
 //-------------------------------------------------------------------------------------------------
 // Helper struct to store pathing related state for a cell.
@@ -144,23 +133,11 @@ pub struct PathingProperties {
 }
 
 impl PathingProperties {
-    pub fn passable(&self) -> bool {
-        self.dijkstra_state.passable()
-    }
-
-    pub fn update_passable(&mut self, passable: bool) {
-        if passable {
-            self.dijkstra_state = DijkstraState::Passable;
-            self.transparency = Transparency::Transparent;
-        } else {
-            self.dijkstra_state = DijkstraState::Blocked;
-            self.transparency = Transparency::Opaque;
-        }
-    }
-
-    pub fn set_state(&mut self, dijkstra_state: DijkstraState) {
-        self.dijkstra_state = dijkstra_state;
-        self.transparency = dijkstra_state.into();
+    //---------------------------------------------------------------------------------------------
+    // Returns whether the pathing properties are passable.
+    //---------------------------------------------------------------------------------------------
+    fn passable(&self) -> bool {
+        Into::<Passability>::into(self.dijkstra_state) == Passability::Passable
     }
 }
 
@@ -206,7 +183,9 @@ pub struct Zone {
 }
 
 impl Zone {
+    //---------------------------------------------------------------------------------------------
     // TODO: Remove.
+    //---------------------------------------------------------------------------------------------
     pub fn generate_dummy_map(&mut self) {
         let mut rng = thread_rng();
         const TREE_CHANCE: u8 = 15;
@@ -224,7 +203,9 @@ impl Zone {
         *self.cell_map.get_xy_mut(self.player_xy) = Cell { things: vec![GRASS_THING] };
     }
 
+    //---------------------------------------------------------------------------------------------
     // TODO: Remove.
+    //---------------------------------------------------------------------------------------------
     pub fn generate_dummy_mobs(&mut self, world: &mut World) -> Result<()> {
         let mut rng = thread_rng();
         const AVOID_MOB_COUNT: u8 = 50;
@@ -293,26 +274,47 @@ impl Zone {
         Ok(())
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Refreshes the state of the navigation related maps.
+    //---------------------------------------------------------------------------------------------
     fn refresh_navigation_maps(&mut self) {
-        // Refresh passability map.
-        // TODO: FIND A WAY TO LET THESE SHARE ONE PASSABILITY MAP!
+        // Refresh the path properties map.
         xy_tuple_iter!(x, y, self.dimensions, {
-            let passable;
+            // Each coord starts out as passable and transparent.
+            let mut passability = Passability::Passable;
+            let mut transparency = Transparency::Transparent;
 
-            // Treat actors who have not moved in two rounds as obstacles.
+            // Check properties from any present actors.
             if let Some(actor) = self.actor_map.get_xy((x, y)) {
-                let actor = actor.as_ref().lock().unwrap();
-                passable = actor.navigation.stationary < 2;
-            } else {
-                passable = self.cell_map.get_xy((x, y)).passable();
+                // Aquire ref to actor.
+                let actor = actor.as_ref().lock().expect("Failed to lock actor mutex.");
+
+                // Treat actors who have not moved in two rounds as obstacles.
+                if actor.navigation.stationary >= 2
+                    || actor.thing.passability != Passability::Passable
+                {
+                    passability = Passability::Blocked;
+                }
+                transparency = actor.thing.transparency;
             }
 
-            // Update all shared passability state.
-            self.pathing.get_xy_mut((x, y)).update_passable(passable);
+            // Check properties from the cell.
+            let cell = self.cell_map.get_xy((x, y));
+            if cell.passability() != Passability::Passable {
+                passability = Passability::Blocked;
+            }
+            if cell.transparency() != Transparency::Transparent {
+                transparency = Transparency::Opaque;
+            }
+
+            // Update the pathing properties.
+            let pathing = self.pathing.get_xy_mut((x, y));
+            pathing.dijkstra_state = passability.into();
+            pathing.transparency = transparency;
         });
 
         // Set player position as th current goal.
-        self.pathing.get_xy_mut(self.player_xy).set_state(DIJKSTRA_DEFAULT_GOAL);
+        self.pathing.get_xy_mut(self.player_xy).dijkstra_state = DIJKSTRA_DEFAULT_GOAL;
 
         // Caluclate the chase map.
         self.chase_map.calculate_thin(&self.pathing);
@@ -321,17 +323,17 @@ impl Zone {
         let highest_xy = self.chase_map.highest_xy();
 
         // Clear the goal.
-        self.pathing.get_xy_mut(self.player_xy).set_state(DijkstraState::Passable);
+        self.pathing.get_xy_mut(self.player_xy).dijkstra_state = DijkstraState::Passable;
 
         if let Some(xy) = highest_xy {
             // If a path exists to the player then use combined flee pathing.
-            self.pathing.get_xy_mut(xy).set_state(DIJKSTRA_DEFAULT_GOAL);
+            self.pathing.get_xy_mut(xy).dijkstra_state = DIJKSTRA_DEFAULT_GOAL;
 
             // Calculate the flee map with the highest chase map xy as the goal.
             self.avoid_map.calculate_thin(&self.pathing);
 
             // Find the highest weight in the chase map.
-            let highest_weight = self.chase_map.get_xy(xy).unwrap();
+            let highest_weight = self.chase_map.get_xy(xy).expect("No highest weight!");
 
             // Modulate the entire flee map by some coefficient of the chase map.
             xy_tuple_iter!(x, y, self.dimensions, {
@@ -354,12 +356,18 @@ impl Zone {
         self.avoid_map.refresh_highest();
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Refreshes the player fov.
+    //---------------------------------------------------------------------------------------------
     fn refresh_player_fov(&mut self) {
         // TODO: Use a meaningful, dynamic value here.
         const PLAYER_FOV_DISTANCE: f32 = 30.0;
         self.player_fov.calculate_thin(self.player_xy, PLAYER_FOV_DISTANCE, &self.pathing);
     }
 
+    //---------------------------------------------------------------------------------------------
+    // TODO: Remove.
+    //---------------------------------------------------------------------------------------------
     pub fn dummy(dimensions: ICoord, world: &mut World) -> Result<Self> {
         let mut actor_map = GridMap::new(dimensions);
 
@@ -398,11 +406,17 @@ impl Zone {
         Ok(zone)
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Refreshes the state of the zone. Should be called every turn.
+    //---------------------------------------------------------------------------------------------
     pub fn refresh(&mut self) {
         self.refresh_navigation_maps();
         self.refresh_player_fov();
     }
 
+    //---------------------------------------------------------------------------------------------
+    // Determins whether a coord in the zone is passable.
+    //---------------------------------------------------------------------------------------------
     pub fn is_blocked(&self, xy: ICoord) -> bool {
         // Is the position in bounds?
         if !self.cell_map.in_bounds(xy) {

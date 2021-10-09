@@ -49,6 +49,9 @@ A data-driven text-based roleplaying game engine.
 - implement static/dynamic color palettes
 - implement ability to switch between vsync and custom fps in client.
 
+- clean up server crate
+- generalize scratch scene into base version of explore scene
+
 ## CRATES
 
 ### fvr_engine

@@ -32,7 +32,6 @@ pub struct Scratch {
     scroll_log: ScrollLog,
     view: Rect,
     path: Vec<ICoord>,
-    a_star: AStar,
     last_offset: ICoord,
     show_path: bool,
     repeat: InputRepeat,
@@ -53,10 +52,9 @@ impl Scratch {
             ),
             view: Rect::new((0, 0), 55, 33),
             path: Vec::new(),
-            a_star: AStar::fast(Distance::Euclidean),
             last_offset: (0, 0),
             show_path: true,
-            repeat: InputRepeat::for_mouse(InputMouse::Left, Duration::from_millis(300), None),
+            repeat: InputRepeat::for_mouse(InputMouse::Left, Duration::from_millis(330), None),
             moved_with_mouse: false,
         }
     }
@@ -67,8 +65,14 @@ impl Scratch {
         terminal: &mut Terminal,
         direction: &Direction,
     ) -> Result<()> {
-        let _ = server.move_player(*direction);
+        // Don't move if the new coord is blocked.
+        let player_xy = server.zone().player_xy;
+        let new_xy = (player_xy.0 + direction.dx(), player_xy.1 + direction.dy());
+        if server.zone().is_blocked(new_xy) {
+            return Ok(());
+        }
 
+        let _ = server.move_player(*direction);
         self.last_offset = server.blit_centered_on_player(terminal, (55, 33), (0, 0), SHOW_FOV);
 
         Ok(())
@@ -112,15 +116,7 @@ impl Scratch {
         let player_xy = server.zone().player_xy;
 
         self.path.clear();
-        // self.a_star.push_path(
-        //     player_xy,
-        //     rect.insert_xy(xy),
-        //     &server.zone().pathing,
-        //     None,
-        //     &mut self.path,
-        // );
         Lines::push_dda(player_xy, rect.insert_xy(xy), &mut self.path);
-        // println!("{:?}", self.path);
 
         for coord in self.path.iter().skip(1) {
             if let Some(norm) = &Rect::new(self.last_offset, 55, 33).extract_xy(*coord) {
@@ -255,16 +251,25 @@ impl Scene for Scratch {
 
         if self.repeat.update(dt, input) {
             if let Some(xy) = mouse_coord {
-                let rect = Rect::new(self.last_offset, 55, 33);
-                let player_xy = server.zone().player_xy;
-
                 if self.view.contains(xy) {
-                    self.moved_with_mouse = true;
-                    self.handle_move(
-                        server,
-                        terminal,
-                        &Direction::closest_direction(player_xy, rect.insert_xy(xy)),
-                    )?;
+                    // The first coord in the path is always the player's coord.
+                    let path_coord = match self.path.get(1) {
+                        Some(coord) => Some(coord.clone()),
+                        None => None,
+                    };
+
+                    if let Some(path) = path_coord {
+                        if !server.zone().is_blocked(path) {
+                            let player_xy = server.zone().player_xy;
+
+                            self.moved_with_mouse = true;
+                            self.handle_move(
+                                server,
+                                terminal,
+                                &Direction::closest_direction(player_xy, path),
+                            )?;
+                        }
+                    }
                 }
             }
         }
