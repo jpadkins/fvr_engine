@@ -24,17 +24,17 @@ pub const DIJKSTRA_DEFAULT_GOAL: DijkstraState = DijkstraState::Goal(0);
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DijkstraState {
-    // An impassable point in the map.
-    Blocked,
-    // A passable point in the map.
-    Passable,
+    // An impassable edge in the map.
+    Unavailable,
+    // A passable edge in the map.
+    Available,
     // A goal in the map.
     Goal(i32),
 }
 
 impl DijkstraState {
     pub fn passable(&self) -> bool {
-        self == &DijkstraState::Passable
+        self == &DijkstraState::Available
     }
 }
 
@@ -42,9 +42,9 @@ impl DijkstraState {
 impl From<bool> for DijkstraState {
     fn from(b: bool) -> Self {
         if b {
-            DijkstraState::Passable
+            DijkstraState::Available
         } else {
-            DijkstraState::Blocked
+            DijkstraState::Unavailable
         }
     }
 }
@@ -55,10 +55,10 @@ impl From<DijkstraState> for bool {
     }
 }
 
-// Passable bu default.
+// Available bu default.
 impl Default for DijkstraState {
     fn default() -> Self {
-        DijkstraState::Passable
+        DijkstraState::Available
     }
 }
 
@@ -108,7 +108,7 @@ macro_rules! recalculate_impl {
             let icoord = (coord.0 as i32, coord.1 as i32);
 
             match $states.get_xy(icoord).clone().into() {
-                DijkstraState::Passable => {
+                DijkstraState::Available => {
                     // Set all passable coords to the max weight.
                     *$self.weights.get_xy_mut(icoord) = Some(start_weight);
                 }
@@ -465,7 +465,7 @@ impl DijkstraMap {
 
         map2d_iter_index!(states, x, y, state, {
             match state {
-                DijkstraState::Blocked => {
+                DijkstraState::Unavailable => {
                     *self.weights.get_xy_mut((x, y)) = None;
                 }
                 _ => {
@@ -493,7 +493,7 @@ impl DijkstraMap {
 
         map2d_iter_index!(states, x, y, state, {
             match state.clone().into() {
-                DijkstraState::Blocked => {
+                DijkstraState::Unavailable => {
                     *self.weights.get_xy_mut((x, y)) = None;
                 }
                 _ => {

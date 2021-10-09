@@ -78,7 +78,7 @@ impl Scratch {
         Ok(())
     }
 
-    fn handle_teleport(
+    fn _handle_teleport(
         &mut self,
         server: &mut Server,
         terminal: &mut Terminal,
@@ -253,10 +253,7 @@ impl Scene for Scratch {
             if let Some(xy) = mouse_coord {
                 if self.view.contains(xy) {
                     // The first coord in the path is always the player's coord.
-                    let path_coord = match self.path.get(1) {
-                        Some(coord) => Some(coord.clone()),
-                        None => None,
-                    };
+                    let path_coord = self.path.get(1).copied();
 
                     if let Some(path) = path_coord {
                         if !server.zone().is_blocked(path) {

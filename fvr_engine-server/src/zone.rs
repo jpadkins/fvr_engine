@@ -126,7 +126,7 @@ static PLAYER_THING: Thing = Thing {
 //-------------------------------------------------------------------------------------------------
 // Helper struct to store pathing related state for a cell.
 //-------------------------------------------------------------------------------------------------
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct PathingProperties {
     pub dijkstra_state: DijkstraState,
     pub transparency: Transparency,
@@ -231,7 +231,7 @@ impl Zone {
                 thing: AVOID_MOB_THING,
                 xy,
                 navigation: ActorNavigation::default(),
-                stats: ActorStats::default(),
+                stats: rng.gen(),
                 behavior: 0,
                 intention: BASIC_AVOID_PLAYER_INDEX,
             }));
@@ -261,7 +261,7 @@ impl Zone {
                 thing: CHASE_MOB_THING,
                 xy,
                 navigation: ActorNavigation::default(),
-                stats: ActorStats::default(),
+                stats: rng.gen(),
                 behavior: 0,
                 intention: BASIC_CHASE_PLAYER_INDEX,
             }));
@@ -313,7 +313,8 @@ impl Zone {
             pathing.transparency = transparency;
         });
 
-        // Set player position as th current goal.
+        // Cache the path properties and set player position as the current goal.
+        let path_props = *self.pathing.get_xy(self.player_xy);
         self.pathing.get_xy_mut(self.player_xy).dijkstra_state = DIJKSTRA_DEFAULT_GOAL;
 
         // Caluclate the chase map.
@@ -322,8 +323,8 @@ impl Zone {
         // Calculate the avoid map using the max xy of the chase map.
         let highest_xy = self.chase_map.highest_xy();
 
-        // Clear the goal.
-        self.pathing.get_xy_mut(self.player_xy).dijkstra_state = DijkstraState::Passable;
+        // Reset the path properties.
+        *self.pathing.get_xy_mut(self.player_xy) = path_props;
 
         if let Some(xy) = highest_xy {
             // If a path exists to the player then use combined flee pathing.
@@ -380,7 +381,7 @@ impl Zone {
             thing: PLAYER_THING,
             xy: player_xy,
             navigation: ActorNavigation::default(),
-            stats: ActorStats::default(),
+            stats: rng.gen(),
             behavior: usize::MAX,
             intention: usize::MAX,
         }));

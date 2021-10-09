@@ -894,15 +894,13 @@ impl RendererV2 {
         let texel_normalize = &self.texel_normalize[index];
 
         // Each vertex of the quad shares the same color values (for now).
+        vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
+        vertex.color[1] = color.0.g as GLfloat * COLOR_NORMALIZE_8BIT;
+        vertex.color[2] = color.0.b as GLfloat * COLOR_NORMALIZE_8BIT;
+
         if outline_quad {
-            vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
-            vertex.color[1] = color.0.g as GLfloat * COLOR_NORMALIZE_8BIT;
-            vertex.color[2] = color.0.b as GLfloat * COLOR_NORMALIZE_8BIT;
             vertex.color[3] = opacity as GLfloat * tile.outline_opacity;
         } else {
-            vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
-            vertex.color[1] = color.0.g as GLfloat * COLOR_NORMALIZE_8BIT;
-            vertex.color[2] = color.0.b as GLfloat * COLOR_NORMALIZE_8BIT;
             vertex.color[3] = opacity as GLfloat * tile.foreground_opacity;
         }
 

@@ -1,4 +1,9 @@
 //-------------------------------------------------------------------------------------------------
+// STD Includes.
+//-------------------------------------------------------------------------------------------------
+use std::mem::transmute;
+
+//-------------------------------------------------------------------------------------------------
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use specs::prelude::*;
@@ -66,7 +71,19 @@ impl<'a> System<'a> for GoalsSystem {
 //-------------------------------------------------------------------------------------------------
 // The move system handles actor movement within the zone.
 //-------------------------------------------------------------------------------------------------
-pub struct MoveSystem;
+pub struct MoveSystem {
+    // Vec for use in sorting movement by priority.
+    cache: Vec<(&'static mut IsActor, &'static mut WantsToMove)>,
+}
+
+impl Default for MoveSystem {
+    //---------------------------------------------------------------------------------------------
+    // Default impl.
+    //---------------------------------------------------------------------------------------------
+    fn default() -> Self {
+        Self { cache: Vec::new() }
+    }
+}
 
 impl<'a> System<'a> for MoveSystem {
     #[allow(clippy::type_complexity)]
@@ -79,30 +96,42 @@ impl<'a> System<'a> for MoveSystem {
     // are complete or failed.
     //---------------------------------------------------------------------------------------------
     fn run(&mut self, (mut zone, mut is_actor, mut wants_to_move): Self::SystemData) {
-        for (a, m) in (&mut is_actor, &mut wants_to_move).join() {
-            // Aquire a mutable ref to the actor.
-            let mut actor = a.0.as_ref().lock().expect("Failed to lock actor mutex.");
+        {
+            // Evil transmute to bypass annoying borrow checker.
+            // This is safe since we're always clearing the vec of refs.
+            let cache_ref: &mut Vec<(&mut IsActor, &mut WantsToMove)> =
+                unsafe { transmute(&mut self.cache) };
+            cache_ref.extend((&mut is_actor, &mut wants_to_move).join());
+            cache_ref.sort_by(|a, b| a.1.priority.cmp(&b.1.priority));
 
-            // Calculate the new xy.
-            let new_xy = (actor.xy.0 + m.direction.dx(), actor.xy.1 + m.direction.dy());
+            for (a, m) in cache_ref.iter() {
+                // Aquire a mutable ref to the actor.
+                let mut actor = a.0.as_ref().lock().expect("Failed to lock actor mutex.");
 
-            // Return if the position is blocked.
-            if zone.is_blocked(new_xy) {
-                actor.navigation.stationary += 1;
-                continue;
+                // Calculate the new xy.
+                let new_xy = (actor.xy.0 + m.direction.dx(), actor.xy.1 + m.direction.dy());
+
+                // Return if the position is blocked.
+                if zone.is_blocked(new_xy) {
+                    actor.navigation.stationary += 1;
+                    continue;
+                }
+
+                // The new position is available - update the actor and the actor map.
+                *zone.actor_map.get_xy_mut(new_xy) = zone.actor_map.get_xy_mut(actor.xy).take();
+
+                actor.navigation.weight = Some(m.weight);
+                actor.navigation.stationary = 0;
+                actor.xy = new_xy;
+
+                // If the entity is the player, also update the player xy.
+                if actor.entity == zone.player_entity {
+                    zone.player_xy = new_xy;
+                }
             }
 
-            // The new position is available - update the actor and the actor map.
-            *zone.actor_map.get_xy_mut(new_xy) = zone.actor_map.get_xy_mut(actor.xy).take();
-
-            actor.navigation.weight = Some(m.weight);
-            actor.navigation.stationary = 0;
-            actor.xy = new_xy;
-
-            // If the entity is the player, also update the player xy.
-            if actor.entity == zone.player_entity {
-                zone.player_xy = new_xy;
-            }
+            // IMPORTANT - clear the vec of refs.
+            cache_ref.clear();
         }
 
         // Clear all components.

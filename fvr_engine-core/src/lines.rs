@@ -2,6 +2,7 @@
 // STD includes.
 //-------------------------------------------------------------------------------------------------
 use std::cmp::max;
+use std::mem::swap;
 
 //-------------------------------------------------------------------------------------------------
 // Local includes.
@@ -35,9 +36,7 @@ impl Lines {
         }
 
         if start.0 > end.0 {
-            let temp = start;
-            start = end;
-            end = temp;
+            swap(&mut start, &mut end);
         }
 
         // Setup initial state.

@@ -55,7 +55,10 @@ pub struct HasGoals {
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct WantsToMove {
+    // The direction to move.
     pub direction: Direction,
+    // The navigation weight.
     pub weight: f32,
+    // The priority.
     pub priority: u8,
 }

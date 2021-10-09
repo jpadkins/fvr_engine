@@ -53,8 +53,8 @@ impl From<Transparency> for bool {
 impl From<DijkstraState> for Transparency {
     fn from(dijkstra_state: DijkstraState) -> Self {
         match dijkstra_state {
-            DijkstraState::Blocked => Self::Opaque,
-            DijkstraState::Goal { .. } | DijkstraState::Passable => Self::Transparent,
+            DijkstraState::Unavailable => Self::Opaque,
+            DijkstraState::Goal { .. } | DijkstraState::Available => Self::Transparent,
         }
     }
 }
@@ -62,8 +62,8 @@ impl From<DijkstraState> for Transparency {
 impl From<Transparency> for DijkstraState {
     fn from(transparency: Transparency) -> Self {
         match transparency {
-            Transparency::Opaque => DijkstraState::Blocked,
-            Transparency::Transparent => DijkstraState::Passable,
+            Transparency::Opaque => DijkstraState::Unavailable,
+            Transparency::Transparent => DijkstraState::Available,
         }
     }
 }

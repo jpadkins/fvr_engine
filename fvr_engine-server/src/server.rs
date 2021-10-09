@@ -43,6 +43,8 @@ pub enum ServerResult {
 pub struct Server {
     // The specs world.
     world: World,
+    goals_system: GoalsSystem,
+    move_system: MoveSystem,
 }
 
 impl Server {
@@ -71,7 +73,7 @@ impl Server {
         world.insert(behaviors);
         world.insert(intentions);
 
-        Ok(Self { world })
+        Ok(Self { world, goals_system: GoalsSystem {}, move_system: MoveSystem::default() })
     }
 
     //---------------------------------------------------------------------------------------------
@@ -232,12 +234,10 @@ impl Server {
     //---------------------------------------------------------------------------------------------
     pub fn tick(&mut self) {
         // Run the systems.
-        let mut goals_system = GoalsSystem {};
-        goals_system.run_now(&self.world);
+        self.goals_system.run_now(&self.world);
         self.world.maintain();
 
-        let mut wants_to_move_system = MoveSystem {};
-        wants_to_move_system.run_now(&self.world);
+        self.move_system.run_now(&self.world);
         self.world.maintain();
 
         // Refresh zone navigation maps and fov.

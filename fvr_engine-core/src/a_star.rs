@@ -56,8 +56,8 @@ impl From<Passability> for bool {
 impl From<DijkstraState> for Passability {
     fn from(dijkstra_state: DijkstraState) -> Self {
         match dijkstra_state {
-            DijkstraState::Blocked => Self::Blocked,
-            DijkstraState::Goal { .. } | DijkstraState::Passable => Self::Passable,
+            DijkstraState::Unavailable => Self::Blocked,
+            DijkstraState::Goal { .. } | DijkstraState::Available => Self::Passable,
         }
     }
 }
@@ -65,8 +65,8 @@ impl From<DijkstraState> for Passability {
 impl From<Passability> for DijkstraState {
     fn from(passability: Passability) -> Self {
         match passability {
-            Passability::Blocked => DijkstraState::Blocked,
-            Passability::Passable => DijkstraState::Passable,
+            Passability::Blocked => DijkstraState::Unavailable,
+            Passability::Passable => DijkstraState::Available,
         }
     }
 }
