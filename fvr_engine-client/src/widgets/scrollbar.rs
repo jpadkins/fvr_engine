@@ -88,9 +88,9 @@ pub enum ScrollbarAction {
     // The mouse is over an interactable area of the scrollbar.
     Interactable,
     // The content should scroll up by some number of lines.
-    ScrollUp(u32),
+    ScrollUp(i32),
     // The content should scroll down by some number of lines.
-    ScrollDown(u32),
+    ScrollDown(i32),
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -98,17 +98,17 @@ pub enum ScrollbarAction {
 //-------------------------------------------------------------------------------------------------
 pub struct Scrollbar {
     // Origin of the scrollbar.
-    origin: UCoord,
+    origin: ICoord,
     // Height of the scrollbar.
-    height: u32,
+    height: i32,
     // Height of the content that the scrollbar represents.
-    content_height: u32,
+    content_height: i32,
     // Index of the current line at the top of the visible area.
-    current_line: u32,
+    current_line: i32,
     // # of content lines represented by a segment of the track.
-    track_ratio: u32,
+    track_ratio: i32,
     // Size of the grip.
-    grip_size: u32,
+    grip_size: i32,
     // Button at the top of the track.
     top_button: Button,
     // Button at the bottom of the track.
@@ -136,7 +136,7 @@ impl Scrollbar {
 
         // Set the grip size to a % of the track height equal to the ratio of content/height.
         self.grip_size =
-            ((self.height - 2) as f32 * (self.height as f32 / self.content_height as f32)) as u32;
+            ((self.height - 2) as f32 * (self.height as f32 / self.content_height as f32)) as i32;
 
         // The grip should always have a length of at least 1.
         if self.grip_size == 0 {
@@ -147,7 +147,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Creates a new scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: UCoord, height: u32, content_height: u32) -> Self {
+    pub fn new(origin: ICoord, height: i32, content_height: i32) -> Self {
         debug_assert!(height > 2);
 
         let top_button = Button::new(Default::default(), TOP_CHAR.into(), ButtonLayout::Center);
@@ -173,21 +173,21 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> UCoord {
+    pub fn origin(&self) -> ICoord {
         self.origin
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the height of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> i32 {
         self.height
     }
 
     //---------------------------------------------------------------------------------------------
     // Update the origin of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn set_origin(&mut self, origin: UCoord) {
+    pub fn set_origin(&mut self, origin: ICoord) {
         self.origin = origin;
         self.dirty = true;
     }
@@ -195,7 +195,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Update the height of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn set_height(&mut self, height: u32) {
+    pub fn set_height(&mut self, height: i32) {
         debug_assert!(height > 2);
 
         self.height = height;
@@ -206,7 +206,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Update the content height of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn set_content_height(&mut self, content_height: u32) {
+    pub fn set_content_height(&mut self, content_height: i32) {
         self.content_height = content_height;
         self.refresh();
         self.dirty = true;
@@ -215,7 +215,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Update the current line of the scrollbar.
     //---------------------------------------------------------------------------------------------
-    pub fn set_current_line(&mut self, current_lint: u32) {
+    pub fn set_current_line(&mut self, current_lint: i32) {
         debug_assert!(current_lint < self.content_height - self.height);
 
         self.current_line = current_lint;
@@ -250,7 +250,7 @@ impl Scrollbar {
             // Set grip offset to a % of the track height equal to the current line/content ratio.
             grip_offset = (track_height as f32
                 * (self.current_line as f32 / self.content_height as f32))
-                as u32;
+                as i32;
 
             // Ensure grip does not cover bottom button in instances where the content height is
             // equal to a multiple of the height.
@@ -270,7 +270,7 @@ impl Scrollbar {
     //---------------------------------------------------------------------------------------------
     // Helper function to determine whether the scrollbar contains a coord.
     //---------------------------------------------------------------------------------------------
-    fn contains(&self, coord: &UCoord) -> bool {
+    fn contains(&self, coord: &ICoord) -> bool {
         coord.0 == self.origin.0
             && coord.1 >= self.origin.1
             && coord.1 < self.origin.1 + self.height

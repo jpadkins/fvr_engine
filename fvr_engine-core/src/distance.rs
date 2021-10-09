@@ -44,18 +44,18 @@ impl Distance {
     //---------------------------------------------------------------------------------------------
     // Calculates the distance between two points.
     //---------------------------------------------------------------------------------------------
-    pub fn calculate(&self, (x1, y1): ICoord, (x2, y2): ICoord) -> f64 {
-        let dx = (x1 - x2).abs() as f64;
-        let dy = (y1 - y2).abs() as f64;
+    pub fn calculate(&self, (x1, y1): ICoord, (x2, y2): ICoord) -> f32 {
+        let dx = (x1 - x2).abs() as f32;
+        let dy = (y1 - y2).abs() as f32;
         self.calculate_slope(dx, dy)
     }
 
     //---------------------------------------------------------------------------------------------
     // Calculates the distance given x and y slope.
     //---------------------------------------------------------------------------------------------
-    pub fn calculate_slope(&self, dx: f64, dy: f64) -> f64 {
+    pub fn calculate_slope(&self, dx: f32, dy: f32) -> f32 {
         match self {
-            Self::Chebyshev => f64::max(dx, f64::max(dy, 0.0)),
+            Self::Chebyshev => f32::max(dx, f32::max(dy, 0.0)),
             Self::Euclidean => ((dx * dx) + (dy * dy)).sqrt(),
             Self::Manhattan => dx + dy,
         }

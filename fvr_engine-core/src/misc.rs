@@ -1,7 +1,14 @@
 //-------------------------------------------------------------------------------------------------
+// Constants.
+//-------------------------------------------------------------------------------------------------
+pub const INVALID_ICOORD: ICoord = (-1, -1);
+
+// Conversion value for radian/degrees.
+pub const DEGREE_PER_RADIAN: f32 = 1.0 / 360.0;
+
+//-------------------------------------------------------------------------------------------------
 // Aliases for commonly used tuple types.
 //-------------------------------------------------------------------------------------------------
-pub type UCoord = (u32, u32);
 pub type ICoord = (i32, i32);
 
 //-------------------------------------------------------------------------------------------------
@@ -13,21 +20,21 @@ impl Misc {
     //---------------------------------------------------------------------------------------------
     // Returns the 1D index for a coord.
     //---------------------------------------------------------------------------------------------
-    pub fn index_2d((x, y): UCoord, width: u32) -> usize {
+    pub fn index_2d((x, y): ICoord, width: i32) -> usize {
         (x + (y * width)) as usize
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the coord for a 1D index.
     //---------------------------------------------------------------------------------------------
-    pub fn reverse_index_2d(index: usize, width: u32) -> UCoord {
-        ((index % width as usize) as u32, (index / width as usize) as u32)
+    pub fn reverse_index_2d(index: usize, width: i32) -> ICoord {
+        ((index % width as usize) as i32, (index / width as usize) as i32)
     }
 
     //---------------------------------------------------------------------------------------------
     // Finds the origin (top left or top right) for centering content within larger bounds.
     //---------------------------------------------------------------------------------------------
-    pub fn centered_origin(dimension: u32, bounding_dimension: u32) -> u32 {
+    pub fn centered_origin(dimension: i32, bounding_dimension: i32) -> i32 {
         (bounding_dimension - dimension) / 2
     }
 
@@ -72,26 +79,54 @@ impl Misc {
     //---------------------------------------------------------------------------------------------
     // Returns the angle between two points in degrees in the range [0.0..360.0].
     //---------------------------------------------------------------------------------------------
-    pub fn angle_between((x1, y1): ICoord, (x2, y2): ICoord) -> f64 {
+    pub fn angle_between((x1, y1): ICoord, (x2, y2): ICoord) -> f32 {
         let (dx, dy) = (x2 - x1, y2 - y1);
-        let angle = (dy as f64).atan2(dx as f64);
-        let degrees = angle * (180.0 / std::f64::consts::PI);
+        let angle = (dy as f32).atan2(dx as f32);
+        let degrees = angle * (180.0 / std::f32::consts::PI);
         (degrees + 360.0) % 360.0
     }
 
     //---------------------------------------------------------------------------------------------
-    // Helper function for converting a u32 coord to i32.
+    // Helper function for converting a i32 coord to i32.
     //---------------------------------------------------------------------------------------------
-    pub fn utoi((x, y): UCoord) -> ICoord {
+    pub fn utoi((x, y): (u32, u32)) -> ICoord {
         (x as i32, y as i32)
     }
 
     //---------------------------------------------------------------------------------------------
-    // Helper function for converting an i32 coord to u32.
+    // Helper function for converting an i32 coord to i32.
     //---------------------------------------------------------------------------------------------
-    pub fn itou((x, y): ICoord) -> UCoord {
+    pub fn itou((x, y): ICoord) -> (u32, u32) {
         (x as u32, y as u32)
     }
+}
+
+//-------------------------------------------------------------------------------------------------
+// Helper macro for iterating over a cartesian product given xy coords.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! xy_iter {
+    ($x:ident, $y:ident, $width:expr, $height:expr, $work:expr) => {
+        for $x in 0..$width {
+            for $y in 0..$height {
+                $work
+            }
+        }
+    };
+}
+
+//-------------------------------------------------------------------------------------------------
+// Helper macro for iterating over a cartesian product given dimensions tuple.
+//-------------------------------------------------------------------------------------------------
+#[macro_export]
+macro_rules! xy_tuple_iter {
+    ($x:ident, $y:ident, $dimensions:expr, $work:expr) => {
+        for $x in 0..$dimensions.0 {
+            for $y in 0..$dimensions.1 {
+                $work
+            }
+        }
+    };
 }
 
 //-------------------------------------------------------------------------------------------------

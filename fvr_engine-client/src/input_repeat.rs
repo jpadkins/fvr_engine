@@ -28,19 +28,21 @@ enum State {
 //-------------------------------------------------------------------------------------------------
 // Represents either a key or an input action.
 //-------------------------------------------------------------------------------------------------
-enum InputKeyOrAction {
-    // An SdlKey.
-    Key(SdlKey),
+enum InputToRepeat {
+    // An InputKey.
+    Key(InputKey),
     // An InputAction.
     Action(InputAction),
+    // An InputMouse.
+    Mouse(InputMouse),
 }
 
 //-------------------------------------------------------------------------------------------------
 // Input repeat allows of easy handling of repeated key or action input events.
 //-------------------------------------------------------------------------------------------------
 pub struct InputRepeat {
-    // The tracked key or input action.
-    key_or_action: InputKeyOrAction,
+    // The tracked input.
+    to_repeat: InputToRepeat,
     // The current state.
     state: State,
     // The input timer.
@@ -53,9 +55,9 @@ pub struct InputRepeat {
 
 impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
-    // Creates a new input repeat for a key.
+    // Creates a new input repeat for an input key.
     //-----------------------------------------------------------------------------------------------
-    pub fn for_key(key: SdlKey, held_step: Duration, initial_step: Option<Duration>) -> Self {
+    pub fn for_key(key: InputKey, held_step: Duration, initial_step: Option<Duration>) -> Self {
         // Set timer initially to either the initial step (if populated) or the held step.
         let timer = match initial_step {
             Some(initial_step) => Timer::new(initial_step),
@@ -65,14 +67,14 @@ impl InputRepeat {
         Self {
             timer,
             state: State::Released,
-            key_or_action: InputKeyOrAction::Key(key),
+            to_repeat: InputToRepeat::Key(key),
             held_step,
             initial_step,
         }
     }
 
     //-----------------------------------------------------------------------------------------------
-    // Creates a new input repeat for an action.
+    // Creates a new input repeat for an input action.
     //-----------------------------------------------------------------------------------------------
     pub fn for_action(
         action: InputAction,
@@ -88,24 +90,54 @@ impl InputRepeat {
         Self {
             timer,
             state: State::Released,
-            key_or_action: InputKeyOrAction::Action(action),
+            to_repeat: InputToRepeat::Action(action),
             held_step,
             initial_step,
         }
     }
 
     //-----------------------------------------------------------------------------------------------
-    // Sets the input repeat to track a key.
+    // Creates a new input repeat for an input mouse.
     //-----------------------------------------------------------------------------------------------
-    pub fn set_key(&mut self, key: SdlKey) {
-        self.key_or_action = InputKeyOrAction::Key(key);
+    pub fn for_mouse(
+        mouse: InputMouse,
+        held_step: Duration,
+        initial_step: Option<Duration>,
+    ) -> Self {
+        // Set timer initially to either the initial step (if populated) or the held step.
+        let timer = match initial_step {
+            Some(initial_step) => Timer::new(initial_step),
+            _ => Timer::new(held_step),
+        };
+
+        Self {
+            timer,
+            state: State::Released,
+            to_repeat: InputToRepeat::Mouse(mouse),
+            held_step,
+            initial_step,
+        }
     }
 
     //-----------------------------------------------------------------------------------------------
-    // Sets the input repeat to track an action.
+    // Sets the input repeat to track an input key.
+    //-----------------------------------------------------------------------------------------------
+    pub fn set_key(&mut self, key: InputKey) {
+        self.to_repeat = InputToRepeat::Key(key);
+    }
+
+    //-----------------------------------------------------------------------------------------------
+    // Sets the input repeat to track an input action.
     //-----------------------------------------------------------------------------------------------
     pub fn set_action(&mut self, action: InputAction) {
-        self.key_or_action = InputKeyOrAction::Action(action);
+        self.to_repeat = InputToRepeat::Action(action);
+    }
+
+    //-----------------------------------------------------------------------------------------------
+    // Sets the input repeat to track an input mouse.
+    //-----------------------------------------------------------------------------------------------
+    pub fn set_mouse(&mut self, mouse: InputMouse) {
+        self.to_repeat = InputToRepeat::Mouse(mouse);
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -132,16 +164,23 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     fn released_update(&mut self, input: &InputManager) -> bool {
         // If the input has been pressed, update the state, reset the timer, and return true.
-        match self.key_or_action {
-            InputKeyOrAction::Key(key) => {
+        match self.to_repeat {
+            InputToRepeat::Key(key) => {
                 if input.key_just_pressed(key) {
                     self.state = State::Pressed;
                     self.reset_timer();
                     return true;
                 }
             }
-            InputKeyOrAction::Action(action) => {
+            InputToRepeat::Action(action) => {
                 if input.action_just_pressed(action) {
+                    self.state = State::Pressed;
+                    self.reset_timer();
+                    return true;
+                }
+            }
+            InputToRepeat::Mouse(mouse) => {
+                if input.mouse_clicked(mouse) {
                     self.state = State::Pressed;
                     self.reset_timer();
                     return true;
@@ -158,15 +197,21 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     fn pressed_update(&mut self, dt: &Duration, input: &InputManager) -> bool {
         // If the input has been released, update the state and return false.
-        match self.key_or_action {
-            InputKeyOrAction::Key(key) => {
+        match self.to_repeat {
+            InputToRepeat::Key(key) => {
                 if !input.key_pressed(key) {
                     self.state = State::Released;
                     return false;
                 }
             }
-            InputKeyOrAction::Action(action) => {
+            InputToRepeat::Action(action) => {
                 if !input.action_pressed(action) {
+                    self.state = State::Released;
+                    return false;
+                }
+            }
+            InputToRepeat::Mouse(mouse) => {
+                if !input.mouse_pressed(mouse) {
                     self.state = State::Released;
                     return false;
                 }
@@ -177,6 +222,7 @@ impl InputRepeat {
         if self.timer.update(dt) {
             self.state = State::Held;
             self.timer.interval = self.held_step;
+            self.timer.reset();
             return true;
         }
 
@@ -189,15 +235,21 @@ impl InputRepeat {
     //-----------------------------------------------------------------------------------------------
     fn held_update(&mut self, dt: &Duration, input: &InputManager) -> bool {
         // If the input has been released, update the state and return false.
-        match self.key_or_action {
-            InputKeyOrAction::Key(key) => {
+        match self.to_repeat {
+            InputToRepeat::Key(key) => {
                 if !input.key_pressed(key) {
                     self.state = State::Released;
                     return false;
                 }
             }
-            InputKeyOrAction::Action(action) => {
+            InputToRepeat::Action(action) => {
                 if !input.action_pressed(action) {
+                    self.state = State::Released;
+                    return false;
+                }
+            }
+            InputToRepeat::Mouse(mouse) => {
+                if !input.mouse_pressed(mouse) {
                     self.state = State::Released;
                     return false;
                 }

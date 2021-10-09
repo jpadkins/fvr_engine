@@ -8,11 +8,11 @@ use serde_derive::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct GlyphMetric {
-    pub codepoint: u32,
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
+    pub codepoint: i32,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
     pub x_offset: i32,
     pub y_offset: i32,
 }

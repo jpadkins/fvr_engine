@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashMap;
+use fnv::FnvHashMap;
 use std::ffi::c_void;
 use std::path::Path;
 use std::{mem, ptr};
@@ -38,6 +38,9 @@ const FONTS_PATH: &str = "./resources/fonts/";
 // Whether to alternate drawing/updating between two sets of array buffers and vertex arrays.
 const USE_DOUBLE_BUFFERS: bool = true;
 
+// Whether to use signed distance field font rendering.
+const USE_SDF_RENDERING: bool = false;
+
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
 // The background shader program will only use position and color[3].
@@ -72,9 +75,9 @@ struct Vertex {
 //-------------------------------------------------------------------------------------------------
 pub struct RendererV2 {
     // Dimensions of each tile in the terminal in # of pixels.
-    tile_dimensions: UCoord,
+    tile_dimensions: ICoord,
     // Dimensions of the terminal in # of tiles.
-    terminal_dimensions: UCoord,
+    terminal_dimensions: ICoord,
     // Frame clear color.
     clear_color: SdlColor,
     // Cached current size of the viewport.
@@ -124,7 +127,7 @@ pub struct RendererV2 {
     // Length will equal TILE_STYLE_COUNT * 2.
     // The first half of the vec will contain maps for the non-outlined metrics.
     // The second half of the vec will contain maps for the outlined metrics.
-    metrics: Vec<HashMap<u32, GlyphMetric>>,
+    metrics: Vec<FnvHashMap<i32, GlyphMetric>>,
 }
 
 impl RendererV2 {
@@ -133,8 +136,8 @@ impl RendererV2 {
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn new<S>(
-        tile_dimensions: UCoord,
-        terminal_dimensions: UCoord,
+        tile_dimensions: ICoord,
+        terminal_dimensions: ICoord,
         font_name: S,
     ) -> Result<Self>
     where
@@ -183,10 +186,17 @@ impl RendererV2 {
         gl_error_unwrap!("Failed to generate background vertex arrays.");
 
         // Generate the foreground program (compile shaders and link).
-        let foreground_program = link_program_from_sources(
-            FOREGROUND_VERTEX_SHADER_SOURCE,
-            FOREGROUND_FRAGMENT_SHADER_SOURCE,
-        )?;
+        let foreground_program = if USE_SDF_RENDERING {
+            link_program_from_sources(
+                FOREGROUND_VERTEX_SHADER_SOURCE,
+                FOREGROUND_FRAGMENT_SHADER_SDF_SOURCE,
+            )
+        } else {
+            link_program_from_sources(
+                FOREGROUND_VERTEX_SHADER_SOURCE,
+                FOREGROUND_FRAGMENT_SHADER_SOURCE,
+            )
+        }?;
 
         // Generate the foreground vertex array.
         let mut foreground_vertex_arrays: [GLuint; 2] = [0; 2];
@@ -197,7 +207,7 @@ impl RendererV2 {
 
         // Generate the vignette program (compile shaders and link).
         let vignette_program = link_program_from_sources(
-            VIGNETTE_VERTEX_SHADER_SOURCE,
+            FULL_FRAME_VERTEX_SHADER_SOURCE,
             VIGNETTE_FRAGMENT_SHADER_SOURCE,
         )?;
 
@@ -517,11 +527,13 @@ impl RendererV2 {
 
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
+            // Get the texture path string.
+            let extension = if USE_SDF_RENDERING { "_sdf.png" } else { ".png" };
             let path_string =
-                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".png"].concat();
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
             let dimensions =
-                load_texture(Path::new(path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
+                load_texture(Path::new(&path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
             texel_normalize[i] = (1.0 / dimensions.0 as f32, 1.0 / dimensions.1 as f32);
 
             let location = get_uniform_location(foreground_program, TILE_STYLE_NAMES[i])?;
@@ -534,15 +546,16 @@ impl RendererV2 {
         // Bind and upload the outlined textures.
         #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
+            // Get the outline texture path string.
+            let extension = if USE_SDF_RENDERING { "_outline_sdf.png" } else { "_outline.png" };
             let path_string =
-                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.png"]
-                    .concat();
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
 
             // Offset the index for outlined textures.
             let index = i + TILE_STYLE_COUNT;
 
             let dimensions = load_texture(
-                Path::new(path_string),
+                Path::new(&path_string),
                 textures[index],
                 gl::TEXTURE0 + index as GLuint,
             )?;
@@ -561,28 +574,18 @@ impl RendererV2 {
         // Misc. OpenGL settings.
         //-----------------------------------------------------------------------------------------
         unsafe {
-            // Optimized blending settings for when the background is always opaque.
-            // https://apoorvaj.io/alpha-compositing-opengl-blending-and-premultiplied-alpha/
-            gl::Enable(gl::BLEND);
-            gl_error_unwrap!("Failed to enable blend.");
-
             gl::BlendEquation(gl::FUNC_ADD);
             gl_error_unwrap!("Failed to set blend equation.");
 
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl_error_unwrap!("Failed to set blend func.");
 
-            // Sub pixel rendering.
-            gl::Disable(gl::DITHER);
+            // Ensure depth testing is enabled.
+            gl::Enable(gl::DEPTH_TEST);
+            gl_error_unwrap!("Failed to enable depth testing.");
 
-            gl::Enable(gl::LINE_SMOOTH);
-            gl_error_unwrap!("Failed to enable smooth lines.");
-
-            gl::Enable(gl::POLYGON_SMOOTH);
-            gl_error_unwrap!("Failed to enable smooth polygons.");
-
-            // Ensure depth testing is disblaed.
-            gl::Disable(gl::DEPTH_TEST);
+            gl::DepthFunc(gl::ALWAYS);
+            gl_error_unwrap!("Failed to set depth func.");
 
             // Update the OpenGL clear color.
             gl::ClearColor(
@@ -597,13 +600,14 @@ impl RendererV2 {
         // Load the glyph metrics.
         //-----------------------------------------------------------------------------------------
 
-        let mut metrics = vec![HashMap::new(); TILE_STYLE_COUNT * 2];
+        let mut metrics = vec![FnvHashMap::default(); TILE_STYLE_COUNT * 2];
 
         // Load the non-outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
+            // Get the path string for the font metrics.
             let path_string =
-                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat();
-            let path = Path::new(path_string);
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".toml"].concat();
+            let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
             let metrics_toml = std::fs::read_to_string(&path)
@@ -620,10 +624,11 @@ impl RendererV2 {
 
         // Load the outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
+            // Get the path string for the outline font metrics.
             let path_string =
-                &[FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.toml"]
+                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.toml"]
                     .concat();
-            let path = Path::new(path_string);
+            let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as TOML.
             let metrics_toml = std::fs::read_to_string(&path)
@@ -672,7 +677,7 @@ impl RendererV2 {
     // Update the OpenGL viewport and projection matrices for a new window size.
     // (should be called whenever the window size changes and no more than once per frame)
     //---------------------------------------------------------------------------------------------
-    pub fn update_viewport(&mut self, (width, height): UCoord) -> Result<()> {
+    pub fn update_viewport(&mut self, (width, height): ICoord) -> Result<()> {
         // Update the OpenGL viewport and query and save the new size.
         unsafe {
             gl::Viewport(0, 0, width as GLsizei, height as GLsizei);
@@ -706,7 +711,8 @@ impl RendererV2 {
         }
 
         // Calculate an orthographic projection matrix with our translation and scale.
-        let projection = Mat4::orthographic_lh(0.0, width as f32, height as f32, 0.0, 0.0, 1.0);
+        let projection =
+            Mat4::orthographic_lh(0.0, width as f32, height as f32, 0.0, -100.0, 100.0);
         let translate = Mat4::from_translation(Vec3::new(x_translate, y_translate, 0.0));
         let scale = Mat4::from_scale(Vec3::new(scale, scale, 1.0));
         let combined = projection * translate * scale;
@@ -766,9 +772,9 @@ impl RendererV2 {
 
         // Return the world coords if they are in bounds of the faux terminal.
         if x >= 0
-            && x < (self.terminal_dimensions.0 * self.tile_dimensions.0) as i32
+            && x < self.terminal_dimensions.0 * self.tile_dimensions.0
             && y >= 0
-            && y < (self.terminal_dimensions.1 * self.tile_dimensions.1) as i32
+            && y < self.terminal_dimensions.1 * self.tile_dimensions.1
         {
             Some((x, y))
         } else {
@@ -779,16 +785,16 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     // Convert a coord in screen space to the corresponding tile coord in the faux terminal.
     //---------------------------------------------------------------------------------------------
-    pub fn screen_to_terminal_coords(&self, (x, y): ICoord) -> Option<UCoord> {
+    pub fn screen_to_terminal_coords(&self, (x, y): ICoord) -> Option<ICoord> {
         let world = self.screen_to_world_coords((x, y))?;
 
-        Some((world.0 as u32 / self.tile_dimensions.0, world.1 as u32 / self.tile_dimensions.1))
+        Some((world.0 / self.tile_dimensions.0, world.1 / self.tile_dimensions.1))
     }
 
     //---------------------------------------------------------------------------------------------
     // Push a colored quad onto the background vertices, based on a tile.
     //---------------------------------------------------------------------------------------------
-    fn push_background_quad(&mut self, (x, y): UCoord, tile: &Tile, opacity: GLfloat) {
+    fn push_background_quad(&mut self, (x, y): ICoord, tile: &Tile, opacity: GLfloat) {
         let mut vertex = Vertex::default();
 
         // Each vertex of the quad shares the same color values (for now).
@@ -834,22 +840,20 @@ impl RendererV2 {
         match layout {
             // Center the glyph.
             TileLayout::Center => (
-                ((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0).floor(),
-                ((self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0).floor(),
+                ((self.tile_dimensions.0 - metric.width) as f32 / 2.0).floor(),
+                ((self.tile_dimensions.1 - metric.height) as f32 / 2.0).floor(),
             ),
             // Center the glyph horizontally but align with the base of the quad vertically.
             TileLayout::Floor => (
-                ((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0).floor(),
-                (self.tile_dimensions.1 as i32 - metric.height as i32) as f32,
+                ((self.tile_dimensions.0 - metric.width) as f32 / 2.0).floor(),
+                (self.tile_dimensions.1 - metric.height) as f32,
             ),
             // Adjust the glyph based on font metrics.
             TileLayout::Text => (metric.x_offset as f32, metric.y_offset as f32),
             // Adjust the glyph from the center position by an exact offset.
             TileLayout::Exact((x, y)) => (
-                (((self.tile_dimensions.0 as i32 - metric.width as i32) as f32 / 2.0) + x as f32)
-                    .floor(),
-                (((self.tile_dimensions.1 as i32 - metric.height as i32) as f32 / 2.0) + y as f32)
-                    .floor(),
+                (((self.tile_dimensions.0 - metric.width) as f32 / 2.0) + x as f32).floor(),
+                (((self.tile_dimensions.1 - metric.height) as f32 / 2.0) + y as f32).floor(),
             ),
         }
     }
@@ -859,7 +863,7 @@ impl RendererV2 {
     //---------------------------------------------------------------------------------------------
     fn push_foreground_quad(
         &mut self,
-        (x, y): UCoord,
+        (x, y): ICoord,
         tile: &Tile,
         outline_quad: bool,
         opacity: GLfloat,
@@ -877,37 +881,27 @@ impl RendererV2 {
 
         // Retrieve the metrics for the tile's glyph and style.
         let metric = self.metrics[index]
-            .get(&(tile.glyph as u32))
+            .get(&(tile.glyph as i32))
             .with_context(|| format!("Failed to load outline metric for glyph {}.", tile.glyph))?;
 
         // Use either the foreground or outline color from the tile.
         let color = if outline_quad { tile.outline_color } else { tile.foreground_color };
 
         // Calculate the glyph offset for the tile's layout.
-        let offset = self.calculate_glyph_offset(&metric, tile.layout);
+        let offset = self.calculate_glyph_offset(metric, tile.layout);
 
         // Get the texel normalize values.
         let texel_normalize = &self.texel_normalize[index];
 
         // Each vertex of the quad shares the same color values (for now).
+        vertex.color[0] = color.0.r as GLfloat * COLOR_NORMALIZE_8BIT;
+        vertex.color[1] = color.0.g as GLfloat * COLOR_NORMALIZE_8BIT;
+        vertex.color[2] = color.0.b as GLfloat * COLOR_NORMALIZE_8BIT;
+
         if outline_quad {
-            vertex.color[0] =
-                color.0.r as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
-            vertex.color[1] =
-                color.0.g as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
-            vertex.color[2] =
-                color.0.b as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
-            vertex.color[3] =
-                color.0.a as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.outline_opacity;
+            vertex.color[3] = opacity as GLfloat * tile.outline_opacity;
         } else {
-            vertex.color[0] =
-                color.0.r as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
-            vertex.color[1] =
-                color.0.g as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
-            vertex.color[2] =
-                color.0.b as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
-            vertex.color[3] =
-                color.0.a as GLfloat * COLOR_NORMALIZE_8BIT * opacity * tile.foreground_opacity;
+            vertex.color[3] = opacity as GLfloat * tile.foreground_opacity;
         }
 
         // Top left.
@@ -957,21 +951,24 @@ impl RendererV2 {
         //-----------------------------------------------------------------------------------------
         for (coord, tile) in terminal.coords_and_tiles_iter() {
             // Skip the background if it would not be visible.
-            if tile.background_color.0.a != 0 && tile.background_color.0 != self.clear_color {
+            if tile.background_color.0.a != 0
+                && tile.background_opacity > 0.0
+                && tile.background_color.0 != self.clear_color
+            {
                 self.push_background_quad(coord, tile, opacity);
             }
 
             // Skip the foreground if it would not be visible
-            if tile.glyph != ' '
-                && tile.foreground_color.0.a != 0
-                && tile.foreground_color != tile.background_color
+            if tile.glyph != ' ' && tile.foreground_color.0.a != 0 && tile.foreground_opacity > 0.0
+            // TODO: Is this check worth fixing, performance wise? It is currently broken.
+            // && tile.foreground_color != tile.background_color
             {
                 self.push_foreground_quad(coord, tile, false, opacity)
                     .context("Failed to push foreground regular quad")?;
             }
 
             // Skip the foreground outline if it is not enabled or would not be visible.
-            if tile.outlined && tile.outline_color.0.a != 0 {
+            if tile.outlined && tile.outline_color.0.a != 0 && tile.outline_opacity > 0.0 {
                 self.push_foreground_quad(coord, tile, true, opacity)
                     .context("Failed to push foreground outline quad")?;
             }
@@ -1047,7 +1044,7 @@ impl RendererV2 {
     pub fn render(&mut self) -> Result<()> {
         // Clear the frame.
         unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         // Determine index for the current vertex arrays.
@@ -1055,6 +1052,14 @@ impl RendererV2 {
 
         // Draw the background (solid colored quads).
         unsafe {
+            // Disable blending.
+            gl::Disable(gl::BLEND);
+            gl_error_unwrap!("Failed to disable blending.");
+
+            // Disable depth testing.
+            gl::DepthMask(gl::FALSE);
+            gl_error_unwrap!("Failed to disable depth testing.");
+
             // Enable the background shader program and vertex array.
             gl::UseProgram(self.background_program);
             gl_error_unwrap!("Failed to use background program for rendering.");
@@ -1082,6 +1087,14 @@ impl RendererV2 {
 
         // Draw the foreground (regular + outline glyphs).
         unsafe {
+            // Enable blending.
+            gl::Enable(gl::BLEND);
+            gl_error_unwrap!("Failed to enable blending.");
+
+            // Enable depth testing.
+            gl::DepthMask(gl::TRUE);
+            gl_error_unwrap!("Failed to enable depth testing.");
+
             // Enable the foreground shader program and vertex array.
             gl::UseProgram(self.foreground_program);
             gl_error_unwrap!("Failed to use foreground program for rendering.");

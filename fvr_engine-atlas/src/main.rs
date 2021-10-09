@@ -1,10 +1,10 @@
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 
 use anyhow::{anyhow, Context, Result};
 use clap::{App, AppSettings, SubCommand};
-use hashbrown::HashSet;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageBuffer, Rgba};
 use rect_packer::Packer;
 use xml::reader::{EventReader, XmlEvent};
@@ -16,25 +16,25 @@ use fvr_engine_core::prelude::*;
 const DEFAULT_FONT: &str = "deja_vu_sans_mono";
 
 // Directory to save generated atlases.
-const OUTPUT_DIR: &str = "./resources/font_atlases";
+const OUTPUT_DIR: &str = "./resources/fonts";
 
 // Directory of input bmfont files.
 const FONTS_DIR: &str = "./fvr_engine-atlas/fonts";
 
 // Glyphs that are always copied from the default font.
-// const ALWAYS_DEFAULT_GLYPHS: &[u32] = &[
-// '♥' as u32,
-// '•' as u32,
-// '◘' as u32,
-// '○' as u32,
-// '◙' as u32,
+// const ALWAYS_DEFAULT_GLYPHS: &[i32] = &[
+// '♥' as i32,
+// '•' as i32,
+// '◘' as i32,
+// '○' as i32,
+// '◙' as i32,
 // ];
 
 // Dimensions of the output atlas.
 // 1024x1024 is enough for most 32px font rendering.
 // 1024x2048 for 64px rendering.
-const OUTPUT_WIDTH: u32 = 1024;
-const OUTPUT_HEIGHT: u32 = 1024;
+const OUTPUT_WIDTH: i32 = 1024;
+const OUTPUT_HEIGHT: i32 = 1024;
 
 fn load_image(file_path: &str) -> Result<DynamicImage> {
     let img = image::open(file_path).context("Failed to open image")?;
@@ -62,23 +62,23 @@ fn parse_metrics(file_path: &str) -> Result<Vec<GlyphMetric>> {
             // Char attributes follow this order: id, x, y, width, height, xoffset, yoffset.
             let codepoint = attributes[0]
                 .value
-                .parse::<u32>()
+                .parse::<i32>()
                 .context(format!("Failed to parse codepoint: <{}>.", attributes[0]))?;
             let x = attributes[1]
                 .value
-                .parse::<u32>()
+                .parse::<i32>()
                 .context(format!("Failed to parse x: <{}>.", attributes[1]))?;
             let y = attributes[2]
                 .value
-                .parse::<u32>()
+                .parse::<i32>()
                 .context(format!("Failed to parse y: <{}>.", attributes[1]))?;
             let width = attributes[3]
                 .value
-                .parse::<u32>()
+                .parse::<i32>()
                 .context(format!("Failed to parse width: <{}>.", attributes[2]))?;
             let height = attributes[4]
                 .value
-                .parse::<u32>()
+                .parse::<i32>()
                 .context(format!("Failed to parse height: <{}>.", attributes[3]))?;
             let x_offset = attributes[5]
                 .value
@@ -108,7 +108,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
     let atlas = load_image(&format!("{}/{}/{}_0.png", FONTS_DIR, name, font_name))?;
 
     // Create the output image buffer.
-    let mut output_buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(OUTPUT_WIDTH, OUTPUT_HEIGHT);
+    let mut output_buffer =
+        ImageBuffer::<Rgba<u8>, Vec<u8>>::new(OUTPUT_WIDTH as u32, OUTPUT_HEIGHT as u32);
 
     // Vectors for capturing the new metrics lists to serialize.
     let mut output_metrics = FontMetricsV2 { metrics: Vec::new() };
@@ -123,8 +124,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
 
     // Initialize the rect packer.
     let config = rect_packer::Config {
-        width: OUTPUT_WIDTH as i32,
-        height: OUTPUT_HEIGHT as i32,
+        width: OUTPUT_WIDTH,
+        height: OUTPUT_HEIGHT,
         border_padding: 2,
         rectangle_padding: 2,
     };
@@ -133,9 +134,14 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
     // Iterate over all regular metrics, copying the glyphs into the output buffer.
     for metric in metrics.iter() {
         // Copy the glyph.
-        let view = atlas.view(metric.x, metric.y, metric.width, metric.height);
+        let view = atlas.view(
+            metric.x as u32,
+            metric.y as u32,
+            metric.width as u32,
+            metric.height as u32,
+        );
         let rect = packer
-            .pack(metric.width as i32, metric.height as i32, false)
+            .pack(metric.width, metric.height, false)
             .ok_or(anyhow!("Failed to pack rect."))?;
 
         output_buffer
@@ -145,8 +151,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x: rect.x as u32,
-            y: rect.y as u32,
+            x: rect.x,
+            y: rect.y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,
@@ -163,9 +169,14 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
         }
 
         // Copy the glyph.
-        let view = default_atlas.view(metric.x, metric.y, metric.width, metric.height);
+        let view = default_atlas.view(
+            metric.x as u32,
+            metric.y as u32,
+            metric.width as u32,
+            metric.height as u32,
+        );
         let rect = packer
-            .pack(metric.width as i32, metric.height as i32, false)
+            .pack(metric.width, metric.height, false)
             .ok_or(anyhow!("Failed to pack rect."))?;
 
         output_buffer
@@ -175,8 +186,8 @@ fn generate(name: &str, font_name: &str) -> Result<()> {
         // Push the new metric.
         let output_metric = GlyphMetric {
             codepoint: metric.codepoint,
-            x: rect.x as u32,
-            y: rect.y as u32,
+            x: rect.x,
+            y: rect.y,
             width: metric.width,
             height: metric.height,
             x_offset: metric.x_offset,

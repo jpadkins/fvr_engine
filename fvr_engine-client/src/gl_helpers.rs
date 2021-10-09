@@ -15,11 +15,6 @@ use gl::types::*;
 use image::DynamicImage;
 
 //-------------------------------------------------------------------------------------------------
-// Workspace includes.
-//-------------------------------------------------------------------------------------------------
-use fvr_engine_core::prelude::*;
-
-//-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
 
@@ -103,7 +98,7 @@ pub fn compile_shader(src: &str, shader_type: GLenum) -> Result<GLuint> {
         }
 
         // Else return the error log.
-        let mut len = 0_i32;
+        let mut len = 0;
         gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
         let mut buffer = Vec::with_capacity(len as usize);
         buffer.set_len(len as usize - 1);
@@ -140,7 +135,7 @@ pub fn link_program(vertex_shader: GLuint, fragment_shader: GLuint) -> Result<GL
         }
 
         // Else return the error log.
-        let mut len = 0_i32;
+        let mut len = 0;
         gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
         let mut buffer = Vec::with_capacity(len as usize);
         buffer.set_len(len as usize - 1);
@@ -227,7 +222,7 @@ pub fn generate_indices(num_quads: usize) -> Vec<GLuint> {
 }
 
 // Binds and uploads the data from an image to a texture, returning the size.
-pub fn load_texture<P>(path: P, texture: GLuint, active: GLenum) -> Result<UCoord>
+pub fn load_texture<P>(path: P, texture: GLuint, active: GLenum) -> Result<(u32, u32)>
 where
     P: AsRef<Path>,
 {
@@ -271,6 +266,9 @@ where
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
         gl_error_unwrap!("Failed to set TEXTURE_MAG_FILTER parameter.");
 
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, 4 as GLint);
+        // gl_error_unwrap!("Failed to set TEXTURE_MAX_LEVEL parameter.");
+
         // Upload the texture data.
         gl::TexImage2D(
             // Target.
@@ -295,8 +293,8 @@ where
         gl_error_unwrap!("Failed to upload texture data.");
 
         // Generate Mipmaps. TODO: Do we need to do this?
-        gl::GenerateMipmap(gl::TEXTURE_2D);
-        gl_error_unwrap!("Failed to generate mipmaps.");
+        // gl::GenerateMipmap(gl::TEXTURE_2D);
+        // gl_error_unwrap!("Failed to generate mipmaps.");
     }
 
     Ok(texture_dimensions)

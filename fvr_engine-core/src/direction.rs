@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
 // STD includes.
 //-------------------------------------------------------------------------------------------------
-use std::f64;
+use std::f32;
 use std::fmt::{Display, Formatter};
 
 //-------------------------------------------------------------------------------------------------
@@ -12,21 +12,24 @@ use crate::misc::*;
 //-------------------------------------------------------------------------------------------------
 // Statics.
 //-------------------------------------------------------------------------------------------------
+pub static NULL_COORD: ICoord = (0, 0);
+
 pub static NORTH_DIRECTION: Direction =
-    Direction { dx: 0, dy: -1, orientation: Orientation::North };
+    Direction { delta: (0, -1), orientation: Orientation::North };
 pub static NORTHEAST_DIRECTION: Direction =
-    Direction { dx: 1, dy: -1, orientation: Orientation::Northeast };
-pub static EAST_DIRECTION: Direction = Direction { dx: 1, dy: 0, orientation: Orientation::East };
+    Direction { delta: (1, -1), orientation: Orientation::Northeast };
+pub static EAST_DIRECTION: Direction = Direction { delta: (1, 0), orientation: Orientation::East };
 pub static SOUTHEAST_DIRECTION: Direction =
-    Direction { dx: 1, dy: 1, orientation: Orientation::Southeast };
+    Direction { delta: (1, 1), orientation: Orientation::Southeast };
 pub static SOUTH_DIRECTION: Direction =
-    Direction { dx: 0, dy: 1, orientation: Orientation::South };
+    Direction { delta: (0, 1), orientation: Orientation::South };
 pub static SOUTHWEST_DIRECTION: Direction =
-    Direction { dx: -1, dy: 1, orientation: Orientation::Southwest };
-pub static WEST_DIRECTION: Direction = Direction { dx: -1, dy: 0, orientation: Orientation::West };
+    Direction { delta: (-1, 1), orientation: Orientation::Southwest };
+pub static WEST_DIRECTION: Direction =
+    Direction { delta: (-1, 0), orientation: Orientation::West };
 pub static NORTHWEST_DIRECTION: Direction =
-    Direction { dx: -1, dy: -1, orientation: Orientation::Northwest };
-pub static NULL_DIRECTION: Direction = Direction { dx: 0, dy: 0, orientation: Orientation::Null };
+    Direction { delta: (-1, -1), orientation: Orientation::Northwest };
+pub static NULL_DIRECTION: Direction = Direction { delta: (0, 0), orientation: Orientation::Null };
 
 // Array of valid directions in order for use with rotation.
 pub static DIRECTIONS: [Direction; 8] = [
@@ -71,10 +74,8 @@ pub enum Orientation {
 //-------------------------------------------------------------------------------------------------
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Direction {
-    // Delta x value of the direction.
-    dx: i32,
-    // Delta y value of the direction.
-    dy: i32,
+    // Delta x and y values of the direction.
+    delta: ICoord,
     // Orientation of the direction.
     orientation: Orientation,
 }
@@ -84,14 +85,14 @@ impl Direction {
     // Returns the dx of the direction.
     //---------------------------------------------------------------------------------------------
     pub fn dx(&self) -> i32 {
-        self.dx
+        self.delta.0
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the dy of the direction.
     //---------------------------------------------------------------------------------------------
     pub fn dy(&self) -> i32 {
-        self.dy
+        self.delta.1
     }
 
     //---------------------------------------------------------------------------------------------
@@ -104,8 +105,8 @@ impl Direction {
     //---------------------------------------------------------------------------------------------
     // Returns the coord for the direction.
     //---------------------------------------------------------------------------------------------
-    pub fn coord(&self) -> ICoord {
-        (self.dx, self.dy)
+    pub fn delta(&self) -> ICoord {
+        self.delta
     }
 
     //---------------------------------------------------------------------------------------------
@@ -141,8 +142,8 @@ impl Direction {
         //     return NULL_DIRECTION;
         // }
 
-        let angle = (dy as f64).atan2(dx as f64);
-        let mut degree = angle * (180.0 / f64::consts::PI);
+        let angle = (dy as f32).atan2(dx as f32);
+        let mut degree = angle * (180.0 / f32::consts::PI);
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
 
@@ -173,8 +174,8 @@ impl Direction {
         //     return NULL_DIRECTION;
         // }
 
-        let angle = (dy as f64).atan2(dx as f64);
-        let mut degree = angle * 180.0 / f64::consts::PI;
+        let angle = (dy as f32).atan2(dx as f32);
+        let mut degree = angle * 180.0 / f32::consts::PI;
         degree += 450.0; // Rotate angle so that it is all positive with 0 up.
         degree %= 360.0; // Normalize angle to 0-360.
 

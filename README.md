@@ -24,11 +24,11 @@ A data-driven text-based roleplaying game engine.
   - [x] scenes:
     - [x] initial
     - [x] main menu
-    - [ ] demo (explore)
+    - [x] demo (explore)
     - [ ] credits
     - [ ] help
     - [x] fade in/out animations
-    - [ ] transition animations
+    - [x] transition animations
   - [ ] tile cache deserialized
   - [ ] cell cache deserialized
   - [ ] color palette deserialized
@@ -48,6 +48,9 @@ A data-driven text-based roleplaying game engine.
 
 - implement static/dynamic color palettes
 - implement ability to switch between vsync and custom fps in client.
+
+- clean up server crate
+- generalize scratch scene into base version of explore scene
 
 ## CRATES
 
@@ -93,6 +96,9 @@ Lib containing commonly shared types.
 Lib containing text parsers, including:
 - a rich text parser for parsing text that contains inline format hints
 
+### fvr_engine-server
+Lib for handling the game's business logic, such as characters, items, zones, combat, etc...
+
 ## TASKS
 
 - continue adapting C# implementation.
@@ -100,6 +106,7 @@ Lib containing text parsers, including:
 - move transitions to client?
 - implement shake effect
 - determine if priority values in flee map should be negated like astar.
+  x I don't think this is necessary anymore with the changes to fleemap, but double check.
 
 ## CONVENTIONS
 

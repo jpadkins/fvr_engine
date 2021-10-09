@@ -2,7 +2,7 @@ pub const BACKGROUND_VERTEX_SHADER_SOURCE: &str = r#"
 #version 330 core
 
 in vec2 position;
-in vec3 color;
+in vec4 color;
 
 out vec4 v_color;
 
@@ -10,7 +10,7 @@ uniform mat4 projection;
 
 void main()
 {
-    v_color = vec4(color, 1.0);
+    v_color = color;
     gl_Position = projection * vec4(position, 1.0, 1.0);
 }
 "#;
@@ -53,6 +53,7 @@ void main()
 }
 "#;
 
+#[allow(dead_code)]
 pub const FOREGROUND_FRAGMENT_SHADER_SOURCE: &str = r#"
 #version 330 core
 
@@ -168,7 +169,76 @@ void main()
 }
 "#;
 
-pub const VIGNETTE_VERTEX_SHADER_SOURCE: &str = r#"
+pub const FOREGROUND_FRAGMENT_SHADER_SDF_SOURCE: &str = r#"
+#version 330 core
+
+#define SMOOTHING 0.09
+#define BUFFER 0.475
+
+precision highp float;
+
+in vec4 v_color;
+in vec2 v_tex_coords;
+in float v_tex_index;
+
+out vec4 color;
+
+uniform sampler2D regular;
+uniform sampler2D bold;
+uniform sampler2D italic;
+uniform sampler2D bold_italic;
+uniform sampler2D regular_outline;
+uniform sampler2D bold_outline;
+uniform sampler2D italic_outline;
+uniform sampler2D bold_italic_outline;
+
+vec4 calculate_frag_color(float distance) {
+    float alpha = smoothstep(BUFFER - SMOOTHING, BUFFER + SMOOTHING, distance);
+    vec4 frag_color = vec4(v_color.rgb, 1.0) * alpha * v_color.a;
+    frag_color.a += frag_color.a * 0.3;
+    return frag_color;
+}
+
+void main()
+{
+    vec4 frag_color;
+    float distance, alpha;
+
+    // In GLSL 330 non-const values cannot be used for indexing arrays in fragment shaders.
+    int index = int(floor(v_tex_index));
+
+    switch(index) {
+    case 0:
+        frag_color = calculate_frag_color(texture2D(regular, v_tex_coords).a);
+        break;
+    case 1:
+        frag_color = calculate_frag_color(texture2D(bold, v_tex_coords).a);
+        break;
+    case 2:
+        frag_color = calculate_frag_color(texture2D(italic, v_tex_coords).a);
+        break;
+    case 3:
+        frag_color = calculate_frag_color(texture2D(bold_italic, v_tex_coords).a);
+        break;
+    case 4:
+        frag_color = calculate_frag_color(texture2D(regular_outline, v_tex_coords).a);
+        break;
+    case 5:
+        frag_color = calculate_frag_color(texture2D(bold_outline, v_tex_coords).a);
+        break;
+    case 6:
+        frag_color = calculate_frag_color(texture2D(italic_outline, v_tex_coords).a);
+        break;
+    case 7:
+        frag_color = calculate_frag_color(texture2D(bold_italic_outline, v_tex_coords).a);
+        break;
+    }
+
+    color = frag_color;
+}
+"#;
+
+pub const FULL_FRAME_VERTEX_SHADER_SOURCE: &str = r#"
 #version 330 core
 
 out vec2 v_coords;

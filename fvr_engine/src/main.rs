@@ -7,8 +7,6 @@ use std::time::Duration;
 // Extern crate includes.
 //-------------------------------------------------------------------------------------------------
 use anyhow::Result;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 
 //-------------------------------------------------------------------------------------------------
 // Workspace includes.
@@ -31,9 +29,9 @@ use scenes::Initial;
 //-------------------------------------------------------------------------------------------------
 // TODO: Load these from config.
 const WINDOW_TITLE: &str = "FVR_ENGINE";
-const WINDOW_DIMENSIONS: UCoord = (1280, 720);
-const TERMINAL_DIMENSIONS: UCoord = (85, 33);
-const TILE_DIMENSIONS: UCoord = (48, 64);
+const WINDOW_DIMENSIONS: ICoord = (1280, 720);
+const TERMINAL_DIMENSIONS: ICoord = (85, 33);
+const TILE_DIMENSIONS: ICoord = (48, 64);
 const FONT_NAME: &str = "deja_vu_sans_mono";
 const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
 
@@ -42,7 +40,7 @@ fn main() -> Result<()> {
     let mut update_dt = Duration::from_secs(0);
     let mut update_timer = Timer::new(UPDATE_INTERVAL);
 
-    let mut server = Server::new();
+    let mut server = Server::new()?;
 
     let mut client = Client::new(
         WINDOW_TITLE,
@@ -61,8 +59,8 @@ fn main() -> Result<()> {
     'main: loop {
         while let Some(event) = client.poll_event() {
             match event {
-                Event::Quit { .. } => break 'main,
-                Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                InputEvent::Quit { .. } => break 'main,
+                InputEvent::KeyDown { keycode: Some(InputKey::Space), .. } => {
                     client.toggle_debug();
                 }
                 _ => {}

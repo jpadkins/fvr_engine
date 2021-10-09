@@ -34,9 +34,9 @@ pub enum ScrollLogAction {
 //-------------------------------------------------------------------------------------------------
 pub struct ScrollLog {
     // The origin of the log.
-    origin: UCoord,
+    origin: ICoord,
     // The size of the log.
-    dimensions: UCoord,
+    dimensions: ICoord,
     // The frame around the scroll log.
     frame: Frame,
     // The scrollbar for the log.
@@ -51,7 +51,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Creates a new scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: UCoord, dimensions: UCoord, style: FrameStyle, max_lines: u32) -> Self {
+    pub fn new(origin: ICoord, dimensions: ICoord, style: FrameStyle, max_lines: i32) -> Self {
         let frame = Frame::new(origin, (dimensions.0 - 2, dimensions.1 - 2), style);
 
         // Subtract from the height to nest the scrollbar within the frame.
@@ -69,28 +69,28 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> UCoord {
+    pub fn origin(&self) -> ICoord {
         self.origin
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the width of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> i32 {
         self.dimensions.0
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the height of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> i32 {
         self.dimensions.1
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the dimensions of the scroll log.
     //---------------------------------------------------------------------------------------------
-    pub fn inner_dimensions(&self) -> UCoord {
+    pub fn inner_dimensions(&self) -> ICoord {
         self.dimensions
     }
 
@@ -116,21 +116,21 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Returns the total lines.
     //---------------------------------------------------------------------------------------------
-    pub fn total_lines(&self) -> u32 {
+    pub fn total_lines(&self) -> i32 {
         self.wrapper.total_lines()
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the # of lines above the currently visible area.
     //---------------------------------------------------------------------------------------------
-    pub fn lines_up(&self) -> u32 {
+    pub fn lines_up(&self) -> i32 {
         self.wrapper.lines_up()
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the # of lines below the currently visible area.
     //---------------------------------------------------------------------------------------------
-    pub fn lines_down(&self) -> u32 {
+    pub fn lines_down(&self) -> i32 {
         self.wrapper.lines_down()
     }
 
@@ -158,7 +158,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Scrolls the visible area up by a # of lines.
     //---------------------------------------------------------------------------------------------
-    pub fn scroll_up(&mut self, lines: u32) {
+    pub fn scroll_up(&mut self, lines: i32) {
         self.wrapper.scroll_up(lines);
         self.scrollbar.set_current_line(self.wrapper.lines_up());
         self.dirty = true;
@@ -167,7 +167,7 @@ impl ScrollLog {
     //---------------------------------------------------------------------------------------------
     // Scrolls the visible area down by a # of lines.
     //---------------------------------------------------------------------------------------------
-    pub fn scroll_down(&mut self, lines: u32) {
+    pub fn scroll_down(&mut self, lines: i32) {
         self.wrapper.scroll_down(lines);
         self.scrollbar.set_current_line(self.wrapper.lines_up());
         self.dirty = true;

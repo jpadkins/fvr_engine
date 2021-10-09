@@ -7,16 +7,16 @@ use priority_queue::PriorityQueue;
 //-------------------------------------------------------------------------------------------------
 // Local includes.
 //-------------------------------------------------------------------------------------------------
+use crate::dijkstra_map::*;
 use crate::distance::*;
 use crate::grid_map::*;
 use crate::map2d::*;
-use crate::map2d_iter_mut;
 use crate::misc::*;
 
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
-const A_STAR_MIN_WEIGHT: f64 = 1.0;
+const A_STAR_MIN_WEIGHT: f32 = 1.0;
 
 //-------------------------------------------------------------------------------------------------
 // Enumerates the possible passability input states for the underlying map.
@@ -30,6 +30,48 @@ pub enum Passability {
     Passable,
 }
 
+impl Passability {
+    pub fn passable(&self) -> bool {
+        self == &Passability::Passable
+    }
+}
+
+// Impl conversion between bool for convenience.
+impl From<bool> for Passability {
+    fn from(b: bool) -> Self {
+        match b {
+            true => Passability::Passable,
+            false => Passability::Blocked,
+        }
+    }
+}
+
+impl From<Passability> for bool {
+    fn from(passability: Passability) -> Self {
+        passability.passable()
+    }
+}
+
+// Impl conversion between dijkstra state for convenience.
+impl From<DijkstraState> for Passability {
+    fn from(dijkstra_state: DijkstraState) -> Self {
+        match dijkstra_state {
+            DijkstraState::Unavailable => Self::Blocked,
+            DijkstraState::Goal { .. } | DijkstraState::Available => Self::Passable,
+        }
+    }
+}
+
+impl From<Passability> for DijkstraState {
+    fn from(passability: Passability) -> Self {
+        match passability {
+            Passability::Blocked => DijkstraState::Unavailable,
+            Passability::Passable => DijkstraState::Available,
+        }
+    }
+}
+
+// Passable bu default.
 impl Default for Passability {
     fn default() -> Self {
         Self::Passable
@@ -39,7 +81,7 @@ impl Default for Passability {
 //-------------------------------------------------------------------------------------------------
 // Alias for boxed heuristic closure for convenience.
 //-------------------------------------------------------------------------------------------------
-type Heuristic = Box<dyn Fn(UCoord, UCoord) -> f64>;
+type Heuristic = Box<dyn Fn(ICoord, ICoord) -> f32>;
 
 //-------------------------------------------------------------------------------------------------
 // Wraps heuristic data for a node.
@@ -47,13 +89,13 @@ type Heuristic = Box<dyn Fn(UCoord, UCoord) -> f64>;
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 struct AStarNode {
     // Coord of the node.
-    xy: UCoord,
+    xy: ICoord,
     // Distance from the start to the node.
-    depth: OrderedFloat<f64>,
+    depth: OrderedFloat<f32>,
     // Distance from the node to the end.
-    distance_left: OrderedFloat<f64>,
+    distance_left: OrderedFloat<f32>,
     // Coord of the node's parent.
-    parent: Option<UCoord>,
+    parent: Option<ICoord>,
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -65,11 +107,11 @@ pub struct AStar {
     // Stores processed state for coords.
     processed: GridMap<bool>,
     // Dimensions of the last map.
-    previous_dimensions: UCoord,
+    previous_dimensions: ICoord,
     // Queue used when calculating path.
-    queue: PriorityQueue<UCoord, OrderedFloat<f64>>,
+    queue: PriorityQueue<ICoord, OrderedFloat<f32>>,
     // Multiplier used for tie breaking in default heuristic.
-    tie_breaker: f64,
+    tie_breaker: f32,
     // The weight heuristic.
     heuristic: Heuristic,
     // The distance method.
@@ -82,24 +124,23 @@ impl AStar {
     //-------------------------------------------------------------------------------------------------
     // Helper for quick distance comparison.
     //-------------------------------------------------------------------------------------------------
-    fn distance_magnitude(p1: UCoord, p2: UCoord) -> f64 {
-        ((p2.0 as i32 - p1.0 as i32).pow(2) + (p2.1 as i32 - p1.1 as i32).pow(2)) as f64
+    fn distance_magnitude(p1: ICoord, p2: ICoord) -> f32 {
+        ((p2.0 - p1.0).pow(2) + (p2.1 - p1.1).pow(2)) as f32
     }
 
     //-------------------------------------------------------------------------------------------------
     // Helper for refreshing tie breaker value.
     //-------------------------------------------------------------------------------------------------
-    fn tie_breaker(dimensions: UCoord) -> f64 {
-        A_STAR_MIN_WEIGHT / Self::distance_magnitude((0, 0), dimensions) as f64
+    fn tie_breaker(dimensions: ICoord) -> f32 {
+        A_STAR_MIN_WEIGHT / Self::distance_magnitude((0, 0), dimensions) as f32
     }
 
     //-------------------------------------------------------------------------------------------------
     // Helper for creating a new heuristic closure.
     //-------------------------------------------------------------------------------------------------
-    fn heuristic(distance: Distance, tie_breaker: f64) -> Heuristic {
+    fn heuristic(distance: Distance, tie_breaker: f32) -> Heuristic {
         Box::new(move |p1, p2| {
-            distance.calculate(Misc::utoi(p1), Misc::utoi(p2))
-                + (Self::distance_magnitude(p1, p2) * tie_breaker)
+            distance.calculate(p1, p2) + (Self::distance_magnitude(p1, p2) * tie_breaker)
         })
     }
 
@@ -142,20 +183,22 @@ impl AStar {
     //-------------------------------------------------------------------------------------------------
     // Calculates the shortest path between two points and pushes it into a vec.
     //-------------------------------------------------------------------------------------------------
-    pub fn push_path<M>(
+    pub fn push_path<M, T>(
         &mut self,
-        start: UCoord,
-        end: UCoord,
+        start: ICoord,
+        end: ICoord,
         states: &M,
-        weights: Option<&GridMap<f64>>,
-        points: &mut Vec<UCoord>,
+        weights: Option<&GridMap<f32>>,
+        points: &mut Vec<ICoord>,
     ) where
-        M: Map2d<Passability>,
+        M: Map2d<T>,
+        T: Map2dType + Into<Passability>,
     {
         // If the start and end coords are equal, or either are not passable, return.
         if start == end
-            || *states.get_xy(start) == Passability::Blocked
-            || *states.get_xy(end) == Passability::Blocked
+            // TODO: Should we always assume the starting coord is passable?
+            // || *states.get_xy(start) == Passability::Blocked
+            || states.get_xy(end).clone().into() == Passability::Blocked
         {
             return;
         }
@@ -185,12 +228,8 @@ impl AStar {
         }
 
         // Clear the nodes map to None and the processed map to false.
-        map2d_iter_mut!(self.nodes, item, {
-            *item = None;
-        });
-        map2d_iter_mut!(self.processed, item, {
-            *item = false;
-        });
+        self.nodes.data_mut().fill(None);
+        self.processed.data_mut().fill(false);
 
         // Calculate the heuristics for the start node and push it into the queue.
         let start_node = self.nodes.get_xy_mut(start);
@@ -216,7 +255,7 @@ impl AStar {
             if node.0 == end {
                 points.push(node.0);
                 let mut node = self.nodes.get_xy(node.0);
-                let mut xy = UCoord::default();
+                let mut xy = ICoord::default();
 
                 while {
                     if let Some(parent_xy) = node.as_ref().unwrap().parent {
@@ -235,20 +274,14 @@ impl AStar {
             }
 
             // Process the node.
-            for xy in adjacency.neighbors(Misc::utoi(node.0)) {
+            for xy in adjacency.neighbors(node.0) {
                 // Continue if the neighbor is not valid.
-                if xy.0 < 0
-                    || xy.1 < 0
-                    || xy.0 as u32 >= states.width()
-                    || xy.1 as u32 >= states.height()
-                {
+                if !states.in_bounds(xy) {
                     continue;
                 }
 
-                let xy = Misc::itou(xy);
-
                 // Continue if the neighbor is not passable.
-                if *states.get_xy(xy) == Passability::Blocked {
+                if states.get_xy(xy).clone().into() == Passability::Blocked {
                     continue;
                 }
 
@@ -260,7 +293,7 @@ impl AStar {
                 }
 
                 // Calculate new depth value.
-                let mut depth = self.distance.calculate(Misc::utoi(node.0), Misc::utoi(xy));
+                let mut depth = self.distance.calculate(node.0, xy);
 
                 if weights.is_some() {
                     depth *= *weights.as_ref().unwrap().get_xy(xy);
@@ -273,8 +306,8 @@ impl AStar {
                 if !is_visited {
                     *self.nodes.get_xy_mut(xy) = Some(AStarNode {
                         xy,
-                        depth: OrderedFloat(f64::MAX),
-                        distance_left: OrderedFloat(f64::MAX),
+                        depth: OrderedFloat(f32::MAX),
+                        distance_left: OrderedFloat(f32::MAX),
                         parent: None,
                     });
                 }
@@ -308,11 +341,11 @@ impl AStar {
     //-------------------------------------------------------------------------------------------------
     pub fn path<M>(
         &mut self,
-        start: UCoord,
-        end: UCoord,
+        start: ICoord,
+        end: ICoord,
         states: &M,
-        weights: Option<&GridMap<f64>>,
-    ) -> Vec<UCoord>
+        weights: Option<&GridMap<f32>>,
+    ) -> Vec<ICoord>
     where
         M: Map2d<Passability>,
     {

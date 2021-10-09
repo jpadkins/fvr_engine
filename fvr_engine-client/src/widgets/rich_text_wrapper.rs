@@ -129,17 +129,17 @@ impl FormatState {
 #[derive(Default)]
 pub struct RichTextWrapper {
     // Origin of the rich text wrapper.
-    origin: UCoord,
+    origin: ICoord,
     // Dimensions of the visible area.
-    dimensions: UCoord,
+    dimensions: ICoord,
     // Maximum number of wrapped lines.
-    max_lines: u32,
+    max_lines: i32,
     // Current # of lines in the rich text.
-    total_lines: u32,
+    total_lines: i32,
     // Current # of lines above the visible area.
-    lines_up: u32,
+    lines_up: i32,
     // Current # of lines below the visible area.
-    lines_down: u32,
+    lines_down: i32,
     // Cached format state to append at the beginning of lines.
     format_state: FormatState,
     // The wrapped rich text.
@@ -162,7 +162,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Creates a new rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn new(origin: UCoord, dimensions: UCoord, max_lines: u32) -> Self {
+    pub fn new(origin: ICoord, dimensions: ICoord, max_lines: i32) -> Self {
         // Push a newline index for the beginning of the wrapped text.
         let newline_indices = vec![0];
 
@@ -172,56 +172,56 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Returns the origin of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn origin(&self) -> UCoord {
+    pub fn origin(&self) -> ICoord {
         self.origin
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the width of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> i32 {
         self.dimensions.0
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the height of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> i32 {
         self.dimensions.1
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the dimensions of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn dimensions(&self) -> UCoord {
+    pub fn dimensions(&self) -> ICoord {
         self.dimensions
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the max lines of the rich text wrapper.
     //---------------------------------------------------------------------------------------------
-    pub fn max_lines(&self) -> u32 {
+    pub fn max_lines(&self) -> i32 {
         self.max_lines
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the total lines of the rich text wrapper's text.
     //---------------------------------------------------------------------------------------------
-    pub fn total_lines(&self) -> u32 {
+    pub fn total_lines(&self) -> i32 {
         self.total_lines
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the # of lines above the currently visible area.
     //---------------------------------------------------------------------------------------------
-    pub fn lines_up(&self) -> u32 {
+    pub fn lines_up(&self) -> i32 {
         self.lines_up
     }
 
     //---------------------------------------------------------------------------------------------
     // Returns the # of lines below the currently visible area.
     //---------------------------------------------------------------------------------------------
-    pub fn lines_down(&self) -> u32 {
+    pub fn lines_down(&self) -> i32 {
         self.lines_down
     }
 
@@ -365,16 +365,16 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     fn refresh_visible_area_metrics(&mut self) {
         // Total lines is the # of newlines.
-        self.total_lines = self.newline_indices.len() as u32;
+        self.total_lines = self.newline_indices.len() as i32;
 
         // Lines up is always equal to the current newline index.
-        self.lines_up = self.current_line as u32;
+        self.lines_up = self.current_line as i32;
 
         // Lines down is the difference between total lines and the last visible line.
         self.lines_down = cmp::max(
             self.total_lines as i32 - (self.current_line as i32 + self.height() as i32),
             0,
-        ) as u32;
+        ) as i32;
 
         // Visible start is the newline index of the current line.
         self.visible_start = self.newline_indices[self.current_line];
@@ -382,7 +382,7 @@ impl RichTextWrapper {
         // Depending on whether there is room to fill the entire height of the text wrapper, set
         // the visible end index.
         if self.total_lines > self.height() {
-            if self.current_line as u32 + self.height() >= self.total_lines {
+            if self.current_line as i32 + self.height() >= self.total_lines {
                 // The entire remainder of the wrapped text is visible.
                 self.visible_end = self.wrapped_text.chars().count();
             } else {
@@ -468,7 +468,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Scrolls the visible area up by a # of lines.
     //---------------------------------------------------------------------------------------------
-    pub fn scroll_up(&mut self, lines: u32) {
+    pub fn scroll_up(&mut self, lines: i32) {
         // Decrement the current line index, stopping at 0.
         self.current_line = cmp::max(self.current_line as i32 - lines as i32, 0) as usize;
 
@@ -479,7 +479,7 @@ impl RichTextWrapper {
     //---------------------------------------------------------------------------------------------
     // Scrolls the visible area down by a # of lines.
     //---------------------------------------------------------------------------------------------
-    pub fn scroll_down(&mut self, lines: u32) {
+    pub fn scroll_down(&mut self, lines: i32) {
         // Only scroll down if there is text that might not be visible
         if self.has_overflow() {
             // Increment the current line index, stopping at the bottom of the visible area.

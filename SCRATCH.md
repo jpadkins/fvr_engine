@@ -18,65 +18,80 @@ Quest where crafter asks you to bring absurd amounts of materials to craft one p
 
 ## AI Design
 
-// Massive variant of all possible action types?
-// At the point of return, the action is ensured to be valid/doable.
-// Eventually have the variant also include optional references to Animations?
-enum Action {
-  // e.g. 
-  // Move(UCoord)
-  // Attack(UCoord)
-  // Shoot(UCoord)
-  // Cast(UCoord, &Spell)
-  // Use(&Item)
-  // Say(&String)
-  // Interact(UCoord)
-  ...
+(Avg. FPS over 1 min fast exploration 255x255 map)
+
+Fx: 677.0
+AHash: 659
+Fnv: 652
+Hashbrown: 641
+
+"BIGT" - Behavior, Intention, Goal, Task
+
+1. !Goal
+2. Goal && !Task
+3. Task
+
+struct Actor {
+  // Navigation related.
+  xy: ICoord,
+  nav: {
+    prev_weight: f32,
+    stationary: bool,
+  },
+
+  // A.I. related.
+  behavior: Behavior,
+  intention: Intention,
+  goals: Vec<Goal>,
+  tasks: Vec<Task>,
 }
 
-// Enum of categories of actions that can be taken in combat.
-// Used to describe unique priorities for particular AIs.
-enum CombatType {
-  Melee,
-  Ranged,
-  Magic,
-  Defense,
-  // ...
+struct Behavior {
+  faction: BitSet,
 }
 
-// Variant of types of goals.
-enum GoalType {
-  Kill,
-  Hail,
-  Visit,
-  Flee,
-  Follow,
-  Interact,
-  // ...
+struct Intention {
+  fn push_goals(&mut Vec<Goal>);
 }
 
-// Variant of possible targets for goals.
-enum GoalTarget {
-  Coord(UCoord),
-  Entity(Entity),
-  // ...
+enum Goal {
+  AvoidPlayer,
+  ChasePlayer,
+  Roam { radius: i32 },
+  Wait,
 }
 
-struct Goal {
-  type: GoalType,
-  target: GoalTarget,
-
-  // If the goal has been accomplished and should be removed from the stack.
-  accomplished() -> bool;
-
-  // If the goal is impossible (i.e. goal was to kill an NPC that is now dead).
+impl Goal {
+  finished() -> bool;
   impossible() -> bool;
+  push_tasks(&mut Vec<Task>);
 }
 
-struct AI {
-  // Index in the goals stack of the last "root" goal.
-  intent: usize,
-  // Stack of goals in order of priority.
-  goals: vec<Goal>,
-  // Enum of combat types in order of priority.
-  combat_preference: vec<CombatType>,
+enum Task {
+  Move(Direction),
+  MoveTo(ICoord),
+  Wait,
 }
+
+impl Task {
+  execute() -> bool;
+}
+
+-----
+
+trait Intention {
+  fn push_goals(&mut Vec<Goal>);
+}
+
+struct DebugAvoidIntention;
+
+impl Intention for DebugAvoidIntention {
+
+}
+
+struct DebugChaseIntention;
+
+impl 
+
+
+6e7a6f

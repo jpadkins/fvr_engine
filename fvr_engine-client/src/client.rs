@@ -32,10 +32,10 @@ use crate::terminal::*;
 // TODO: Load these from config?
 
 // Minimum window size.
-const MINIMUM_WINDOW_SIZE: UCoord = (1280, 720);
+const MINIMUM_WINDOW_SIZE: ICoord = (1280, 720);
 
 // Render at 60 fps.
-const FRAME_INTERVAL: Duration = Duration::from_micros(1000000 / 60);
+const FRAME_INTERVAL: Duration = Duration::from_micros(1000000 / 10000);
 
 // Duration to sleep when frame duration has not yet passed.
 const SLEEP_INTERVAL: Duration = Duration::from_millis(2);
@@ -48,7 +48,7 @@ const FPS_LOG_INTERVAL: Duration = Duration::from_secs(5);
 //-------------------------------------------------------------------------------------------------
 pub struct Client {
     // Dimensions of the faux terminal.
-    terminal_dimensions: UCoord,
+    terminal_dimensions: ICoord,
     // The SDL2 context (not used after initialization, but it must stay in scope).
     _sdl2_context: Sdl,
     // The SDL2 video context (not used after initialization, but it must stay in scope).
@@ -74,7 +74,7 @@ pub struct Client {
     // Timer used for calculating the FPS.
     fps_log_timer: Timer,
     // Stores the frame count. Used for calculating the FPS.
-    fps_counter: u32,
+    fps_counter: i32,
     // Whether the window has been resized this frame.
     resized: bool,
 }
@@ -86,9 +86,9 @@ impl Client {
     //---------------------------------------------------------------------------------------------
     pub fn new<S>(
         window_title: S,
-        window_dimensions: UCoord,
-        terminal_dimensions: UCoord,
-        tile_dimensions: UCoord,
+        window_dimensions: ICoord,
+        terminal_dimensions: ICoord,
+        tile_dimensions: ICoord,
         font_name: S,
     ) -> Result<Self>
     where
@@ -125,7 +125,7 @@ impl Client {
 
         // Build the window.
         let mut window = video_subsystem
-            .window(window_title.as_ref(), window_dimensions.0, window_dimensions.1)
+            .window(window_title.as_ref(), window_dimensions.0 as u32, window_dimensions.1 as u32)
             // .fullscreen_desktop()
             .position_centered()
             .resizable()
@@ -134,7 +134,7 @@ impl Client {
             .map_err(|e| anyhow!(e))
             .context("Failed to open the SDL2 window.")?;
 
-        window.set_minimum_size(MINIMUM_WINDOW_SIZE.0, MINIMUM_WINDOW_SIZE.1)?;
+        window.set_minimum_size(MINIMUM_WINDOW_SIZE.0 as u32, MINIMUM_WINDOW_SIZE.1 as u32)?;
 
         // Initialize the OpenGL context.
         //-----------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ impl Client {
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
         if self.fps_log_timer.update(&self.delta_time) {
-            const FPS_LOG_SECONDS: u32 = FPS_LOG_INTERVAL.as_secs() as u32;
+            const FPS_LOG_SECONDS: i32 = FPS_LOG_INTERVAL.as_secs() as i32;
             println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
 
             self.fps_counter = 0;
@@ -277,7 +277,7 @@ impl Client {
         //-----------------------------------------------------------------------------------------
         if self.resized {
             self.renderer
-                .update_viewport(self.window.size())
+                .update_viewport(Misc::utoi(self.window.size()))
                 .context("Failed to refresh renderer scaling.")?;
 
             // Reset the resized state.

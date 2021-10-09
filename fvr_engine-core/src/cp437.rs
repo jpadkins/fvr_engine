@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------------------
-// STD includes.
+// Extern crate includes.
 //-------------------------------------------------------------------------------------------------
-use std::collections::HashSet;
+use fnv::FnvHashSet;
 
 //-------------------------------------------------------------------------------------------------
 // Extern crate includes.
@@ -31,11 +31,11 @@ pub const CP437_CHARS: [char; 254] = [
 //-------------------------------------------------------------------------------------------------
 // Statics.
 //-------------------------------------------------------------------------------------------------
-pub static CP437_SET: Lazy<HashSet<char>> = Lazy::new(|| {
-    let mut cp437_set = HashSet::new();
+pub static CP437_SET: Lazy<FnvHashSet<i32>> = Lazy::new(|| {
+    let mut cp437_set = FnvHashSet::default();
 
     for c in CP437_CHARS.iter() {
-        cp437_set.insert(*c);
+        cp437_set.insert(*c as i32);
     }
 
     cp437_set
