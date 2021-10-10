@@ -94,9 +94,35 @@ impl Client {
             .map_err(|e| anyhow!(e))
             .context("Failed to obtain the SDL2 event pump.")?;
 
-        // Build the window.
-        let mut window = if CONFIG.fullscreen {
-            video_subsystem
+        // Build the window depending on the type.
+        // Because window builder returns a ref, there's no good way to DRY this up.
+        let mut window = match CONFIG.window_type {
+            WindowType::Fullscreen => video_subsystem
+                .window(
+                    CONFIG_WINDOW_TITLE,
+                    CONFIG.window_dimensions.0 as u32,
+                    CONFIG.window_dimensions.1 as u32,
+                )
+                .fullscreen()
+                .position_centered()
+                .resizable()
+                .opengl()
+                .build()
+                .map_err(|e| anyhow!(e))
+                .context("Failed to open the SDL2 window."),
+            WindowType::Windowed => video_subsystem
+                .window(
+                    CONFIG_WINDOW_TITLE,
+                    CONFIG.window_dimensions.0 as u32,
+                    CONFIG.window_dimensions.1 as u32,
+                )
+                .position_centered()
+                .resizable()
+                .opengl()
+                .build()
+                .map_err(|e| anyhow!(e))
+                .context("Failed to open the SDL2 window."),
+            WindowType::WindowedFullscreen => video_subsystem
                 .window(
                     CONFIG_WINDOW_TITLE,
                     CONFIG.window_dimensions.0 as u32,
@@ -108,20 +134,7 @@ impl Client {
                 .opengl()
                 .build()
                 .map_err(|e| anyhow!(e))
-                .context("Failed to open the SDL2 window.")
-        } else {
-            video_subsystem
-                .window(
-                    CONFIG_WINDOW_TITLE,
-                    CONFIG.window_dimensions.0 as u32,
-                    CONFIG.window_dimensions.1 as u32,
-                )
-                .position_centered()
-                .resizable()
-                .opengl()
-                .build()
-                .map_err(|e| anyhow!(e))
-                .context("Failed to open the SDL2 window.")
+                .context("Failed to open the SDL2 window."),
         }?;
 
         window.set_minimum_size(

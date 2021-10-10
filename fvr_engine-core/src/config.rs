@@ -46,14 +46,27 @@ pub static CONFIG: Lazy<Config> = Lazy::new(|| {
 });
 
 //-------------------------------------------------------------------------------------------------
+// Enumerates the types of game windows.
+//-------------------------------------------------------------------------------------------------
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum WindowType {
+    // True fullscreen.
+    Fullscreen,
+    // Basic windowed.
+    Windowed,
+    // Windowed stretched to the dimensions of the monitor.
+    WindowedFullscreen,
+}
+
+//-------------------------------------------------------------------------------------------------
 // Config holds the global config.
 //-------------------------------------------------------------------------------------------------
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     // Whether to render the full frame vignette.
     pub enable_vignette: bool,
     // Whether the window should be created fullscreen.
-    pub fullscreen: bool,
+    pub window_type: WindowType,
     // Name of the font to use.
     pub font_name: String,
     // Minimum size of the game window.

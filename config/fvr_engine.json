@@ -1,6 +1,5 @@
 {
   "enable_vignette": true,
-  "fullscreen": false,
   "font_name": "fantasque_sans_mono",
   "minimum_window_dimensions": [1280, 720],
   "render_interval": {
@@ -20,5 +19,6 @@
   },
   "use_alternating_vbos": false,
   "use_sdf_fonts": false,
-  "window_dimensions": [1280, 720]
+  "window_dimensions": [1280, 720],
+  "window_type": "Windowed"
 }
