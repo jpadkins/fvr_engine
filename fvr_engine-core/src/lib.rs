@@ -1,5 +1,6 @@
 mod a_star;
 mod adjacency;
+mod config;
 mod cp437;
 mod dijkstra_map;
 mod direction;
@@ -20,6 +21,7 @@ mod timer;
 pub mod prelude {
     pub use crate::a_star::*;
     pub use crate::adjacency::*;
+    pub use crate::config::*;
     pub use crate::cp437::*;
     pub use crate::dijkstra_map::*;
     pub use crate::direction::*;

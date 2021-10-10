@@ -1,8 +1,24 @@
 {
-  "gamplay": {},
-  "renderer": {
-    "use_alternating_vbos": false,
-    "use_sdf_fonts": false,
-    "enable_vignette": true
-  }
+  "enable_vignette": true,
+  "fullscreen": false,
+  "font_name": "fantasque_sans_mono",
+  "minimum_window_dimensions": [1280, 720],
+  "render_interval": {
+    "secs": 0,
+    "nanos": 100000
+  },
+  "sleep_interval": {
+    "secs": 0,
+    "nanos": 2000000
+  },
+  "show_fps": false,
+  "terminal_dimensions": [85, 33],
+  "tile_dimensions": [48, 64],
+  "update_interval": {
+    "secs": 0,
+    "nanos": 33333000
+  },
+  "use_alternating_vbos": false,
+  "use_sdf_fonts": false,
+  "window_dimensions": [1280, 720]
 }

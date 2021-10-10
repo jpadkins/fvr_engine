@@ -26,29 +26,9 @@ use crate::renderer_v2::*;
 use crate::terminal::*;
 
 //-------------------------------------------------------------------------------------------------
-// Constants.
-//-------------------------------------------------------------------------------------------------
-
-// TODO: Load these from config?
-
-// Minimum window size.
-const MINIMUM_WINDOW_SIZE: ICoord = (1280, 720);
-
-// Render at 60 fps.
-const FRAME_INTERVAL: Duration = Duration::from_micros(1000000 / 10000);
-
-// Duration to sleep when frame duration has not yet passed.
-const SLEEP_INTERVAL: Duration = Duration::from_millis(2);
-
-// Interval at which to print the FPS.
-const FPS_LOG_INTERVAL: Duration = Duration::from_secs(5);
-
-//-------------------------------------------------------------------------------------------------
 // Client holds the window and rendering context and provides access to the terminal.
 //-------------------------------------------------------------------------------------------------
 pub struct Client {
-    // Dimensions of the faux terminal.
-    terminal_dimensions: ICoord,
     // The SDL2 context (not used after initialization, but it must stay in scope).
     _sdl2_context: Sdl,
     // The SDL2 video context (not used after initialization, but it must stay in scope).
@@ -70,7 +50,7 @@ pub struct Client {
     // Delta time for the current frame.
     delta_time: Duration,
     // Timer used for limiting the rendering FPS.
-    frame_timer: Timer,
+    render_timer: Timer,
     // Timer used for calculating the FPS.
     fps_log_timer: Timer,
     // Stores the frame count. Used for calculating the FPS.
@@ -84,16 +64,7 @@ impl Client {
     // Creates a new client.
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
-    pub fn new<S>(
-        window_title: S,
-        window_dimensions: ICoord,
-        terminal_dimensions: ICoord,
-        tile_dimensions: ICoord,
-        font_name: S,
-    ) -> Result<Self>
-    where
-        S: AsRef<str>,
-    {
+    pub fn new() -> Result<Self> {
         // Initialize SDL2.
         //-----------------------------------------------------------------------------------------
         let sdl2_context =
@@ -124,17 +95,39 @@ impl Client {
             .context("Failed to obtain the SDL2 event pump.")?;
 
         // Build the window.
-        let mut window = video_subsystem
-            .window(window_title.as_ref(), window_dimensions.0 as u32, window_dimensions.1 as u32)
-            // .fullscreen_desktop()
-            .position_centered()
-            .resizable()
-            .opengl()
-            .build()
-            .map_err(|e| anyhow!(e))
-            .context("Failed to open the SDL2 window.")?;
+        let mut window = if CONFIG.fullscreen {
+            video_subsystem
+                .window(
+                    CONFIG_WINDOW_TITLE,
+                    CONFIG.window_dimensions.0 as u32,
+                    CONFIG.window_dimensions.1 as u32,
+                )
+                .fullscreen_desktop()
+                .position_centered()
+                .resizable()
+                .opengl()
+                .build()
+                .map_err(|e| anyhow!(e))
+                .context("Failed to open the SDL2 window.")
+        } else {
+            video_subsystem
+                .window(
+                    CONFIG_WINDOW_TITLE,
+                    CONFIG.window_dimensions.0 as u32,
+                    CONFIG.window_dimensions.1 as u32,
+                )
+                .position_centered()
+                .resizable()
+                .opengl()
+                .build()
+                .map_err(|e| anyhow!(e))
+                .context("Failed to open the SDL2 window.")
+        }?;
 
-        window.set_minimum_size(MINIMUM_WINDOW_SIZE.0 as u32, MINIMUM_WINDOW_SIZE.1 as u32)?;
+        window.set_minimum_size(
+            CONFIG.minimum_window_dimensions.0 as u32,
+            CONFIG.minimum_window_dimensions.1 as u32,
+        )?;
 
         // Initialize the OpenGL context.
         //-----------------------------------------------------------------------------------------
@@ -159,13 +152,14 @@ impl Client {
 
         // Initialize the renderer.
         //-----------------------------------------------------------------------------------------
-        let renderer = RendererV2::new(tile_dimensions, terminal_dimensions, font_name)
-            .context("Failed to create the renderer.")?;
+        let renderer = RendererV2::new().context("Failed to create the renderer.")?;
+
+        // If the render interval is none, cap at 1000 fps.
+        let render_interval = CONFIG.render_interval.unwrap_or_else(|| Duration::from_millis(1));
 
         // ...and that's it!
         //-----------------------------------------------------------------------------------------
         Ok(Self {
-            terminal_dimensions,
             _sdl2_context: sdl2_context,
             _video_subsystem: video_subsystem,
             event_pump,
@@ -176,8 +170,8 @@ impl Client {
             debug_enabled: false,
             last_frame: Instant::now(),
             delta_time: Duration::from_secs(0),
-            frame_timer: Timer::new(FRAME_INTERVAL),
-            fps_log_timer: Timer::new(FPS_LOG_INTERVAL),
+            render_timer: Timer::new(render_interval),
+            fps_log_timer: Timer::new(CONFIG_FPS_LOG_INTERVAL),
             fps_counter: 0,
             resized: true,
         })
@@ -211,13 +205,6 @@ impl Client {
     //---------------------------------------------------------------------------------------------
     pub fn toggle_debug(&mut self) {
         self.debug_enabled = !self.debug_enabled;
-    }
-
-    //---------------------------------------------------------------------------------------------
-    // Returns a new terminal matching the client's dimensions.
-    //---------------------------------------------------------------------------------------------
-    pub fn create_terminal(&self) -> Terminal {
-        Terminal::new(self.terminal_dimensions)
     }
 
     //---------------------------------------------------------------------------------------------
@@ -255,7 +242,7 @@ impl Client {
         // TODO: Handle this elsewhere?
         //-----------------------------------------------------------------------------------------
         if self.fps_log_timer.update(&self.delta_time) {
-            const FPS_LOG_SECONDS: i32 = FPS_LOG_INTERVAL.as_secs() as i32;
+            const FPS_LOG_SECONDS: i32 = CONFIG_FPS_LOG_INTERVAL.as_secs() as i32;
             println!("FPS: {}", self.fps_counter / FPS_LOG_SECONDS);
 
             self.fps_counter = 0;
@@ -263,9 +250,9 @@ impl Client {
 
         // Return early if minimum frame duration has not yet passed.
         //-----------------------------------------------------------------------------------------
-        if !self.frame_timer.update(&self.delta_time) {
+        if !self.render_timer.update(&self.delta_time) {
             // Sleep for a bit.
-            thread::sleep(SLEEP_INTERVAL);
+            thread::sleep(CONFIG.sleep_interval);
 
             return Ok(false);
         }

@@ -32,18 +32,6 @@ use crate::terminal::*;
 // Normalization value to convert u8 color to OpenGL float representation.
 const COLOR_NORMALIZE_8BIT: GLfloat = 1.0 / 255.0;
 
-// Relative path to the fonts directory.
-const FONTS_PATH: &str = "./assets/fonts/";
-
-// Whether to alternate drawing/updating between two vertex buffers.
-const USE_ALTERNATING_VBOS: bool = true;
-
-// Whether to use signed distance field font rendering.
-const USE_SDF_FONTS: bool = false;
-
-// Whether to render the screen vignette.
-const ENABLE_VIGNETTE: bool = true;
-
 //-------------------------------------------------------------------------------------------------
 // Describes a vertex for a colored (+ alpha) and texture-mapped quad.
 // The background shader program will only use position and color[3].
@@ -138,14 +126,7 @@ impl RendererV2 {
     // Creates a new renderer.
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
-    pub fn new<S>(
-        tile_dimensions: ICoord,
-        terminal_dimensions: ICoord,
-        font_name: S,
-    ) -> Result<Self>
-    where
-        S: AsRef<str>,
-    {
+    pub fn new() -> Result<Self> {
         // Default clear color (this will change).
         let clear_color = SdlColor::RGB(15, 25, 35);
 
@@ -189,7 +170,7 @@ impl RendererV2 {
         gl_error_unwrap!("Failed to generate background vertex arrays.");
 
         // Generate the foreground program (compile shaders and link).
-        let foreground_program = if USE_SDF_FONTS {
+        let foreground_program = if CONFIG.use_sdf_fonts {
             link_program_from_sources(
                 FOREGROUND_VERTEX_SHADER_SOURCE,
                 FOREGROUND_FRAGMENT_SHADER_SDF_SOURCE,
@@ -248,7 +229,7 @@ impl RendererV2 {
 
         // The max # of quads is the total # of tiles in the terminal * 3.
         // (for background, foreground, and outline).
-        let num_quads = (terminal_dimensions.0 * terminal_dimensions.1) as usize;
+        let num_quads = (CONFIG.terminal_dimensions.0 * CONFIG.terminal_dimensions.1) as usize;
         let indices = generate_indices(num_quads * 3);
 
         // Bind the index buffer and upload the index data (we only need to do this once).
@@ -531,9 +512,10 @@ impl RendererV2 {
         // Bind and upload the non-outlined textures.
         for i in 0..TILE_STYLE_COUNT {
             // Get the texture path string.
-            let extension = if USE_SDF_FONTS { "_sdf.png" } else { ".png" };
+            let extension = if CONFIG.use_sdf_fonts { "_sdf.png" } else { ".png" };
             let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
+                [CONFIG_FONTS_DIR, CONFIG.font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension]
+                    .concat();
 
             let dimensions =
                 load_texture(Path::new(&path_string), textures[i], gl::TEXTURE0 + i as GLuint)?;
@@ -550,9 +532,10 @@ impl RendererV2 {
         #[allow(clippy::needless_range_loop)]
         for i in 0..TILE_STYLE_COUNT {
             // Get the outline texture path string.
-            let extension = if USE_SDF_FONTS { "_outline_sdf.png" } else { "_outline.png" };
+            let extension = if CONFIG.use_sdf_fonts { "_outline_sdf.png" } else { "_outline.png" };
             let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension].concat();
+                [CONFIG_FONTS_DIR, CONFIG.font_name.as_ref(), "/", TILE_STYLE_NAMES[i], extension]
+                    .concat();
 
             // Offset the index for outlined textures.
             let index = i + TILE_STYLE_COUNT;
@@ -609,7 +592,8 @@ impl RendererV2 {
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the font metrics.
             let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".json"].concat();
+                [CONFIG_FONTS_DIR, CONFIG.font_name.as_ref(), "/", TILE_STYLE_NAMES[i], ".json"]
+                    .concat();
             let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as JSON.
@@ -628,9 +612,14 @@ impl RendererV2 {
         // Load the outlined metrics.
         for i in 0..TILE_STYLE_COUNT {
             // Get the path string for the outline font metrics.
-            let path_string =
-                [FONTS_PATH, font_name.as_ref(), "/", TILE_STYLE_NAMES[i], "_outline.json"]
-                    .concat();
+            let path_string = [
+                CONFIG_FONTS_DIR,
+                CONFIG.font_name.as_ref(),
+                "/",
+                TILE_STYLE_NAMES[i],
+                "_outline.json",
+            ]
+            .concat();
             let path = Path::new(&path_string);
 
             // Read in the data from the metrics file and parse it as JSON.
@@ -650,8 +639,8 @@ impl RendererV2 {
         // ...and that's it!
         //-----------------------------------------------------------------------------------------
         Ok(Self {
-            tile_dimensions,
-            terminal_dimensions,
+            tile_dimensions: CONFIG.tile_dimensions,
+            terminal_dimensions: CONFIG.terminal_dimensions,
             clear_color,
             viewport,
             inverse_projection,
@@ -981,9 +970,11 @@ impl RendererV2 {
         //-----------------------------------------------------------------------------------------
 
         // Determine index for the current vertex buffer and vertex arrays.
-        let noncurrent_index =
-            if USE_ALTERNATING_VBOS { !self.target_backbuffer } else { self.target_backbuffer }
-                as usize;
+        let noncurrent_index = if CONFIG.use_alternating_vbos {
+            !self.target_backbuffer
+        } else {
+            self.target_backbuffer
+        } as usize;
 
         // Bind the vertex buffer not currently being rendered.
         unsafe {
@@ -1120,7 +1111,7 @@ impl RendererV2 {
         }
 
         // Draw the vignette.
-        if ENABLE_VIGNETTE {
+        if CONFIG.enable_vignette {
             unsafe {
                 // Enable the vignette shader program and vertex array.
                 gl::UseProgram(self.vignette_program);
@@ -1136,7 +1127,7 @@ impl RendererV2 {
         }
 
         // Flip the targeted buffer / vertex arrays.
-        if USE_ALTERNATING_VBOS {
+        if CONFIG.use_alternating_vbos {
             self.target_backbuffer = !self.target_backbuffer;
         }
 

@@ -21,16 +21,6 @@ use strum_macros::EnumIter;
 use fvr_engine_core::prelude::*;
 
 //-------------------------------------------------------------------------------------------------
-// Constants.
-//-------------------------------------------------------------------------------------------------
-
-// Path to current serialized keybindings. These can change.
-const KEYBINDINGS_PATH: &str = "./config/keybindings.json";
-
-// Path to default keybindings. These never change.
-const DEFAULT_KEYBINDINGS_PATH: &str = "./config/default_keybindings.json";
-
-//-------------------------------------------------------------------------------------------------
 // InputAction enumerates the kinds of input the user can make.
 // These actions are meant to be composite and remappable and used alongside individual key inputs.
 //-------------------------------------------------------------------------------------------------
@@ -163,7 +153,7 @@ impl InputManager {
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn with_keybindings() -> Result<Self> {
-        Self::new(KEYBINDINGS_PATH)
+        Self::new(CONFIG_KEYBINDINGS_PATH)
     }
 
     //---------------------------------------------------------------------------------------------
@@ -171,7 +161,7 @@ impl InputManager {
     // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn with_default_bindings() -> Result<Self> {
-        Self::new(DEFAULT_KEYBINDINGS_PATH)
+        Self::new(CONFIG_DEFAULT_KEYBINDINGS_PATH)
     }
 
     //---------------------------------------------------------------------------------------------

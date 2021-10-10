@@ -25,30 +25,16 @@ mod scenes;
 use scenes::Initial;
 
 //-------------------------------------------------------------------------------------------------
-// Constants.
+// Main.
 //-------------------------------------------------------------------------------------------------
-// TODO: Load these from config.
-const WINDOW_TITLE: &str = "FVR_ENGINE";
-const WINDOW_DIMENSIONS: ICoord = (1280, 720);
-const TERMINAL_DIMENSIONS: ICoord = (85, 33);
-const TILE_DIMENSIONS: ICoord = (48, 64);
-const FONT_NAME: &str = "deja_vu_sans_mono";
-const UPDATE_INTERVAL: Duration = Duration::from_micros(1000000 / 30);
-
 fn main() -> Result<()> {
     // Initialize everything.
     let mut render_dt;
     let mut update_dt = Duration::from_secs(0);
-    let mut update_timer = Timer::new(UPDATE_INTERVAL);
+    let mut update_timer = Timer::new(CONFIG.update_interval);
     let mut server = Server::new()?;
-    let mut client = Client::new(
-        WINDOW_TITLE,
-        WINDOW_DIMENSIONS,
-        TERMINAL_DIMENSIONS,
-        TILE_DIMENSIONS,
-        FONT_NAME,
-    )?;
-    let mut terminal = client.create_terminal();
+    let mut client = Client::new()?;
+    let mut terminal = Terminal::default();
     let mut input = InputManager::with_default_bindings()?;
     let mut scene_stack = SceneStack::new();
     scene_stack.push(Box::new(Initial::new()), &mut server, &mut terminal, &input)?;
@@ -79,7 +65,7 @@ fn main() -> Result<()> {
             }
 
             input.reset();
-            update_dt -= UPDATE_INTERVAL;
+            update_dt -= CONFIG.update_interval;
         }
 
         // Always render the frame.

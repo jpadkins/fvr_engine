@@ -22,14 +22,6 @@ pub struct Terminal {
 
 impl Terminal {
     //---------------------------------------------------------------------------------------------
-    // Creates a new terminal.
-    // (there should only ever be one, for now)
-    //---------------------------------------------------------------------------------------------
-    pub(crate) fn new(dimensions: ICoord) -> Self {
-        Self { tiles: GridMap::new(dimensions), opacity: 1.0 }
-    }
-
-    //---------------------------------------------------------------------------------------------
     // Returns the opacity of the entire terminal.
     //---------------------------------------------------------------------------------------------
     pub fn opacity(&self) -> f32 {
@@ -193,6 +185,15 @@ impl Terminal {
             tile.foreground_color = rng.gen();
             tile.outline_color = rng.gen();
         }
+    }
+}
+
+impl Default for Terminal {
+    //---------------------------------------------------------------------------------------------
+    // Returns the default terminal. There should only ever be one.
+    //---------------------------------------------------------------------------------------------
+    fn default() -> Self {
+        Self { tiles: GridMap::new(CONFIG.terminal_dimensions), opacity: 1.0 }
     }
 }
 

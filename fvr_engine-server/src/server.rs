@@ -43,7 +43,9 @@ pub enum ServerResult {
 pub struct Server {
     // The specs world.
     world: World,
+    // System for managing actor goals.
     goals_system: GoalsSystem,
+    // System for managing actor movement.
     move_system: MoveSystem,
 }
 
