@@ -23,7 +23,12 @@ use fvr_engine_core::prelude::*;
 //-------------------------------------------------------------------------------------------------
 // Constants.
 //-------------------------------------------------------------------------------------------------
+
+// Path to current serialized keybindings. These can change.
 const KEYBINDINGS_PATH: &str = "./config/keybindings.json";
+
+// Path to default keybindings. These never change.
+const DEFAULT_KEYBINDINGS_PATH: &str = "./config/default_keybindings.json";
 
 //-------------------------------------------------------------------------------------------------
 // InputAction enumerates the kinds of input the user can make.
@@ -133,10 +138,9 @@ pub struct InputManager {
 
 impl InputManager {
     //---------------------------------------------------------------------------------------------
-    // Creates a new input manager.
-    // (there should only ever be one)
+    // Helper function for create a new input manager.
     //---------------------------------------------------------------------------------------------
-    pub fn new() -> Result<Self> {
+    fn new(keybindings_path: &str) -> Result<Self> {
         let cursors = vec![
             SdlCursor::from_system(SystemCursor::Arrow).map_err(|e| anyhow!(e))?,
             SdlCursor::from_system(SystemCursor::Crosshair).map_err(|e| anyhow!(e))?,
@@ -145,39 +149,29 @@ impl InputManager {
             SdlCursor::from_system(SystemCursor::No).map_err(|e| anyhow!(e))?,
             SdlCursor::from_system(SystemCursor::Wait).map_err(|e| anyhow!(e))?,
         ];
+        let keybindings_json = std::fs::read_to_string(keybindings_path)?;
 
-        Ok(Self { cursors, ..Default::default() })
+        Ok(Self {
+            cursors,
+            action_bindings: serde_json::from_str(&keybindings_json)?,
+            ..Default::default()
+        })
     }
 
     //---------------------------------------------------------------------------------------------
-    // Returns an input manager with default action bindings.
+    // Creates a new input manager.
+    // (there should only ever be one)
+    //---------------------------------------------------------------------------------------------
+    pub fn with_keybindings() -> Result<Self> {
+        Self::new(KEYBINDINGS_PATH)
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Creates a new input manager with default action bindings.
+    // (there should only ever be one)
     //---------------------------------------------------------------------------------------------
     pub fn with_default_bindings() -> Result<Self> {
-        let mut this = Self::new()?;
-
-        // TODO: load these from config.
-        this.bind_action(
-            InputAction::Accept,
-            &[InputBinding::SpecificKey(InputKey::Return as i32)],
-        );
-        this.bind_action(
-            InputAction::Decline,
-            &[
-                InputBinding::SpecificKey(InputKey::Tab as i32),
-                InputBinding::ExcludeModifierKey(ModifierKey::Alt),
-            ],
-        );
-        this.bind_action(InputAction::Quit, &[InputBinding::SpecificKey(InputKey::Escape as i32)]);
-        this.bind_action(InputAction::North, &[InputBinding::SpecificKey(InputKey::K as i32)]);
-        this.bind_action(InputAction::Northeast, &[InputBinding::SpecificKey(InputKey::U as i32)]);
-        this.bind_action(InputAction::East, &[InputBinding::SpecificKey(InputKey::L as i32)]);
-        this.bind_action(InputAction::Southeast, &[InputBinding::SpecificKey(InputKey::N as i32)]);
-        this.bind_action(InputAction::South, &[InputBinding::SpecificKey(InputKey::J as i32)]);
-        this.bind_action(InputAction::Southwest, &[InputBinding::SpecificKey(InputKey::B as i32)]);
-        this.bind_action(InputAction::West, &[InputBinding::SpecificKey(InputKey::H as i32)]);
-        this.bind_action(InputAction::Northwest, &[InputBinding::SpecificKey(InputKey::Y as i32)]);
-
-        Ok(this)
+        Self::new(DEFAULT_KEYBINDINGS_PATH)
     }
 
     //---------------------------------------------------------------------------------------------
