@@ -8,6 +8,8 @@
       \|__|    \|__|/       \|__|\|__| \|_______|\|__| \|__|\|_______|\|__|\|__| \|__|\|_______|
 ```
 
+# NOTE: This project is no longer being worked on. Feel free to use anything, it's MIT licensed now 👍
+
 A Rusty Re-Write of the _CabinFever_ game engine.
 
 A data-driven text-based roleplaying game engine.
