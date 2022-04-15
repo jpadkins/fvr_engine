@@ -77,6 +77,7 @@ Basic steps:
   - stick in directory under fonts/
   - run with `cargo run -p fvr_engine-atlas -- run` while in root dir of project
   - output goes to resources/fonts/
+  - finally, create SDF versions of the textures. See the bash script in resources/fonts.
 
 ### fvr_engine-client
 Lib for handling the game window, user input, and drawing to the faux terminal.
